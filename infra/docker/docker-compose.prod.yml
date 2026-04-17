@@ -1,0 +1,58 @@
+# Production configuration - runs built files
+# Both dev and prod share the same DB service (same volume and network)
+
+services:
+  # Shared PostgreSQL database (used by both dev and prod)
+  postgres:
+    image: postgres:16-alpine
+    container_name: starter-be-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_DATABASE:-starter_db}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - starter-be-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Production app - runs built files
+  app:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+      target: production
+    container_name: starter-be-app
+    restart: unless-stopped
+    ports:
+      - "${PORT:-5000}:5000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${PORT:-5000}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_DATABASE: ${DB_DATABASE:-starter_db}
+      DB_SYNCHRONIZE: ${DB_SYNCHRONIZE:-false}
+      DB_LOGGING: ${DB_LOGGING:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - starter-be-network
+
+volumes:
+  postgres_data:
+
+networks:
+  starter-be-network:
+    driver: bridge
+

@@ -1,0 +1,11 @@
+site_name: Starter BE NestJS
+
+nav:
+  - Home: AUTH.md
+  - Backend-module: BACKEND_MODULE.md
+  - Backend-summary: BACKEND_SUMMARY.md
+  - Boilerplate: BOILERPLATE_FEATURES.md
+  - QUICK_REFERENCE: QUICK_REFERENCE.md
+
+theme:
+  name: readthedocs

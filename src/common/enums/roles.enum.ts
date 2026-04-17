@@ -1,0 +1,15 @@
+export enum Roles {
+  ADMIN = 'admin',
+  USER = 'user',
+  MODERATOR = 'moderator',
+  EDITOR = 'editor',
+  VIEWER = 'viewer',
+  GUEST = 'guest',
+  ANONYMOUS = 'anonymous',
+  SYSTEM = 'system',
+  API = 'api',
+  WEB = 'web',
+  MOBILE = 'mobile',
+  DESKTOP = 'desktop',
+  TABLET = 'tablet',
+}
