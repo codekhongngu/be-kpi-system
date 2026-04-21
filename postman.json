@@ -30,6 +30,11 @@
 			"key": "departmentId",
 			"value": "",
 			"type": "string"
+		},
+		{
+			"key": "orgId",
+			"value": "",
+			"type": "string"
 		}
 	],
 	"item": [
@@ -528,6 +533,223 @@
 				}
 			],
 			"description": "User management endpoints"
+		},
+		{
+			"name": "Organizations (Admin)",
+			"item": [
+				{
+					"name": "Get Orgs (List)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/orgs?q=&isActive=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "orgs"],
+							"query": [
+								{
+									"key": "q",
+									"value": "",
+									"description": "Tìm theo code hoặc name"
+								},
+								{
+									"key": "isActive",
+									"value": "true",
+									"description": "Lọc theo trạng thái hoạt động (true/false)"
+								}
+							]
+						},
+						"description": "Danh sách đơn vị (flat list)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Orgs (Tree)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/orgs?tree=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "orgs"],
+							"query": [
+								{
+									"key": "tree",
+									"value": "true",
+									"description": "Trả về cấu trúc cây (children[])"
+								}
+							]
+						},
+						"description": "Danh sách đơn vị dạng cây"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Org",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"ORG-TEST\",\n  \"name\": \"Đơn vị test\",\n  \"parentId\": null,\n  \"headUserId\": null,\n  \"level\": 1,\n  \"description\": \"Tạo từ Postman\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/orgs",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "orgs"]
+						},
+						"description": "Tạo đơn vị mới"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('orgId', jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Org By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/orgs/{{orgId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "orgs", "{{orgId}}"]
+						},
+						"description": "Lấy chi tiết đơn vị theo ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Org (Patch)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Đơn vị test (updated)\",\n  \"description\": \"Cập nhật từ Postman\",\n  \"parentId\": null,\n  \"headUserId\": null,\n  \"level\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/orgs/{{orgId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "orgs", "{{orgId}}"]
+						},
+						"description": "Cập nhật đơn vị (PATCH)"
+					},
+					"response": []
+				},
+				{
+					"name": "Lock Org",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/orgs/{{orgId}}/lock",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "orgs", "{{orgId}}", "lock"]
+						},
+						"description": "Khóa đơn vị (isActive=false)"
+					},
+					"response": []
+				},
+				{
+					"name": "Unlock Org",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/orgs/{{orgId}}/unlock",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "orgs", "{{orgId}}", "unlock"]
+						},
+						"description": "Mở khóa đơn vị (isActive=true)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Org",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/orgs/{{orgId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "orgs", "{{orgId}}"]
+						},
+						"description": "Xóa đơn vị (soft delete; sẽ bị chặn nếu còn dữ liệu liên quan)"
+					},
+					"response": []
+				}
+			],
+			"description": "Organizations administration endpoints"
 		}
 	]
 }

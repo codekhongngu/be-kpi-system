@@ -7,6 +7,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { RoleModule } from './modules/role/role.module';
 import { ExampleModule } from './modules/example/example.module';
+import { OrganizationModule } from './modules/organization/organization.module';
 import {
   LoggingMiddleware,
   RequestIdMiddleware,
@@ -65,6 +66,7 @@ import { URL } from 'url';
     AuthModule,
     UserModule,
     RoleModule,
+    OrganizationModule,
     ExampleModule,
   ],
   controllers: [AppController],
