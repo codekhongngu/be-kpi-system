@@ -1,7 +1,6 @@
 import {
   Injectable,
   UnauthorizedException,
-  NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -12,13 +11,15 @@ import { ConfigService } from '@nestjs/config';
 import { UserService } from '../user/user.service';
 import { User, UserStatus } from '../user/entities/user.entity';
 import { PasswordReset } from './entities/password-reset.entity';
+import { AuthRefreshToken } from './entities/refresh-token.entity';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
-import { randomBytes } from 'crypto';
+import { randomBytes, createHash } from 'crypto';
+import { PublicUser } from './dto/public-user.type';
 
 @Injectable()
 export class AuthService {
@@ -28,6 +29,8 @@ export class AuthService {
     private readonly configService: ConfigService,
     @InjectRepository(PasswordReset)
     private readonly passwordResetRepository: Repository<PasswordReset>,
+    @InjectRepository(AuthRefreshToken)
+    private readonly refreshTokenRepository: Repository<AuthRefreshToken>,
   ) {}
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
@@ -44,14 +47,32 @@ export class AuthService {
       throw new UnauthorizedException('Tài khoản đã bị khóa hoặc vô hiệu hóa');
     }
 
+    if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
+      throw new UnauthorizedException(
+        'Tài khoản đang bị khóa tạm thời, vui lòng thử lại sau',
+      );
+    }
+
     const isPasswordValid = await bcrypt.compare(
       loginDto.password,
       user.passwordHash,
     );
 
     if (!isPasswordValid) {
+      const maxFailed = this.configService.get<number>('AUTH_MAX_FAILED', 5);
+      const lockMinutes = this.configService.get<number>(
+        'AUTH_LOCK_MINUTES',
+        15,
+      );
+      const failed = await this.userService.incrementFailedLoginAttempt(user.id);
+      if (failed >= maxFailed) {
+        const lockedUntil = new Date(Date.now() + lockMinutes * 60_000);
+        await this.userService.lockUntil(user.id, lockedUntil);
+      }
       throw new UnauthorizedException('Thông tin đăng nhập không chính xác');
     }
+
+    await this.userService.resetFailedLoginAttemptsAndUnlock(user.id);
 
     // Update last login
     await this.userService.updateLastLogin(user.id);
@@ -65,6 +86,7 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
+    this.assertPasswordPolicy(registerDto.password);
     const user = await this.userService.create({
       ...registerDto,
       status: UserStatus.ACTIVE,
@@ -93,9 +115,16 @@ export class AuthService {
       throw new UnauthorizedException('Mật khẩu cũ không chính xác');
     }
 
+    this.assertPasswordPolicy(changePasswordDto.newPassword);
     await this.userService.update(userId, {
       password: changePasswordDto.newPassword,
     });
+
+    // revoke all sessions after password change
+    await this.refreshTokenRepository.update(
+      { user: { id: userId }, revokedAt: IsNull() },
+      { revokedAt: new Date() },
+    );
   }
 
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<void> {
@@ -108,49 +137,40 @@ export class AuthService {
 
     // Generate reset token
     const token = randomBytes(32).toString('hex');
+    const tokenHash = this.sha256Hex(token);
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 1); // Token expires in 1 hour
 
-    // Save or update password reset record
-    const existingReset = await this.passwordResetRepository.findOne({
-      where: { email: user.email },
+    const passwordReset = this.passwordResetRepository.create({
+      user,
+      tokenHash,
+      expiresAt,
+      usedAt: null,
     });
-
-    if (existingReset) {
-      existingReset.token = token;
-      existingReset.expiresAt = expiresAt;
-      existingReset.usedAt = null;
-      await this.passwordResetRepository.save(existingReset);
-    } else {
-      const passwordReset = this.passwordResetRepository.create({
-        email: user.email,
-        token,
-        expiresAt,
-      });
-      await this.passwordResetRepository.save(passwordReset);
-    }
+    await this.passwordResetRepository.save(passwordReset);
 
     // TODO: Send email with reset link
     // await this.emailService.sendPasswordResetEmail(user.email, token);
   }
 
   async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<void> {
+    this.assertPasswordPolicy(resetPasswordDto.newPassword);
+
+    const tokenHash = this.sha256Hex(resetPasswordDto.token);
     const passwordReset = await this.passwordResetRepository.findOne({
       where: {
-        token: resetPasswordDto.token,
+        tokenHash,
         usedAt: IsNull(),
         expiresAt: MoreThan(new Date()),
       },
+      relations: { user: true },
     });
 
     if (!passwordReset) {
       throw new BadRequestException('Token không hợp lệ hoặc đã hết hạn');
     }
 
-    const user = await this.userService.findByEmail(passwordReset.email);
-    if (!user) {
-      throw new NotFoundException('Không tìm thấy user');
-    }
+    const user = passwordReset.user;
 
     // Update password
     await this.userService.update(user.id, {
@@ -160,28 +180,56 @@ export class AuthService {
     // Mark token as used
     passwordReset.usedAt = new Date();
     await this.passwordResetRepository.save(passwordReset);
+
+    // revoke all sessions after reset
+    await this.refreshTokenRepository.update(
+      { user: { id: user.id }, revokedAt: IsNull() },
+      { revokedAt: new Date() },
+    );
   }
 
   async refreshToken(refreshToken: string): Promise<AuthResponseDto> {
-    try {
-      const payload = await this.jwtService.verifyAsync(refreshToken, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      });
+    const tokenHash = this.sha256Hex(refreshToken);
+    const row = await this.refreshTokenRepository.findOne({
+      where: {
+        tokenHash,
+        revokedAt: IsNull(),
+        expiresAt: MoreThan(new Date()),
+      },
+      relations: { user: true },
+    });
 
-      const user = await this.userService.findOne(payload.sub);
-      if (user.status !== UserStatus.ACTIVE) {
-        throw new UnauthorizedException('Tài khoản đã bị khóa');
-      }
-
-      const tokens = await this.generateTokens(user);
-
-      return {
-        ...tokens,
-        user: this.sanitizeUser(user),
-      };
-    } catch {
+    if (!row) {
       throw new UnauthorizedException('Refresh token không hợp lệ');
     }
+
+    const user = row.user;
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException('Tài khoản đã bị khóa');
+    }
+
+    // rotate: revoke old token, issue new token
+    row.revokedAt = new Date();
+    await this.refreshTokenRepository.save(row);
+
+    const tokens = await this.generateTokens(user);
+    return { ...tokens, user: this.sanitizeUser(user) };
+  }
+
+  async logout(userId: string, refreshToken?: string): Promise<void> {
+    if (refreshToken) {
+      const tokenHash = this.sha256Hex(refreshToken);
+      await this.refreshTokenRepository.update(
+        { tokenHash, revokedAt: IsNull() },
+        { revokedAt: new Date() },
+      );
+      return;
+    }
+
+    await this.refreshTokenRepository.update(
+      { user: { id: userId }, revokedAt: IsNull() },
+      { revokedAt: new Date() },
+    );
   }
 
   async validateUser(userId: string): Promise<User> {
@@ -208,13 +256,26 @@ export class AuthService {
       expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '1h'),
     } as any);
 
-    const refreshToken = await this.jwtService.signAsync(payload, {
-      secret: this.configService.get<string>(
-        'JWT_REFRESH_SECRET',
-        'your-refresh-secret-key',
-      ),
-      expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d'),
-    } as any);
+    const refreshTokenTtlDays = this.configService.get<number>(
+      'JWT_REFRESH_TTL_DAYS',
+      7,
+    );
+    const refreshToken = randomBytes(48).toString('hex'); // opaque
+    const expiresAt = new Date(
+      Date.now() + refreshTokenTtlDays * 24 * 60 * 60_000,
+    );
+    const tokenHash = this.sha256Hex(refreshToken);
+
+    await this.refreshTokenRepository.save(
+      this.refreshTokenRepository.create({
+        tokenHash,
+        expiresAt,
+        revokedAt: null,
+        user,
+        ipAddress: null,
+        userAgent: null,
+      }),
+    );
 
     const expiresIn = this.configService.get<number>(
       'JWT_EXPIRES_IN_SECONDS',
@@ -228,9 +289,36 @@ export class AuthService {
     };
   }
 
-  private sanitizeUser(user: User): Omit<User, 'passwordHash' | 'deletedAt'> {
+  private sha256Hex(input: string) {
+    return createHash('sha256').update(input).digest('hex');
+  }
+
+  private assertPasswordPolicy(password: string) {
+    const minLen = this.configService.get<number>('AUTH_PASSWORD_MIN_LEN', 8);
+    if (password.length < minLen) {
+      throw new BadRequestException(`Mật khẩu phải có ít nhất ${minLen} ký tự`);
+    }
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSymbol = /[^A-Za-z0-9]/.test(password);
+    if (!(hasUpper && hasLower && hasNumber && hasSymbol)) {
+      throw new BadRequestException(
+        'Mật khẩu phải gồm chữ hoa, chữ thường, số và ký tự đặc biệt',
+      );
+    }
+  }
+
+  private sanitizeUser(user: User): PublicUser {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { passwordHash, deletedAt, ...sanitized } = user;
+    const {
+      passwordHash,
+      deletedAt,
+      totpSecret,
+      failedLoginAttempts,
+      lockedUntil,
+      ...sanitized
+    } = user;
     return sanitized;
   }
 }

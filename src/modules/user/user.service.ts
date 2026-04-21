@@ -203,6 +203,28 @@ export class UserService {
     await this.userRepository.update(id, { lastLogin: new Date() });
   }
 
+  async incrementFailedLoginAttempt(id: string): Promise<number> {
+    await this.userRepository.increment({ id }, 'failedLoginAttempts', 1);
+    const u = await this.userRepository.findOne({
+      where: { id },
+      select: { id: true, failedLoginAttempts: true },
+    });
+    return u?.failedLoginAttempts ?? 0;
+  }
+
+  async resetFailedLoginAttemptsAndUnlock(id: string): Promise<void> {
+    await this.userRepository.update(id, {
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+    });
+  }
+
+  async lockUntil(id: string, lockedUntil: Date): Promise<void> {
+    await this.userRepository.update(id, {
+      lockedUntil,
+    });
+  }
+
   async findByDepartment(departmentId: string): Promise<User[]> {
     return await this.userRepository.find({
       where: { departmentId },

@@ -35,12 +35,23 @@ Trước khi test các endpoints, bạn cần đăng nhập để lấy access t
    Body:
    {
      "usernameOrEmail": "admin@example.com",
-     "password": "password123"
+     "password": "Password@123"
    }
    ```
 
 2. Copy `accessToken` từ response
 3. Paste vào environment variable `accessToken` trong Postman
+
+### 3.1 Refresh token (rotate)
+
+- API `POST /api/auth/refresh-token` sẽ **cấp accessToken mới** và **cấp refreshToken mới** (rotate).
+- Trong Postman collection, script test đã tự động overwrite `refreshToken` sau mỗi lần refresh.
+
+### 3.2 Logout (revoke refresh token)
+
+- API `POST /api/auth/logout` hỗ trợ body:
+  - Có `refreshToken`: revoke đúng session hiện tại
+  - Không có `refreshToken`: revoke tất cả session của user
 
 ### 4. Test các endpoints
 

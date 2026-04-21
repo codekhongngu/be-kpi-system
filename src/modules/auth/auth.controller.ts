@@ -48,10 +48,8 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  getMe(@CurrentUser() user: User): Omit<User, 'passwordHash' | 'deletedAt'> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { passwordHash, deletedAt, ...sanitized } = user;
-    return sanitized;
+  getMe(@CurrentUser() user: User): User {
+    return user;
   }
 
   @Post('change-password')
@@ -88,7 +86,11 @@ export class AuthController {
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  logout(): { message: string } {
+  async logout(
+    @CurrentUser() user: User,
+    @Body('refreshToken') refreshToken?: string,
+  ): Promise<{ message: string }> {
+    await this.authService.logout(user.id, refreshToken);
     return { message: 'Đăng xuất thành công' };
   }
 }
