@@ -8,7 +8,7 @@
 	"variable": [
 		{
 			"key": "baseUrl",
-			"value": "http://localhost:3000",
+			"value": "http://localhost:5000",
 			"type": "string"
 		},
 		{
@@ -40,6 +40,16 @@
 			"key": "periodId",
 			"value": "",
 			"type": "string"
+		},
+		{
+			"key": "importJobId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "roleIdFilter",
+			"value": "",
+			"type": "string"
 		}
 	],
 	"item": [
@@ -66,9 +76,9 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/auth/login",
+							"raw": "{{baseUrl}}/api/v1/auth/login",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "login"]
+							"path": ["api","v1","auth", "login"]
 						},
 						"description": "Đăng nhập với username/email và password"
 					},
@@ -79,7 +89,8 @@
 							"script": {
 								"exec": [
 									"if (pm.response.code === 200) {",
-									"    const jsonData = pm.response.json();",
+									"    const envelope = pm.response.json();",
+									"    const jsonData = envelope && envelope.data !== undefined ? envelope.data : envelope;",
 									"    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
 									"    if (jsonData.refreshToken) {",
 									"        pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
@@ -111,9 +122,9 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/auth/register",
+							"raw": "{{baseUrl}}/api/v1/auth/register",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "register"]
+							"path": ["api","v1","auth", "register"]
 						},
 						"description": "Đăng ký tài khoản mới"
 					},
@@ -139,9 +150,9 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/auth/refresh-token",
+							"raw": "{{baseUrl}}/api/v1/auth/refresh-token",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "refresh-token"]
+							"path": ["api","v1","auth", "refresh-token"]
 						},
 						"description": "Làm mới access token bằng refresh token (rotate: refreshToken sẽ được cấp mới)"
 					},
@@ -152,7 +163,8 @@
 							"script": {
 								"exec": [
 									"if (pm.response.code === 200) {",
-									"    const jsonData = pm.response.json();",
+									"    const envelope = pm.response.json();",
+									"    const jsonData = envelope && envelope.data !== undefined ? envelope.data : envelope;",
 									"    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
 									"    if (jsonData.refreshToken) {",
 									"        pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
@@ -175,11 +187,11 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/auth/me",
+							"raw": "{{baseUrl}}/api/v1/auth/me",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "me"]
+							"path": ["api","v1","auth", "me"]
 						},
-						"description": "Lấy thông tin user hiện tại (yêu cầu JWT)"
+						"description": "GET /auth/me — hợp đồng MeResponse (QLDL): id, code, fullName, email, username, phone, avatarUrl, orgId, roleGroupIds[], language, timezone, notifyChannel. JWT bắt buộc; body nằm trong envelope `data`."
 					},
 					"response": [],
 					"event": [
@@ -188,7 +200,8 @@
 							"script": {
 								"exec": [
 									"if (pm.response.code === 200) {",
-									"    const jsonData = pm.response.json();",
+									"    const envelope = pm.response.json();",
+									"    const jsonData = envelope && envelope.data !== undefined ? envelope.data : envelope;",
 									"    pm.collectionVariables.set('userId', jsonData.id);",
 									"}"
 								],
@@ -221,9 +234,9 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/auth/change-password",
+							"raw": "{{baseUrl}}/api/v1/auth/change-password",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "change-password"]
+							"path": ["api","v1","auth", "change-password"]
 						},
 						"description": "Đổi mật khẩu (yêu cầu JWT)"
 					},
@@ -249,9 +262,9 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/auth/forgot-password",
+							"raw": "{{baseUrl}}/api/v1/auth/forgot-password",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "forgot-password"]
+							"path": ["api","v1","auth", "forgot-password"]
 						},
 						"description": "Gửi email reset password"
 					},
@@ -277,9 +290,9 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/auth/reset-password",
+							"raw": "{{baseUrl}}/api/v1/auth/reset-password",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "reset-password"]
+							"path": ["api","v1","auth", "reset-password"]
 						},
 						"description": "Đặt lại mật khẩu với token từ email"
 					},
@@ -309,9 +322,9 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/auth/logout",
+							"raw": "{{baseUrl}}/api/v1/auth/logout",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "logout"]
+							"path": ["api","v1","auth", "logout"]
 						},
 						"description": "Đăng xuất (yêu cầu JWT). Nếu gửi refreshToken sẽ revoke đúng session; nếu không gửi sẽ revoke tất cả session của user."
 					},
@@ -339,7 +352,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"testuser@example.com\",\n  \"password\": \"Password@123\",\n  \"fullName\": \"Test User\",\n  \"phone\": \"0123456789\",\n  \"departmentId\": \"{{departmentId}}\",\n  \"status\": \"active\"\n}",
+							"raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"testuser@example.com\",\n  \"password\": \"Password@123\",\n  \"fullName\": \"Test User\",\n  \"phone\": \"0123456789\",\n  \"code\": \"USR-TEST\",\n  \"orgId\": \"{{orgId}}\",\n  \"roleGroupIds\": [],\n  \"roleIds\": [],\n  \"departmentId\": \"{{departmentId}}\",\n  \"status\": \"active\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -347,9 +360,9 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/users",
+							"raw": "{{baseUrl}}/api/v1/users",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "users"]
+							"path": ["api","v1","users"]
 						},
 						"description": "Tạo user mới (yêu cầu JWT)"
 					},
@@ -360,7 +373,8 @@
 							"script": {
 								"exec": [
 									"if (pm.response.code === 201) {",
-									"    const jsonData = pm.response.json();",
+									"    const envelope = pm.response.json();",
+									"    const jsonData = envelope && envelope.data !== undefined ? envelope.data : envelope;",
 									"    pm.collectionVariables.set('userId', jsonData.id);",
 									"}"
 								],
@@ -368,6 +382,158 @@
 							}
 						}
 					]
+				},
+				{
+					"name": "Get Users By Department",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/departments/{{departmentId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api","v1","users", "departments", "{{departmentId}}"]
+						},
+						"description": "GET /users/departments/:id — danh sách UserListItem. JWT + ADMIN_USERS:READ."
+					},
+					"response": []
+				},
+				{
+					"name": "Activate User",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}/activate",
+							"host": ["{{baseUrl}}"],
+							"path": ["api","v1","users", "{{userId}}", "activate"]
+						},
+						"description": "Kích hoạt user (active + clear lock counters)"
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate User",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}/deactivate",
+							"host": ["{{baseUrl}}"],
+							"path": ["api","v1","users", "{{userId}}", "deactivate"]
+						},
+						"description": "Vô hiệu hóa user (inactive)"
+					},
+					"response": []
+				},
+				{
+					"name": "Reset User Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"newPassword\": \"Reset@12345\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}/reset-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["api","v1","users", "{{userId}}", "reset-password"]
+						},
+						"description": "Reset mật khẩu (nếu bỏ body newPassword, server sẽ generate temporaryPassword)"
+					},
+					"response": []
+				},
+				{
+					"name": "Import Users (CSV)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/import",
+							"host": ["{{baseUrl}}"],
+							"path": ["api","v1","users", "import"]
+						},
+						"description": "Import CSV async (multipart field `file`). Dòng 1 là header **chữ thường** (khớp parser): `code,fullname,email,username,password,orgid,roleids,status` + **bắt buộc một trong hai**: `rolegroupids` (khuyến nghị) hoặc `rolegroupid` (tương thích ngược). Nhiều UUID trong `rolegroupids` / `rolegroupid` hoặc `roleids`: phân tách bằng `|`. `password` có thể để trống → server sinh mật khẩu. Phản hồi: `{ jobId }` trong envelope `data`."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const envelope = pm.response.json();",
+									"    const jsonData = envelope && envelope.data !== undefined ? envelope.data : envelope;",
+									"    pm.collectionVariables.set('importJobId', jsonData.jobId);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Import Job Result",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/import/{{importJobId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api","v1","users", "import", "{{importJobId}}"]
+						},
+						"description": "Xem kết quả import (status + errors theo dòng)"
+					},
+					"response": []
 				},
 				{
 					"name": "Get All Users",
@@ -380,9 +546,9 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/users?page=1&limit=10&search=&status=active&departmentId=",
+							"raw": "{{baseUrl}}/api/v1/users?page=1&limit=10&q=&search=&status=&isActive=&orgId=&roleGroupId=&roleId=&departmentId=&sort=createdAt,desc",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "users"],
+							"path": ["api","v1","users"],
 							"query": [
 								{
 									"key": "page",
@@ -395,23 +561,53 @@
 									"description": "Số lượng items mỗi trang (mặc định: 10)"
 								},
 								{
+									"key": "q",
+									"value": "",
+									"description": "Alias search (username/email/fullName/code)"
+								},
+								{
 									"key": "search",
 									"value": "",
-									"description": "Tìm kiếm theo username, email, fullName"
+									"description": "Tìm kiếm theo username, email, fullName, code"
 								},
 								{
 									"key": "status",
-									"value": "active",
-									"description": "Lọc theo status: active, inactive, suspended"
+									"value": "",
+									"description": "Lọc enum nội bộ: active | inactive | suspended (tuỳ chọn; để trống = không lọc)"
+								},
+								{
+									"key": "isActive",
+									"value": "",
+									"description": "QLDL: true | false (ưu tiên contract; khác `status`)"
+								},
+								{
+									"key": "orgId",
+									"value": "",
+									"description": "Lọc theo đơn vị (users.org_id)"
+								},
+								{
+									"key": "roleGroupId",
+									"value": "",
+									"description": "Lọc theo nhóm quyền QLDL (primary hoặc user_role_groups)"
+								},
+								{
+									"key": "roleId",
+									"value": "{{roleIdFilter}}",
+									"description": "Lọc theo role (Nest roles.id)"
 								},
 								{
 									"key": "departmentId",
 									"value": "",
 									"description": "Lọc theo department ID"
+								},
+								{
+									"key": "sort",
+									"value": "createdAt,desc",
+									"description": "Ví dụ: createdAt,desc | username,asc"
 								}
 							]
 						},
-						"description": "Lấy danh sách users với phân trang và filter (yêu cầu JWT)"
+						"description": "GET /users — { items: UserListItem[], meta } (QLDL). JWT + quyền ADMIN_USERS:READ trên role_groups.permissions."
 					},
 					"response": []
 				},
@@ -426,11 +622,11 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/users/{{userId}}",
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "users", "{{userId}}"]
+							"path": ["api","v1","users", "{{userId}}"]
 						},
-						"description": "Lấy thông tin user theo ID (yêu cầu JWT)"
+						"description": "GET /users/:id — UserDetail (QLDL). JWT + ADMIN_USERS:READ."
 					},
 					"response": []
 				},
@@ -458,9 +654,9 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/users/{{userId}}",
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "users", "{{userId}}"]
+							"path": ["api","v1","users", "{{userId}}"]
 						},
 						"description": "Cập nhật thông tin user (yêu cầu JWT)"
 					},
@@ -477,9 +673,9 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/users/{{userId}}",
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "users", "{{userId}}"]
+							"path": ["api","v1","users", "{{userId}}"]
 						},
 						"description": "Xóa user (yêu cầu JWT)"
 					},
@@ -509,16 +705,16 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/users/{{userId}}/status",
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}/status",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "users", "{{userId}}", "status"]
+							"path": ["api","v1","users", "{{userId}}", "status"]
 						},
 						"description": "Cập nhật status của user: active, inactive, suspended (yêu cầu JWT)"
 					},
 					"response": []
 				},
 				{
-					"name": "Get Users By Department",
+					"name": "Get User Permissions",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -528,11 +724,43 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/users/departments/{{departmentId}}",
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}/permissions",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "users", "departments", "{{departmentId}}"]
+							"path": ["api","v1","users", "{{userId}}", "permissions"]
 						},
-						"description": "Lấy danh sách users theo department ID (yêu cầu JWT)"
+						"description": "Lấy permissions của user (từ Nest roles)"
+					},
+					"response": []
+				},
+				{
+					"name": "Assign Roles to User",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"roleIds\": [\"{{roleIdFilter}}\"]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}/roles",
+							"host": ["{{baseUrl}}"],
+							"path": ["api","v1","users", "{{userId}}", "roles"]
+						},
+						"description": "Gán roles (Nest) cho user"
 					},
 					"response": []
 				}
@@ -553,9 +781,9 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/orgs?q=&isActive=true",
+							"raw": "{{baseUrl}}/api/v1/orgs?q=&isActive=true",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "orgs"],
+							"path": ["api","v1","orgs"],
 							"query": [
 								{
 									"key": "q",
@@ -584,9 +812,9 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/orgs?tree=true",
+							"raw": "{{baseUrl}}/api/v1/orgs?tree=true",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "orgs"],
+							"path": ["api","v1","orgs"],
 							"query": [
 								{
 									"key": "tree",
@@ -623,9 +851,9 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/orgs",
+							"raw": "{{baseUrl}}/api/v1/orgs",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "orgs"]
+							"path": ["api","v1","orgs"]
 						},
 						"description": "Tạo đơn vị mới"
 					},
@@ -636,7 +864,8 @@
 							"script": {
 								"exec": [
 									"if (pm.response.code === 201) {",
-									"    const jsonData = pm.response.json();",
+									"    const envelope = pm.response.json();",
+									"    const jsonData = envelope && envelope.data !== undefined ? envelope.data : envelope;",
 									"    pm.collectionVariables.set('orgId', jsonData.id);",
 									"}"
 								],
@@ -656,9 +885,9 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/orgs/{{orgId}}",
+							"raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "orgs", "{{orgId}}"]
+							"path": ["api","v1","orgs", "{{orgId}}"]
 						},
 						"description": "Lấy chi tiết đơn vị theo ID"
 					},
@@ -688,9 +917,9 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/orgs/{{orgId}}",
+							"raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "orgs", "{{orgId}}"]
+							"path": ["api","v1","orgs", "{{orgId}}"]
 						},
 						"description": "Cập nhật đơn vị (PATCH)"
 					},
@@ -707,9 +936,9 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/orgs/{{orgId}}/lock",
+							"raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/lock",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "orgs", "{{orgId}}", "lock"]
+							"path": ["api","v1","orgs", "{{orgId}}", "lock"]
 						},
 						"description": "Khóa đơn vị (isActive=false)"
 					},
@@ -726,9 +955,9 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/orgs/{{orgId}}/unlock",
+							"raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/unlock",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "orgs", "{{orgId}}", "unlock"]
+							"path": ["api","v1","orgs", "{{orgId}}", "unlock"]
 						},
 						"description": "Mở khóa đơn vị (isActive=true)"
 					},
@@ -745,9 +974,9 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/orgs/{{orgId}}",
+							"raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "orgs", "{{orgId}}"]
+							"path": ["api","v1","orgs", "{{orgId}}"]
 						},
 						"description": "Xóa đơn vị (soft delete; sẽ bị chặn nếu còn dữ liệu liên quan)"
 					},
@@ -770,9 +999,9 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/report-periods?type=THANG&page=1&limit=20",
+							"raw": "{{baseUrl}}/api/v1/report-periods?type=THANG&page=1&limit=20",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "report-periods"],
+							"path": ["api","v1","report-periods"],
 							"query": [
 								{
 									"key": "type",
@@ -827,9 +1056,9 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/report-periods",
+							"raw": "{{baseUrl}}/api/v1/report-periods",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "report-periods"]
+							"path": ["api","v1","report-periods"]
 						},
 						"description": "Tạo kỳ báo cáo (auto-generate code)"
 					},
@@ -840,7 +1069,8 @@
 							"script": {
 								"exec": [
 									"if (pm.response.code === 201) {",
-									"    const jsonData = pm.response.json();",
+									"    const envelope = pm.response.json();",
+									"    const jsonData = envelope && envelope.data !== undefined ? envelope.data : envelope;",
 									"    pm.collectionVariables.set('periodId', jsonData.id);",
 									"}"
 								],
@@ -860,9 +1090,9 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/report-periods/{{periodId}}",
+							"raw": "{{baseUrl}}/api/v1/report-periods/{{periodId}}",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "report-periods", "{{periodId}}"]
+							"path": ["api","v1","report-periods", "{{periodId}}"]
 						},
 						"description": "Lấy chi tiết kỳ báo cáo theo ID"
 					},
@@ -892,9 +1122,9 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/report-periods/{{periodId}}",
+							"raw": "{{baseUrl}}/api/v1/report-periods/{{periodId}}",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "report-periods", "{{periodId}}"]
+							"path": ["api","v1","report-periods", "{{periodId}}"]
 						},
 						"description": "Cập nhật kỳ báo cáo (PATCH)"
 					},
@@ -911,9 +1141,9 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/report-periods/{{periodId}}",
+							"raw": "{{baseUrl}}/api/v1/report-periods/{{periodId}}",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "report-periods", "{{periodId}}"]
+							"path": ["api","v1","report-periods", "{{periodId}}"]
 						},
 						"description": "Xóa kỳ báo cáo (bị chặn nếu đã giao báo cáo: form_assignments.period_id)"
 					},

@@ -20,6 +20,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { randomBytes, createHash } from 'crypto';
 import { PublicUser } from './dto/public-user.type';
+import { Organization } from '../organization/entities/organization.entity';
 
 @Injectable()
 export class AuthService {
@@ -31,6 +32,8 @@ export class AuthService {
     private readonly passwordResetRepository: Repository<PasswordReset>,
     @InjectRepository(AuthRefreshToken)
     private readonly refreshTokenRepository: Repository<AuthRefreshToken>,
+    @InjectRepository(Organization)
+    private readonly organizationRepository: Repository<Organization>,
   ) {}
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
@@ -87,10 +90,14 @@ export class AuthService {
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
     this.assertPasswordPolicy(registerDto.password);
-    const user = await this.userService.create({
-      ...registerDto,
-      status: UserStatus.ACTIVE,
-    });
+    const created = await this.userService.create(
+      {
+        ...registerDto,
+        status: UserStatus.ACTIVE,
+      },
+      { requireQldlRoleGroups: false },
+    );
+    const user = await this.userService.findOne(created.id);
 
     const tokens = await this.generateTokens(user);
 
@@ -237,6 +244,16 @@ export class AuthService {
     if (user.status !== UserStatus.ACTIVE) {
       throw new UnauthorizedException('Tài khoản đã bị khóa');
     }
+
+    if (user.orgId) {
+      const org = await this.organizationRepository.findOne({
+        where: { id: user.orgId },
+      });
+      if (!org || !org.isActive) {
+        throw new UnauthorizedException('Đơn vị đã bị khóa hoặc không tồn tại');
+      }
+    }
+
     // Ensure roles is always an array, even if empty
     if (!user.roles) {
       user.roles = [];
