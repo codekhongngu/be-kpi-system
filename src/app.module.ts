@@ -9,6 +9,16 @@ import { RoleModule } from './modules/role/role.module';
 import { ExampleModule } from './modules/example/example.module';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { ReportPeriodModule } from './modules/report-period/report-period.module';
+import { RbacModule } from './modules/rbac/rbac.module';
+import { FormDesignerModule } from './modules/form-designer/form-designer.module';
+import { AssignmentModule } from './modules/assignment/assignment.module';
+import { SubmissionModule } from './modules/submission/submission.module';
+import { ApprovalModule } from './modules/approval/approval.module';
+import { SummaryModule } from './modules/summary/summary.module';
+import { MonitoringModule } from './modules/monitoring/monitoring.module';
+import { QueryModule } from './modules/query/query.module';
+import { NotificationModule } from './modules/notification/notification.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import {
   LoggingMiddleware,
   RequestIdMiddleware,
@@ -67,6 +77,16 @@ import { URL } from 'url';
     AuthModule,
     UserModule,
     RoleModule,
+    RbacModule,
+    FormDesignerModule,
+    AssignmentModule,
+    SubmissionModule,
+    ApprovalModule,
+    SummaryModule,
+    MonitoringModule,
+    QueryModule,
+    NotificationModule,
+    AnalyticsModule,
     OrganizationModule,
     ReportPeriodModule,
     ExampleModule,

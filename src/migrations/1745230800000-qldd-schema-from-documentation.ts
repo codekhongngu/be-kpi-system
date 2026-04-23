@@ -11,13 +11,16 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * Lưu ý: codebase hiện dùng `users.id` kiểu UUID — migration này dùng UUID cho PK/FK
  * của các bảng QLDL và các cột FK trỏ tới `users`, thay cho BIGSERIAL trong tài liệu gốc.
+ *
+ * Dùng `CREATE TABLE IF NOT EXISTS` để an toàn khi DB đã có schema (drift với bảng `migrations`,
+ * hoặc từng bật synchronize) nhưng migration này chưa được ghi nhận.
  */
 export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterface {
   name = 'QLDLSchemaFromDocumentation1745230800000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-      CREATE TABLE "role_groups" (
+      CREATE TABLE IF NOT EXISTS "role_groups" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "name" varchar(100) NOT NULL,
         "description" text NULL,
@@ -30,7 +33,7 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE TABLE "organizations" (
+      CREATE TABLE IF NOT EXISTS "organizations" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "code" varchar(50) NOT NULL,
         "name" varchar(255) NOT NULL,
@@ -47,7 +50,7 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE TABLE "user_role_groups" (
+      CREATE TABLE IF NOT EXISTS "user_role_groups" (
         "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
         "role_group_id" uuid NOT NULL REFERENCES "role_groups"("id") ON DELETE CASCADE,
         "created_at" timestamptz NOT NULL DEFAULT now(),
@@ -77,7 +80,7 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE TABLE "report_periods" (
+      CREATE TABLE IF NOT EXISTS "report_periods" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "code" varchar(30) NOT NULL,
         "name" varchar(255) NOT NULL,
@@ -92,7 +95,7 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE TABLE "forms" (
+      CREATE TABLE IF NOT EXISTS "forms" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "code" varchar(20) NOT NULL,
         "name" varchar(255) NOT NULL,
@@ -111,7 +114,7 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE TABLE "indicator_catalog" (
+      CREATE TABLE IF NOT EXISTS "indicator_catalog" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "code" varchar(50) NOT NULL,
         "name" varchar(500) NOT NULL,
@@ -124,7 +127,7 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE TABLE "form_attributes" (
+      CREATE TABLE IF NOT EXISTS "form_attributes" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "form_id" uuid NOT NULL REFERENCES "forms"("id") ON DELETE CASCADE,
         "name" varchar(255) NOT NULL,
@@ -139,7 +142,7 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE TABLE "form_indicators" (
+      CREATE TABLE IF NOT EXISTS "form_indicators" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "form_id" uuid NOT NULL REFERENCES "forms"("id") ON DELETE CASCADE,
         "code" varchar(50) NOT NULL,
@@ -161,7 +164,7 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE TABLE "form_assignments" (
+      CREATE TABLE IF NOT EXISTS "form_assignments" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "form_id" uuid NOT NULL REFERENCES "forms"("id") ON DELETE RESTRICT,
         "org_id" uuid NOT NULL REFERENCES "organizations"("id") ON DELETE RESTRICT,
@@ -178,7 +181,7 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE TABLE "report_submissions" (
+      CREATE TABLE IF NOT EXISTS "report_submissions" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "code" varchar(25) NOT NULL,
         "assignment_id" uuid NOT NULL REFERENCES "form_assignments"("id") ON DELETE RESTRICT,
@@ -198,7 +201,7 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE TABLE "report_data" (
+      CREATE TABLE IF NOT EXISTS "report_data" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "submission_id" uuid NOT NULL REFERENCES "report_submissions"("id") ON DELETE CASCADE,
         "indicator_id" uuid NOT NULL REFERENCES "form_indicators"("id") ON DELETE RESTRICT,
@@ -212,7 +215,7 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE TABLE "report_summaries" (
+      CREATE TABLE IF NOT EXISTS "report_summaries" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "form_id" uuid NOT NULL REFERENCES "forms"("id") ON DELETE RESTRICT,
         "period_id" uuid NOT NULL REFERENCES "report_periods"("id") ON DELETE RESTRICT,
@@ -232,7 +235,7 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE TABLE "notifications" (
+      CREATE TABLE IF NOT EXISTS "notifications" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
         "type" varchar(50) NOT NULL,
@@ -250,7 +253,7 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE TABLE "audit_logs" (
+      CREATE TABLE IF NOT EXISTS "audit_logs" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "user_id" uuid NULL REFERENCES "users"("id") ON DELETE SET NULL,
         "action" varchar(20) NOT NULL,
@@ -265,7 +268,7 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE TABLE "auth_refresh_tokens" (
+      CREATE TABLE IF NOT EXISTS "auth_refresh_tokens" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
         "token_hash" varchar(128) NOT NULL,
@@ -279,7 +282,7 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE TABLE "auth_otp_challenges" (
+      CREATE TABLE IF NOT EXISTS "auth_otp_challenges" (
         "id" varchar(64) PRIMARY KEY,
         "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
         "channel" varchar(20) NOT NULL,
@@ -292,7 +295,7 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE TABLE "auth_password_resets" (
+      CREATE TABLE IF NOT EXISTS "auth_password_resets" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
         "token_hash" varchar(128) NOT NULL,
@@ -304,7 +307,7 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE TABLE "import_jobs" (
+      CREATE TABLE IF NOT EXISTS "import_jobs" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "type" varchar(30) NOT NULL,
         "status" varchar(20) NOT NULL,
@@ -316,7 +319,7 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE TABLE "report_data_history" (
+      CREATE TABLE IF NOT EXISTS "report_data_history" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "submission_id" uuid NOT NULL REFERENCES "report_submissions"("id") ON DELETE CASCADE,
         "indicator_id" uuid NOT NULL REFERENCES "form_indicators"("id") ON DELETE RESTRICT,
@@ -329,7 +332,7 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE TABLE "user_notification_prefs" (
+      CREATE TABLE IF NOT EXISTS "user_notification_prefs" (
         "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
         "type" varchar(50) NOT NULL,
         "in_app_enabled" boolean NOT NULL DEFAULT true,
