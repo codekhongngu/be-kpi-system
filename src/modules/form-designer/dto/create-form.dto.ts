@@ -1,5 +1,4 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
-import { PeriodType } from '../../report-period/entities/report-period.entity';
+import { IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class CreateFormDto {
   @IsString()
@@ -7,13 +6,10 @@ export class CreateFormDto {
   @MaxLength(255)
   name: string;
 
-  @IsString()
+  /** ID bản ghi trong bảng `field_categories` (đang hoạt động). */
+  @IsUUID()
   @IsNotEmpty()
-  @MaxLength(100)
-  fieldCategory: string;
-
-  @IsEnum(PeriodType)
-  periodType: PeriodType;
+  fieldCategoryId: string;
 
   @IsOptional()
   @IsString()

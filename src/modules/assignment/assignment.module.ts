@@ -4,11 +4,10 @@ import { FormAssignment } from './entities/form-assignment.entity';
 import { Form } from '../form-designer/entities/form.entity';
 import { Organization } from '../organization/entities/organization.entity';
 import { ReportPeriod } from '../report-period/entities/report-period.entity';
-import { RoleGroup } from '../user/entities/role-group.entity';
-import { UserRoleGroup } from '../user/entities/user-role-group.entity';
 import { AssignmentService } from './assignment.service';
 import { AssignmentController } from './assignment.controller';
-import { QldlRbacGuard } from '../../common/guards/qldl-rbac.guard';
+import { Role } from '../role/entities/role.entity';
+import { Permission } from '../role/entities/permission.entity';
 
 @Module({
   imports: [
@@ -17,12 +16,12 @@ import { QldlRbacGuard } from '../../common/guards/qldl-rbac.guard';
       Form,
       Organization,
       ReportPeriod,
-      RoleGroup,
-      UserRoleGroup,
+      Role,
+      Permission,
     ]),
   ],
   controllers: [AssignmentController],
-  providers: [AssignmentService, QldlRbacGuard],
+  providers: [AssignmentService],
   exports: [AssignmentService],
 })
 export class AssignmentModule {}

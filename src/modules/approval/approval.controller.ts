@@ -12,7 +12,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/entities/user.entity';
-import { QldlPermission, QldlRbacGuard } from '../../common';
+import { Permissions, PermissionsGuard } from '../../common';
 import { ApprovalService } from './approval.service';
 import { PendingApprovalsQueryDto } from './dto/pending-approvals-query.dto';
 import { ApproveDto } from './dto/approve.dto';
@@ -20,12 +20,12 @@ import { RejectDto } from './dto/reject.dto';
 import { PatchRejectNoteDto } from './dto/patch-reject-note.dto';
 
 @Controller('approvals')
-@UseGuards(JwtAuthGuard, QldlRbacGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class ApprovalController {
   constructor(private readonly approvalService: ApprovalService) {}
 
   @Get('pending')
-  @QldlPermission('APPROVALS', 'READ')
+  @Permissions('approvals.manage')
   async pending(
     @CurrentUser() user: User,
     @Query() query: PendingApprovalsQueryDto,
@@ -34,7 +34,7 @@ export class ApprovalController {
   }
 
   @Post(':submissionId/approve')
-  @QldlPermission('APPROVALS', 'WRITE')
+  @Permissions('approvals.manage')
   async approve(
     @Param('submissionId', ParseUUIDPipe) submissionId: string,
     @Body() _dto: ApproveDto,
@@ -44,7 +44,7 @@ export class ApprovalController {
   }
 
   @Post(':submissionId/reject')
-  @QldlPermission('APPROVALS', 'WRITE')
+  @Permissions('approvals.manage')
   async reject(
     @Param('submissionId', ParseUUIDPipe) submissionId: string,
     @Body() dto: RejectDto,
@@ -54,7 +54,7 @@ export class ApprovalController {
   }
 
   @Patch(':submissionId/reject-note')
-  @QldlPermission('APPROVALS', 'WRITE')
+  @Permissions('approvals.manage')
   async patchRejectNote(
     @Param('submissionId', ParseUUIDPipe) submissionId: string,
     @Body() dto: PatchRejectNoteDto,

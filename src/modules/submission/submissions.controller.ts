@@ -13,32 +13,32 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/entities/user.entity';
-import { QldlPermission, QldlRbacGuard } from '../../common';
+import { Permissions, PermissionsGuard } from '../../common';
 import { SubmissionService } from './submission.service';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { PatchCellsDto } from './dto/patch-cells.dto';
 import { SubmitSubmissionDto } from './dto/submit-submission.dto';
 
 @Controller('submissions')
-@UseGuards(JwtAuthGuard, QldlRbacGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class SubmissionsController {
   constructor(private readonly submissionService: SubmissionService) {}
 
   @Post()
-  @QldlPermission('ENTRY_SUBMISSIONS', 'WRITE')
+  @Permissions('submissions.manage')
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateSubmissionDto, @CurrentUser() user: User) {
     return await this.submissionService.create(dto, user);
   }
 
   @Get(':id')
-  @QldlPermission('ENTRY_SUBMISSIONS', 'READ')
+  @Permissions('submissions.manage')
   async getOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return await this.submissionService.findOne(id, user);
   }
 
   @Patch(':id/cells')
-  @QldlPermission('ENTRY_SUBMISSIONS', 'WRITE')
+  @Permissions('submissions.manage')
   async patchCells(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: PatchCellsDto,
@@ -48,7 +48,7 @@ export class SubmissionsController {
   }
 
   @Post(':id/submit')
-  @QldlPermission('ENTRY_SUBMISSIONS', 'WRITE')
+  @Permissions('submissions.manage')
   async submit(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: SubmitSubmissionDto,

@@ -62,6 +62,11 @@
 			"type": "string"
 		},
 		{
+			"key": "fieldCategoryId",
+			"value": "a1b2c3d4-e5f6-4789-a012-000000000001",
+			"type": "string"
+		},
+		{
 			"key": "assignmentId",
 			"value": "",
 			"type": "string"
@@ -1283,6 +1288,98 @@
 			"name": "Form Designer (QLDL)",
 			"item": [
 				{
+					"name": "List Field Categories",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/field-categories?isActive=true&page=1&limit=100",
+							"host": ["{{baseUrl}}"],
+							"path": ["api","v1","field-categories"],
+							"query": [
+								{ "key": "isActive", "value": "true" },
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "100" }
+							]
+						},
+						"description": "GET /field-categories — JWT + DESIGN_FORMS:READ. Mặc định biến collection `fieldCategoryId` = UUID seed `kt_xh`; có thể chạy request này rồi gán id từ `data.items[0].id` trong Tests."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"  const envelope = pm.response.json();",
+									"  const data = envelope && envelope.data !== undefined ? envelope.data : envelope;",
+									"  const items = data && data.items ? data.items : [];",
+									"  if (items.length && items[0].id) {",
+									"    pm.collectionVariables.set('fieldCategoryId', items[0].id);",
+									"  }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Field Category",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"linh_vuc_tuy_chinh\",\n  \"name\": \"Lĩnh vực tùy chỉnh (Postman)\",\n  \"description\": \"Tạo thử qua Postman\",\n  \"sortOrder\": 99,\n  \"isActive\": true\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/v1/field-categories", "host": ["{{baseUrl}}"], "path": ["api","v1","field-categories"] },
+						"description": "POST /field-categories — JWT + DESIGN_FORMS:WRITE. `code` chỉ gồm chữ thường, số, gạch dưới."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"  const envelope = pm.response.json();",
+									"  const data = envelope && envelope.data !== undefined ? envelope.data : envelope;",
+									"  if (data && data.id) pm.collectionVariables.set('fieldCategoryId', data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Patch Field Category",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Đổi tên từ Postman\",\n  \"sortOrder\": 100\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/field-categories/{{fieldCategoryId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api","v1","field-categories","{{fieldCategoryId}}"]
+						},
+						"description": "PATCH /field-categories/:id — JWT + DESIGN_FORMS:WRITE"
+					},
+					"response": []
+				},
+				{
 					"name": "List Forms",
 					"request": {
 						"method": "GET",
@@ -1302,11 +1399,11 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Biểu mẫu test\",\n  \"fieldCategory\": \"KPI\",\n  \"periodType\": \"THANG\",\n  \"description\": \"Tạo từ Postman\"\n}",
+								"raw": "{\n  \"name\": \"Biểu mẫu test\",\n  \"fieldCategoryId\": \"{{fieldCategoryId}}\",\n  \"description\": \"Tạo từ Postman\"\n}",
 							"options": { "raw": { "language": "json" } }
 						},
 						"url": { "raw": "{{baseUrl}}/api/v1/forms", "host": ["{{baseUrl}}"], "path": ["api","v1","forms"] },
-						"description": "POST /forms — JWT + DESIGN_FORMS:WRITE"
+						"description": "POST /forms — JWT + DESIGN_FORMS:WRITE. `fieldCategoryId` = UUID trong bảng `field_categories` (chạy List Field Categories trước hoặc dùng seed)."
 					},
 					"response": [],
 					"event": [
@@ -1364,7 +1461,7 @@
 					"response": []
 				}
 			],
-			"description": "Thiết kế biểu mẫu (forms/attributes/indicators)"
+			"description": "Thiết kế biểu mẫu: lĩnh vực (`field-categories`) + forms/attributes/indicators"
 		},
 		{
 			"name": "Assignments / Submissions / Approvals (QLDL)",

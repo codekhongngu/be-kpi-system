@@ -12,25 +12,25 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { QldlPermission, QldlRbacGuard } from '../../common';
+import { Permissions, PermissionsGuard } from '../../common';
 import { OrganizationService } from './organization.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { OrganizationQueryDto } from './dto/organization-query.dto';
 
 @Controller('orgs')
-@UseGuards(JwtAuthGuard, QldlRbacGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class OrganizationController {
   constructor(private readonly service: OrganizationService) {}
 
   @Get()
-  @QldlPermission('ADMIN_ORGS', 'READ')
+  @Permissions('orgs.manage')
   async list(@Query() query: OrganizationQueryDto) {
     return await this.service.findAll(query);
   }
 
   @Post()
-  @QldlPermission('ADMIN_ORGS', 'WRITE')
+  @Permissions('orgs.manage')
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateOrganizationDto) {
     const org = await this.service.create(dto);
@@ -38,32 +38,32 @@ export class OrganizationController {
   }
 
   @Get(':id')
-  @QldlPermission('ADMIN_ORGS', 'READ')
+  @Permissions('orgs.manage')
   async detail(@Param('id') id: string) {
     return await this.service.findOne(id);
   }
 
   @Patch(':id')
-  @QldlPermission('ADMIN_ORGS', 'WRITE')
+  @Permissions('orgs.manage')
   async patch(@Param('id') id: string, @Body() dto: UpdateOrganizationDto) {
     await this.service.update(id, dto);
     return { ok: true };
   }
 
   @Post(':id/lock')
-  @QldlPermission('ADMIN_ORGS', 'WRITE')
+  @Permissions('orgs.manage')
   async lock(@Param('id') id: string) {
     return await this.service.lock(id);
   }
 
   @Post(':id/unlock')
-  @QldlPermission('ADMIN_ORGS', 'WRITE')
+  @Permissions('orgs.manage')
   async unlock(@Param('id') id: string) {
     return await this.service.unlock(id);
   }
 
   @Delete(':id')
-  @QldlPermission('ADMIN_ORGS', 'DELETE')
+  @Permissions('orgs.manage')
   async remove(@Param('id') id: string) {
     return await this.service.remove(id);
   }

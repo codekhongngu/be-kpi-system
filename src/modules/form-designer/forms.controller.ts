@@ -18,7 +18,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/entities/user.entity';
-import { QldlPermission, QldlRbacGuard } from '../../common';
+import { Permissions, PermissionsGuard } from '../../common';
 import { FormDesignerService } from './form-designer.service';
 import { FormQueryDto } from './dto/form-query.dto';
 import { CreateFormDto } from './dto/create-form.dto';
@@ -26,31 +26,31 @@ import { PatchFormDto } from './dto/patch-form.dto';
 import { CopyFormDto } from './dto/copy-form.dto';
 
 @Controller('forms')
-@UseGuards(JwtAuthGuard, QldlRbacGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class FormsController {
   constructor(private readonly formDesigner: FormDesignerService) {}
 
   @Get()
-  @QldlPermission('DESIGN_FORMS', 'READ')
+  @Permissions('forms.manage')
   async list(@Query() query: FormQueryDto) {
     return await this.formDesigner.findAllForms(query);
   }
 
   @Post()
-  @QldlPermission('DESIGN_FORMS', 'WRITE')
+  @Permissions('forms.manage')
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateFormDto, @CurrentUser() user: User) {
     return await this.formDesigner.createForm(dto, user?.id);
   }
 
   @Get(':id')
-  @QldlPermission('DESIGN_FORMS', 'READ')
+  @Permissions('forms.manage')
   async detail(@Param('id', ParseUUIDPipe) id: string) {
     return await this.formDesigner.findOneForm(id);
   }
 
   @Patch(':id')
-  @QldlPermission('DESIGN_FORMS', 'WRITE')
+  @Permissions('forms.manage')
   async patch(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: PatchFormDto,
@@ -59,25 +59,25 @@ export class FormsController {
   }
 
   @Delete(':id')
-  @QldlPermission('DESIGN_FORMS', 'DELETE')
+  @Permissions('forms.manage')
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     return await this.formDesigner.removeForm(id);
   }
 
   @Post(':id/activate')
-  @QldlPermission('DESIGN_FORMS', 'WRITE')
+  @Permissions('forms.manage')
   async activate(@Param('id', ParseUUIDPipe) id: string) {
     return await this.formDesigner.setActive(id, true);
   }
 
   @Post(':id/deactivate')
-  @QldlPermission('DESIGN_FORMS', 'WRITE')
+  @Permissions('forms.manage')
   async deactivate(@Param('id', ParseUUIDPipe) id: string) {
     return await this.formDesigner.setActive(id, false);
   }
 
   @Post(':id/copy')
-  @QldlPermission('DESIGN_FORMS', 'WRITE')
+  @Permissions('forms.manage')
   @HttpCode(HttpStatus.CREATED)
   async copy(
     @Param('id', ParseUUIDPipe) id: string,
@@ -88,7 +88,7 @@ export class FormsController {
   }
 
   @Post(':id/template')
-  @QldlPermission('DESIGN_FORMS', 'WRITE')
+  @Permissions('forms.manage')
   @UseInterceptors(FileInterceptor('file'))
   async template(
     @Param('id', ParseUUIDPipe) id: string,

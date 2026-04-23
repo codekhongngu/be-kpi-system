@@ -1,26 +1,10 @@
 import { Type } from 'class-transformer';
-import {
-  IsBoolean,
-  IsInt,
-  IsOptional,
-  IsString,
-  IsUUID,
-  Max,
-  Min,
-} from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
-export class FormQueryDto {
+export class FieldCategoryQueryDto {
   @IsOptional()
   @IsString()
   q?: string;
-
-  @IsOptional()
-  @IsString()
-  fieldCategory?: string;
-
-  @IsOptional()
-  @IsUUID()
-  fieldCategoryId?: string;
 
   @IsOptional()
   @Type(() => Boolean)

@@ -201,11 +201,36 @@
 
 ---
 
+### Field categories (lĩnh vực nghiệp vụ)
+
+Danh mục **lĩnh vực** dùng khi thiết kế biểu mẫu: `forms` tham chiếu qua `fieldCategoryId` (UUID) tới bảng `field_categories`. Không còn cột chuỗi `field_category` trên `forms` trong triển khai hiện tại; API list/detail form vẫn có thể trả thêm `fieldCategory` là **mã `code`** (đọc từ join) để tương thích filter/query theo mã.
+
+**Phân quyền (triển khai NestJS):** `GET` dùng `DESIGN_FORMS:READ`; `POST`/`PATCH` dùng `DESIGN_FORMS:WRITE` (cùng nhóm với thiết kế biểu mẫu). Có thể tách key riêng (vd. `ADMIN_FIELD_CATEGORIES`) nếu BA yêu cầu.
+
+#### `GET /field-categories`
+
+- **Query**: `q?, isActive?, page?, limit?`
+- **200**: `{ items: FieldCategoryListItem[], meta }`
+
+#### `POST /field-categories`
+
+- **Body**: `CreateFieldCategoryRequest`
+- **201**: `{ id }`
+
+#### `PATCH /field-categories/{id}`
+
+- **Body**: `PatchFieldCategoryRequest`
+- **200**: `{ ok: true }`
+
+---
+
 ### Forms / Attributes / Indicators
 
 #### `GET /forms`
 
-- **Query**: `q?, fieldCategory?, periodType?, isActive?, page?, limit?`
+- **Query**: `q?, fieldCategory?, fieldCategoryId?, isActive?, page?, limit?`  
+  - `fieldCategory`: lọc theo **`field_categories.code`** (join).  
+  - `fieldCategoryId`: lọc theo UUID khóa ngoại `forms.field_category_id`.
 - **200**: `{ items: FormListItem[], meta }`
 
 #### `POST /forms`
@@ -730,12 +755,39 @@ export type PatchReportPeriodRequest = Partial<{
   isActive: boolean;
 }>;
 
+export type FieldCategoryListItem = {
+  id: string;
+  code: string;
+  name: string;
+  description?: string | null;
+  sortOrder: number;
+  isActive: boolean;
+};
+
+export type CreateFieldCategoryRequest = {
+  code: string;
+  name: string;
+  description?: string | null;
+  sortOrder?: number;
+  isActive?: boolean;
+};
+
+export type PatchFieldCategoryRequest = Partial<{
+  code: string;
+  name: string;
+  description: string | null;
+  sortOrder: number;
+  isActive: boolean;
+}>;
+
 export type FormListItem = {
   id: string;
   code: string;
   name: string;
+  /** UUID → `field_categories.id` */
+  fieldCategoryId?: string | null;
+  /** Mã `code` từ `field_categories` (join / derived), không lưu trên cột `forms` */
   fieldCategory?: string | null;
-  periodType?: PeriodType | null;
   isActive: boolean;
   templateFileUrl?: string | null;
   parentFormId?: string | null;
@@ -745,8 +797,8 @@ export type ListFormsResponse = { items: FormListItem[]; meta: PageMeta };
 
 export type CreateFormRequest = {
   name: string;
-  fieldCategory: string;
-  periodType: PeriodType;
+  /** Bắt buộc: UUID bản ghi `field_categories` đang `is_active` */
+  fieldCategoryId: string;
   description?: string;
   parentFormId?: string | null;
 };
@@ -786,8 +838,8 @@ export type FormDetailResponse = FormListItem & {
 
 export type PatchFormRequest = Partial<{
   name: string;
-  fieldCategory: string | null;
-  periodType: PeriodType | null;
+  /** Đổi lĩnh vực theo UUID; `null` = gỡ FK khỏi form */
+  fieldCategoryId: string | null;
   description: string | null;
   isActive: boolean;
   parentFormId: string | null;
@@ -795,8 +847,8 @@ export type PatchFormRequest = Partial<{
 
 export type CopyFormRequest = {
   name: string;
-  fieldCategory?: string;
-  periodType?: PeriodType;
+  /** Tuỳ chọn: đổi lĩnh vực so với bản gốc; mặc định giữ theo form nguồn */
+  fieldCategoryId?: string;
   parentFormId?: string | null;
 };
 
@@ -1120,10 +1172,17 @@ export type PivotResponse = { header: unknown; rows: unknown[] };
 
 #### Forms
 
-- **Validate**: unique `(name, field_category)`; activate chỉ khi đủ cấu trúc (tuỳ rule).
+- **Validate**: `fieldCategoryId` tồn tại trong `field_categories` và đang active (create/patch/copy khi set); rule unique tên biểu mẫu theo policy dự án (ví dụ unique `name` global hoặc theo phạm vi); activate chỉ khi đủ cấu trúc (tuỳ rule).
 - **Lỗi**:
   - `FORM_DUPLICATE_NAME`
   - `FORM_DELETE_HAS_DATA` → fallback deactivate
+  - (triển khai) `400` khi `fieldCategoryId` không hợp lệ / inactive
+
+#### Field categories
+
+- **Validate**: `code` unique, format `^[a-z0-9_]+$`; `name` bắt buộc.
+- **Lỗi**:
+  - `FIELD_CATEGORY_CODE_DUPLICATE` (409)
 
 #### Indicators/attributes
 
@@ -1304,14 +1363,21 @@ Format theo yêu cầu triển khai:
 
 ### Form designer
 
+`API: GET|POST|PATCH /api/v1/field-categories*`
+
+- **GET**: list danh mục (filter `isActive`, search `q`).
+- **POST/PATCH**: CRUD danh mục; validate `code` unique + format.
+- **Tables**: `field_categories` (**R/C/U**), `audit_logs` (**C** tuỳ policy).
+
 `API: POST /api/v1/forms`
 
+- Validate `fieldCategoryId` → `field_categories` (tồn tại + `is_active`).
 - Validate unique constraints + generate `code` theo rule hệ thống.
-- Insert `forms` + audit.
+- Insert `forms` (`field_category_id` FK) + audit. Response list/detail có thể trả thêm `fieldCategory` = `code` từ join (không cột denormalized trên `forms`).
 
 `API: POST /api/v1/forms/{id}/copy`
 
-- Transaction: clone `forms` + clone attributes/indicators (không clone dữ liệu nhập) + audit.
+- Transaction: clone `forms` (giữ/đổi `field_category_id` theo body) + clone attributes/indicators (không clone dữ liệu nhập) + audit.
 
 `API: POST /api/v1/forms/{id}/indicators/import`
 

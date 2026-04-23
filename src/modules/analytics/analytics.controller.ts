@@ -9,18 +9,18 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/entities/user.entity';
-import { QldlPermission, QldlRbacGuard } from '../../common';
+import { Permissions, PermissionsGuard } from '../../common';
 import { AnalyticsService } from './analytics.service';
 import { AnalyticsKpiQueryDto } from './dto/analytics-kpi-query.dto';
 import { PivotRequestDto } from './dto/pivot-request.dto';
 
 @Controller('analytics')
-@UseGuards(JwtAuthGuard, QldlRbacGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Get('kpis')
-  @QldlPermission('ANALYTICS', 'READ')
+  @Permissions('analytics.read')
   async kpis(
     @CurrentUser() user: User,
     @Query() query: AnalyticsKpiQueryDto,
@@ -29,19 +29,19 @@ export class AnalyticsController {
   }
 
   @Get('charts')
-  @QldlPermission('ANALYTICS', 'READ')
+  @Permissions('analytics.read')
   async charts() {
     return await this.analyticsService.charts();
   }
 
   @Post('pivot')
-  @QldlPermission('ANALYTICS', 'READ')
+  @Permissions('analytics.read')
   async pivot(@Body() dto: PivotRequestDto) {
     return await this.analyticsService.pivot(dto);
   }
 
   @Get('export')
-  @QldlPermission('ANALYTICS', 'EXPORT')
+  @Permissions('analytics.export')
   async export(@Query('format') format = 'excel') {
     return await this.analyticsService.export(format);
   }

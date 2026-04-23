@@ -21,32 +21,32 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UserQueryDto } from './dto/user-query.dto';
 import { AssignRolesDto } from './dto/assign-roles.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { QldlPermission, QldlRbacGuard } from '../../common';
+import { Permissions, PermissionsGuard } from '../../common';
 import { User, UserStatus } from './entities/user.entity';
 import { ResetPasswordBodyDto } from './dto/reset-password.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { UserDetail, UserListItem } from './types/user-contract.types';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard, QldlRbacGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
-  @QldlPermission('ADMIN_USERS', 'WRITE')
+  @Permissions('users.manage')
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() createUserDto: CreateUserDto): Promise<{ id: string }> {
     return await this.userService.create(createUserDto);
   }
 
   @Get()
-  @QldlPermission('ADMIN_USERS', 'READ')
+  @Permissions('users.manage')
   async findAll(@Query() query: UserQueryDto) {
     return await this.userService.findAll(query);
   }
 
   @Get('departments/:departmentId')
-  @QldlPermission('ADMIN_USERS', 'READ')
+  @Permissions('users.manage')
   async findByDepartment(
     @Param('departmentId') departmentId: string,
   ): Promise<UserListItem[]> {
@@ -54,7 +54,7 @@ export class UserController {
   }
 
   @Post('import')
-  @QldlPermission('ADMIN_USERS', 'EXPORT')
+  @Permissions('users.export')
   @UseInterceptors(FileInterceptor('file'))
   @HttpCode(HttpStatus.OK)
   async importUsers(
@@ -68,19 +68,19 @@ export class UserController {
   }
 
   @Get('import/:jobId')
-  @QldlPermission('ADMIN_USERS', 'READ')
+  @Permissions('users.manage')
   async importStatus(@Param('jobId') jobId: string) {
     return await this.userService.getImportJob(jobId);
   }
 
   @Get(':id')
-  @QldlPermission('ADMIN_USERS', 'READ')
+  @Permissions('users.manage')
   async findOne(@Param('id') id: string): Promise<UserDetail> {
     return await this.userService.findOneDetail(id);
   }
 
   @Patch(':id')
-  @QldlPermission('ADMIN_USERS', 'WRITE')
+  @Permissions('users.manage')
   @HttpCode(HttpStatus.OK)
   async update(
     @Param('id') id: string,
@@ -90,14 +90,14 @@ export class UserController {
   }
 
   @Delete(':id')
-  @QldlPermission('ADMIN_USERS', 'DELETE')
+  @Permissions('users.manage')
   @HttpCode(HttpStatus.OK)
   async remove(@Param('id') id: string): Promise<{ ok: true }> {
     return await this.userService.remove(id);
   }
 
   @Patch(':id/status')
-  @QldlPermission('ADMIN_USERS', 'WRITE')
+  @Permissions('users.manage')
   @HttpCode(HttpStatus.OK)
   async updateStatus(
     @Param('id') id: string,
@@ -107,21 +107,21 @@ export class UserController {
   }
 
   @Patch(':id/activate')
-  @QldlPermission('ADMIN_USERS', 'WRITE')
+  @Permissions('users.manage')
   @HttpCode(HttpStatus.OK)
   async activate(@Param('id') id: string) {
     return await this.userService.activate(id);
   }
 
   @Patch(':id/deactivate')
-  @QldlPermission('ADMIN_USERS', 'WRITE')
+  @Permissions('users.manage')
   @HttpCode(HttpStatus.OK)
   async deactivate(@Param('id') id: string) {
     return await this.userService.deactivate(id);
   }
 
   @Post(':id/reset-password')
-  @QldlPermission('ADMIN_USERS', 'WRITE')
+  @Permissions('users.manage')
   @HttpCode(HttpStatus.OK)
   async resetPassword(
     @Param('id') id: string,
@@ -131,13 +131,13 @@ export class UserController {
   }
 
   @Get(':id/permissions')
-  @QldlPermission('ADMIN_USERS', 'READ')
+  @Permissions('users.manage')
   async getUserPermissions(@Param('id') id: string): Promise<string[]> {
     return await this.userService.getUserPermissions(id);
   }
 
   @Patch(':id/roles')
-  @QldlPermission('ADMIN_USERS', 'WRITE')
+  @Permissions('users.manage')
   @HttpCode(HttpStatus.OK)
   async assignRoles(
     @Param('id') id: string,

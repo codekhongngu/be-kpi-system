@@ -3,68 +3,13 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 /** UUID cố định để seed idempotent + dễ rollback */
 const IDS = {
   org: 'f0e0d0c0-b0a0-4a90-8c00-000000000001',
-  roleGroup: 'f0e0d0c0-b0a0-4a90-8c00-000000000002',
   nestRole: 'f0e0d0c0-b0a0-4a90-8c00-000000000003',
   adminUser: 'f0e0d0c0-b0a0-4a90-8c00-000000000099',
   periodMonth: 'f0e0d0c0-b0a0-4a90-8c00-000000000010',
   periodQuarter: 'f0e0d0c0-b0a0-4a90-8c00-000000000011',
-  /** Nhóm QLDL + user bổ sung (System Admin / Data Manager / Data Entry / Approver) */
-  rgSystemAdmin: 'f0e0d0c0-b0a0-4a90-8c00-0000000000c1',
-  rgDataManager: 'f0e0d0c0-b0a0-4a90-8c00-0000000000c2',
-  rgDataEntry: 'f0e0d0c0-b0a0-4a90-8c00-0000000000c3',
-  rgApprover: 'f0e0d0c0-b0a0-4a90-8c00-0000000000c4',
-  uSystemAdmin: 'f0e0d0c0-b0a0-4a90-8c00-0000000000d1',
-  uDataManager: 'f0e0d0c0-b0a0-4a90-8c00-0000000000d2',
-  uDataEntry: 'f0e0d0c0-b0a0-4a90-8c00-0000000000d3',
-  uApprover: 'f0e0d0c0-b0a0-4a90-8c00-0000000000d4',
 } as const;
 
 const SEED_DEMO_PASSWORD = 'Admin@123';
-
-/** QLDL JSON — đầy đủ (Quản trị hệ thống / System Admin) */
-const SEED_QLDL_FULL_PERMISSIONS: Record<string, string[]> = {
-  AUTH: ['READ', 'WRITE', 'DELETE'],
-  ADMIN_USERS: ['READ', 'WRITE', 'DELETE', 'EXPORT'],
-  ADMIN_RBAC: ['READ', 'WRITE', 'DELETE', 'EXPORT'],
-  ADMIN_ORGS: ['READ', 'WRITE', 'DELETE', 'EXPORT'],
-  ADMIN_PERIODS: ['READ', 'WRITE', 'DELETE', 'EXPORT'],
-  DESIGN_FORMS: ['READ', 'WRITE', 'DELETE', 'EXPORT'],
-  OPS_ASSIGNMENTS: ['READ', 'WRITE', 'DELETE', 'EXPORT'],
-  OPS_MONITORING: ['READ', 'WRITE', 'DELETE', 'EXPORT'],
-  QUERY_REPORTS: ['READ', 'EXPORT'],
-  OPS_SUMMARIES: ['READ', 'WRITE', 'DELETE', 'EXPORT'],
-  ENTRY_SUBMISSIONS: ['READ', 'WRITE', 'DELETE', 'EXPORT'],
-  APPROVALS: ['READ', 'WRITE', 'DELETE', 'EXPORT'],
-  ANALYTICS: ['READ', 'EXPORT'],
-  NOTIFICATIONS: ['READ'],
-  AUDIT: ['READ'],
-};
-
-/** Quản lý kỳ, biểu mẫu, giao việc, giám sát, tổng hợp, tra cứu (không quản user/RBAC tổ chức) */
-const SEED_QLDL_DATA_MANAGER_PERMISSIONS: Record<string, string[]> = {
-  AUTH: ['READ', 'WRITE'],
-  ADMIN_PERIODS: ['READ', 'WRITE', 'DELETE', 'EXPORT'],
-  DESIGN_FORMS: ['READ', 'WRITE', 'DELETE', 'EXPORT'],
-  OPS_ASSIGNMENTS: ['READ', 'WRITE', 'DELETE', 'EXPORT'],
-  OPS_MONITORING: ['READ', 'WRITE', 'DELETE', 'EXPORT'],
-  OPS_SUMMARIES: ['READ', 'WRITE', 'DELETE', 'EXPORT'],
-  QUERY_REPORTS: ['READ', 'EXPORT'],
-  NOTIFICATIONS: ['READ'],
-  ENTRY_SUBMISSIONS: ['READ', 'EXPORT'],
-  ANALYTICS: ['READ', 'EXPORT'],
-};
-
-const SEED_QLDL_DATA_ENTRY_PERMISSIONS: Record<string, string[]> = {
-  AUTH: ['READ', 'WRITE'],
-  ENTRY_SUBMISSIONS: ['READ', 'WRITE', 'DELETE', 'EXPORT'],
-  QUERY_REPORTS: ['READ', 'EXPORT'],
-};
-
-const SEED_QLDL_APPROVER_PERMISSIONS: Record<string, string[]> = {
-  AUTH: ['READ', 'WRITE'],
-  APPROVALS: ['READ', 'WRITE', 'DELETE', 'EXPORT'],
-  QUERY_REPORTS: ['READ', 'EXPORT'],
-};
 
 const PERMISSION_IDS = {
   usersManage: 'f0e0d0c0-b0a0-4a90-8c00-000000000021',
@@ -78,18 +23,22 @@ const PERMISSION_IDS = {
   summariesManage: 'f0e0d0c0-b0a0-4a90-8c00-000000000029',
   analyticsRead: 'f0e0d0c0-b0a0-4a90-8c00-00000000002a',
   auditRead: 'f0e0d0c0-b0a0-4a90-8c00-00000000002b',
+  analyticsExport: 'f0e0d0c0-b0a0-4a90-8c00-00000000002c',
+  notificationsRead: 'f0e0d0c0-b0a0-4a90-8c00-00000000002d',
+  monitoringRead: 'f0e0d0c0-b0a0-4a90-8c00-00000000002e',
+  monitoringManage: 'f0e0d0c0-b0a0-4a90-8c00-00000000002f',
+  reportsRead: 'f0e0d0c0-b0a0-4a90-8c00-000000000030',
+  reportsExport: 'f0e0d0c0-b0a0-4a90-8c00-000000000031',
+  usersExport: 'f0e0d0c0-b0a0-4a90-8c00-000000000032',
 } as const;
 
 /**
  * Dữ liệu mẫu:
- * - Tài khoản: `admin` + `system_admin`, `data_manager`, `data_entry`, `approver` / mật khẩu `Admin@123`
+ * - Tài khoản: `admin` / mật khẩu `Admin@123`
  *   (hash bằng pgcrypto `crypt`, tương thích `bcrypt.compare` ở Nest).
- *   Nếu migration này đã chạy trước khi có block 4 user: chạy thêm `1745230800002-seed-four-demo-role-accounts`.
- * - `system_admin`: QLDL đầy đủ + Nest `SUPER_ADMIN` (giống quyền vận hành admin)
  * - Quyền Nest: bảng `permissions` + `roles` (SUPER_ADMIN) + `role_permissions` + `user_roles`
- * - QLDL (nếu migration schema đã chạy): `role_groups` (JSON permissions), `organizations`, `user_role_groups`, `report_periods`
  *
- * Yêu cầu: migration `1745230800000-QLDL-schema-from-documentation` đã chạy trước (để có `role_groups`, `organizations`, cột QLDL trên `users`, `report_periods`).
+ * Yêu cầu: migrations schema nghiệp vụ đã chạy (để có `organizations`, `report_periods` nếu seed dữ liệu mẫu).
  * Bảng `users` phải tồn tại (schema starter / synchronize).
  */
 export class SeedSampleAdminRbacAndPeriods1745230800001 implements MigrationInterface {
@@ -153,6 +102,13 @@ export class SeedSampleAdminRbacAndPeriods1745230800001 implements MigrationInte
       { id: PERMISSION_IDS.approvalsManage, code: 'approvals.manage', name: 'Duyệt báo cáo', category: 'QLDL' },
       { id: PERMISSION_IDS.summariesManage, code: 'summaries.manage', name: 'Tổng hợp báo cáo', category: 'QLDL' },
       { id: PERMISSION_IDS.analyticsRead, code: 'analytics.read', name: 'Xem phân tích / KPI', category: 'QLDL' },
+      { id: PERMISSION_IDS.analyticsExport, code: 'analytics.export', name: 'Xuất dữ liệu phân tích / KPI', category: 'QLDL' },
+      { id: PERMISSION_IDS.notificationsRead, code: 'notifications.read', name: 'Xem thông báo', category: 'QLDL' },
+      { id: PERMISSION_IDS.monitoringRead, code: 'monitoring.read', name: 'Xem giám sát/nhắc hạn', category: 'QLDL' },
+      { id: PERMISSION_IDS.monitoringManage, code: 'monitoring.manage', name: 'Gửi nhắc hạn/điều hành', category: 'QLDL' },
+      { id: PERMISSION_IDS.reportsRead, code: 'reports.read', name: 'Tra cứu báo cáo', category: 'QLDL' },
+      { id: PERMISSION_IDS.reportsExport, code: 'reports.export', name: 'Xuất báo cáo tra cứu', category: 'QLDL' },
+      { id: PERMISSION_IDS.usersExport, code: 'users.export', name: 'Import/Export tài khoản', category: 'admin' },
       { id: PERMISSION_IDS.auditRead, code: 'audit.read', name: 'Xem nhật ký kiểm toán', category: 'admin' },
     ];
 
@@ -185,16 +141,14 @@ export class SeedSampleAdminRbacAndPeriods1745230800001 implements MigrationInte
         AND p."code" IN (
           'users.manage','roles.manage','orgs.manage','periods.manage','forms.manage',
           'assignments.manage','submissions.manage','approvals.manage','summaries.manage',
-          'analytics.read','audit.read'
+          'analytics.read','analytics.export',
+          'monitoring.read','monitoring.manage',
+          'notifications.read',
+          'reports.read','reports.export',
+          'users.export',
+          'audit.read'
         )
       ON CONFLICT ("role_id", "permission_id") DO NOTHING
-    `);
-
-    const hasRoleGroups = await queryRunner.query(`
-      SELECT EXISTS (
-        SELECT 1 FROM information_schema.tables
-        WHERE table_schema = 'public' AND table_name = 'role_groups'
-      ) AS "exists"
     `);
     const hasOrganizations = await queryRunner.query(`
       SELECT EXISTS (
@@ -208,71 +162,6 @@ export class SeedSampleAdminRbacAndPeriods1745230800001 implements MigrationInte
         WHERE table_schema = 'public' AND table_name = 'report_periods'
       ) AS "exists"
     `);
-    const hasUserRoleGroups = await queryRunner.query(`
-      SELECT EXISTS (
-        SELECT 1 FROM information_schema.tables
-        WHERE table_schema = 'public' AND table_name = 'user_role_groups'
-      ) AS "exists"
-    `);
-
-    if (hasRoleGroups[0]?.exists === true) {
-      await queryRunner.query(
-        `
-        INSERT INTO "role_groups" ("id", "name", "description", "permissions", "is_system", "created_at", "updated_at")
-        VALUES ($1, 'Quản trị hệ thống', 'Nhóm QLDL mặc định (seed)', $2::jsonb, true, now(), now())
-        ON CONFLICT ("id") DO NOTHING
-      `,
-        [IDS.roleGroup, JSON.stringify(SEED_QLDL_FULL_PERMISSIONS)],
-      );
-
-      const extraRoleGroups: Array<{
-        id: string;
-        name: string;
-        description: string;
-        permissions: Record<string, string[]>;
-        isSystem: boolean;
-      }> = [
-        {
-          id: IDS.rgSystemAdmin,
-          name: 'System Admin (seed)',
-          description: 'QLDL đầy đủ + dùng chung với tài khoản system_admin',
-          permissions: SEED_QLDL_FULL_PERMISSIONS,
-          isSystem: true,
-        },
-        {
-          id: IDS.rgDataManager,
-          name: 'Data Manager (seed)',
-          description: 'Kỳ báo cáo, biểu mẫu, giao việc, giám sát, tổng hợp, tra cứu',
-          permissions: SEED_QLDL_DATA_MANAGER_PERMISSIONS,
-          isSystem: false,
-        },
-        {
-          id: IDS.rgDataEntry,
-          name: 'Data Entry (seed)',
-          description: 'Nhập liệu / nộp báo cáo',
-          permissions: SEED_QLDL_DATA_ENTRY_PERMISSIONS,
-          isSystem: false,
-        },
-        {
-          id: IDS.rgApprover,
-          name: 'Approver (seed)',
-          description: 'Duyệt / từ chối báo cáo',
-          permissions: SEED_QLDL_APPROVER_PERMISSIONS,
-          isSystem: false,
-        },
-      ];
-
-      for (const rg of extraRoleGroups) {
-        await queryRunner.query(
-          `
-          INSERT INTO "role_groups" ("id", "name", "description", "permissions", "is_system", "created_at", "updated_at")
-          VALUES ($1::uuid, $2, $3, $4::jsonb, $5, now(), now())
-          ON CONFLICT ("id") DO NOTHING
-        `,
-          [rg.id, rg.name, rg.description, JSON.stringify(rg.permissions), rg.isSystem],
-        );
-      }
-    }
 
     if (hasOrganizations[0]?.exists === true) {
       await queryRunner.query(
@@ -290,10 +179,6 @@ export class SeedSampleAdminRbacAndPeriods1745230800001 implements MigrationInte
     const orgIdExpr =
       hasOrganizations[0]?.exists === true
         ? `(SELECT o."id" FROM "organizations" o WHERE o."code" = 'XA-ROOT' LIMIT 1)`
-        : 'NULL';
-    const roleGroupIdExpr =
-      hasRoleGroups[0]?.exists === true
-        ? `(SELECT rg."id" FROM "role_groups" rg WHERE rg."name" = 'Quản trị hệ thống' LIMIT 1)`
         : 'NULL';
 
     await queryRunner.query(
@@ -313,7 +198,6 @@ export class SeedSampleAdminRbacAndPeriods1745230800001 implements MigrationInte
         "deleted_at",
         "code",
         "org_id",
-        "role_group_id",
         "avatar_url",
         "failed_login_attempts",
         "locked_until",
@@ -338,7 +222,6 @@ export class SeedSampleAdminRbacAndPeriods1745230800001 implements MigrationInte
         NULL,
         'ADM001',
         ${orgIdExpr},
-        ${roleGroupIdExpr},
         NULL,
         0,
         NULL,
@@ -369,18 +252,6 @@ export class SeedSampleAdminRbacAndPeriods1745230800001 implements MigrationInte
       `);
     }
 
-    if (hasRoleGroups[0]?.exists === true) {
-      await queryRunner.query(`
-        UPDATE "users" SET
-          "role_group_id" = COALESCE(
-            "role_group_id",
-            (SELECT rg."id" FROM "role_groups" rg WHERE rg."name" = 'Quản trị hệ thống' LIMIT 1)
-          ),
-          "updated_at" = now()
-        WHERE "username" = 'admin'
-      `);
-    }
-
     await queryRunner.query(`
       INSERT INTO "user_roles" ("user_id", "role_id")
       SELECT u."id", r."id"
@@ -389,130 +260,6 @@ export class SeedSampleAdminRbacAndPeriods1745230800001 implements MigrationInte
       WHERE u."username" = 'admin' AND r."code" = 'SUPER_ADMIN'
       ON CONFLICT ("user_id", "role_id") DO NOTHING
     `);
-
-    if (hasUserRoleGroups[0]?.exists === true && hasRoleGroups[0]?.exists === true) {
-      await queryRunner.query(`
-        INSERT INTO "user_role_groups" ("user_id", "role_group_id")
-        SELECT u."id", rg."id"
-        FROM "users" u
-        CROSS JOIN "role_groups" rg
-        WHERE u."username" = 'admin' AND rg."name" = 'Quản trị hệ thống'
-        ON CONFLICT ("user_id", "role_group_id") DO NOTHING
-      `);
-    }
-
-    if (hasRoleGroups[0]?.exists === true) {
-      const seedDemoUsers: Array<{
-        id: string;
-        username: string;
-        email: string;
-        fullName: string;
-        code: string;
-        roleGroupId: string;
-      }> = [
-        {
-          id: IDS.uSystemAdmin,
-          username: 'system_admin',
-          email: 'system_admin@localhost.local',
-          fullName: 'System Admin (seed)',
-          code: 'SYSADM',
-          roleGroupId: IDS.rgSystemAdmin,
-        },
-        {
-          id: IDS.uDataManager,
-          username: 'data_manager',
-          email: 'data_manager@localhost.local',
-          fullName: 'Data Manager (seed)',
-          code: 'DATAMGR',
-          roleGroupId: IDS.rgDataManager,
-        },
-        {
-          id: IDS.uDataEntry,
-          username: 'data_entry',
-          email: 'data_entry@localhost.local',
-          fullName: 'Data Entry (seed)',
-          code: 'DATAENT',
-          roleGroupId: IDS.rgDataEntry,
-        },
-        {
-          id: IDS.uApprover,
-          username: 'approver',
-          email: 'approver@localhost.local',
-          fullName: 'Approver (seed)',
-          code: 'APPROV',
-          roleGroupId: IDS.rgApprover,
-        },
-      ];
-
-      for (const u of seedDemoUsers) {
-        await queryRunner.query(
-          `
-          INSERT INTO "users" (
-            "id", "username", "email", "password_hash", "full_name", "phone", "department_id",
-            "status", "last_login", "created_at", "updated_at", "deleted_at",
-            "code", "org_id", "role_group_id", "avatar_url", "failed_login_attempts", "locked_until",
-            "totp_secret", "totp_enabled", "notify_channel", "language", "timezone"
-          ) VALUES (
-            $1::uuid, $2, $3,
-            crypt($4, gen_salt('bf', 12)),
-            $5, NULL, NULL,
-            'active', NULL, now(), now(), NULL,
-            $6, ${orgIdExpr}, $7::uuid, NULL, 0, NULL,
-            NULL, false, 'both', 'vi', 'Asia/Ho_Chi_Minh'
-          )
-          ON CONFLICT ("username") DO NOTHING
-        `,
-          [u.id, u.username, u.email, SEED_DEMO_PASSWORD, u.fullName, u.code, u.roleGroupId],
-        );
-
-        await queryRunner.query(
-          `
-          UPDATE "users" SET
-            "code" = COALESCE(NULLIF("code", ''), $2),
-            "role_group_id" = COALESCE("role_group_id", $3::uuid),
-            "updated_at" = now()
-          WHERE "username" = $1
-        `,
-          [u.username, u.code, u.roleGroupId],
-        );
-
-        if (hasOrganizations[0]?.exists === true) {
-          await queryRunner.query(
-            `
-            UPDATE "users" SET
-              "org_id" = COALESCE("org_id", (SELECT o."id" FROM "organizations" o WHERE o."code" = 'XA-ROOT' LIMIT 1)),
-              "updated_at" = now()
-            WHERE "username" = $1
-          `,
-            [u.username],
-          );
-        }
-      }
-
-      if (hasUserRoleGroups[0]?.exists === true) {
-        for (const u of seedDemoUsers) {
-          await queryRunner.query(
-            `
-            INSERT INTO "user_role_groups" ("user_id", "role_group_id")
-            SELECT usr."id", $2::uuid
-            FROM "users" usr
-            WHERE usr."username" = $1
-            ON CONFLICT ("user_id", "role_group_id") DO NOTHING
-          `,
-            [u.username, u.roleGroupId],
-          );
-        }
-      }
-
-      await queryRunner.query(`
-        INSERT INTO "user_roles" ("user_id", "role_id")
-        SELECT u."id", r."id"
-        FROM "users" u
-        CROSS JOIN "roles" r
-        WHERE u."username" = 'system_admin' AND r."code" = 'SUPER_ADMIN'
-        ON CONFLICT ("user_id", "role_id") DO NOTHING
-      `);
-    }
 
     if (hasOrganizations[0]?.exists === true) {
       await queryRunner.query(`
@@ -550,24 +297,16 @@ export class SeedSampleAdminRbacAndPeriods1745230800001 implements MigrationInte
     `);
 
     await queryRunner.query(`
-      DELETE FROM "user_role_groups" urg
-      USING "users" u
-      WHERE urg."user_id" = u."id"
-        AND u."username" IN ('admin', 'system_admin', 'data_manager', 'data_entry', 'approver')
-    `);
-
-    await queryRunner.query(`
       DELETE FROM "user_roles" ur
       USING "users" u, "roles" r
       WHERE ur."user_id" = u."id" AND ur."role_id" = r."id"
         AND r."code" = 'SUPER_ADMIN'
-        AND u."username" IN ('admin', 'system_admin')
+        AND u."username" IN ('admin')
     `);
 
     await queryRunner.query(`
       DELETE FROM "users"
       WHERE ("username" = 'admin' AND "email" = 'admin@localhost.local')
-         OR "username" IN ('system_admin', 'data_manager', 'data_entry', 'approver')
     `);
 
     await queryRunner.query(`
@@ -584,22 +323,18 @@ export class SeedSampleAdminRbacAndPeriods1745230800001 implements MigrationInte
       DELETE FROM "permissions" WHERE "code" IN (
         'users.manage','roles.manage','orgs.manage','periods.manage','forms.manage',
         'assignments.manage','submissions.manage','approvals.manage','summaries.manage',
-        'analytics.read','audit.read'
+        'analytics.read','analytics.export',
+        'monitoring.read','monitoring.manage',
+        'notifications.read',
+        'reports.read','reports.export',
+        'users.export',
+        'audit.read'
       )
     `);
 
     await queryRunner.query(`
       DELETE FROM "organizations" WHERE "code" = 'XA-ROOT'
     `);
-
-    await queryRunner.query(
-      `
-      DELETE FROM "role_groups"
-      WHERE ("name" = 'Quản trị hệ thống' AND "is_system" = true)
-         OR "id" IN ($1::uuid, $2::uuid, $3::uuid, $4::uuid)
-    `,
-      [IDS.rgSystemAdmin, IDS.rgDataManager, IDS.rgDataEntry, IDS.rgApprover],
-    );
 
     // Không DROP bảng rbac (có thể đã dùng trước seed); chỉ gỡ dữ liệu seed ở trên.
   }

@@ -4,16 +4,15 @@ import { Organization } from './entities/organization.entity';
 import { OrganizationService } from './organization.service';
 import { OrganizationController } from './organization.controller';
 import { User } from '../user/entities/user.entity';
-import { RoleGroup } from '../user/entities/role-group.entity';
-import { UserRoleGroup } from '../user/entities/user-role-group.entity';
-import { QldlRbacGuard } from '../../common/guards/qldl-rbac.guard';
+import { Role } from '../role/entities/role.entity';
+import { Permission } from '../role/entities/permission.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Organization, User, RoleGroup, UserRoleGroup]),
+    TypeOrmModule.forFeature([Organization, User, Role, Permission]),
   ],
   controllers: [OrganizationController],
-  providers: [OrganizationService, QldlRbacGuard],
+  providers: [OrganizationService],
   exports: [OrganizationService],
 })
 export class OrganizationModule {}

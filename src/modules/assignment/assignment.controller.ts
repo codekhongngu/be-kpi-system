@@ -11,7 +11,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/entities/user.entity';
-import { QldlPermission, QldlRbacGuard } from '../../common';
+import { Permissions, PermissionsGuard } from '../../common';
 import { AssignmentService } from './assignment.service';
 import { AssignmentQueryDto } from './dto/assignment-query.dto';
 import { CreateAssignmentsDto } from './dto/create-assignments.dto';
@@ -19,18 +19,18 @@ import { CancelAssignmentDto } from './dto/cancel-assignment.dto';
 import { NextPeriodAssignmentsDto } from './dto/next-period-assignments.dto';
 
 @Controller('assignments')
-@UseGuards(JwtAuthGuard, QldlRbacGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class AssignmentController {
   constructor(private readonly assignmentService: AssignmentService) {}
 
   @Get()
-  @QldlPermission('OPS_ASSIGNMENTS', 'READ')
+  @Permissions('assignments.manage')
   async list(@Query() query: AssignmentQueryDto) {
     return await this.assignmentService.findAll(query);
   }
 
   @Post()
-  @QldlPermission('OPS_ASSIGNMENTS', 'WRITE')
+  @Permissions('assignments.manage')
   async create(
     @Body() dto: CreateAssignmentsDto,
     @CurrentUser() user: User,
@@ -39,7 +39,7 @@ export class AssignmentController {
   }
 
   @Post(':id/cancel')
-  @QldlPermission('OPS_ASSIGNMENTS', 'WRITE')
+  @Permissions('assignments.manage')
   async cancel(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: CancelAssignmentDto,
@@ -48,7 +48,7 @@ export class AssignmentController {
   }
 
   @Post('next-period')
-  @QldlPermission('OPS_ASSIGNMENTS', 'WRITE')
+  @Permissions('assignments.manage')
   async nextPeriod(@Body() dto: NextPeriodAssignmentsDto) {
     return await this.assignmentService.nextPeriod(dto);
   }

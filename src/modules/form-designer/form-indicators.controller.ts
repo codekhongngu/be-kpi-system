@@ -14,25 +14,25 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/entities/user.entity';
-import { QldlPermission, QldlRbacGuard } from '../../common';
+import { Permissions, PermissionsGuard } from '../../common';
 import { FormDesignerService } from './form-designer.service';
 import { CreateFormIndicatorDto } from './dto/create-form-indicator.dto';
 import { PatchFormIndicatorDto } from './dto/patch-form-indicator.dto';
 import { ReorderIndicatorsDto } from './dto/reorder-indicators.dto';
 
 @Controller('forms/:formId/indicators')
-@UseGuards(JwtAuthGuard, QldlRbacGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class FormIndicatorsController {
   constructor(private readonly formDesigner: FormDesignerService) {}
 
   @Get()
-  @QldlPermission('DESIGN_FORMS', 'READ')
+  @Permissions('forms.manage')
   async list(@Param('formId', ParseUUIDPipe) formId: string) {
     return await this.formDesigner.listIndicators(formId);
   }
 
   @Post()
-  @QldlPermission('DESIGN_FORMS', 'WRITE')
+  @Permissions('forms.manage')
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Param('formId', ParseUUIDPipe) formId: string,
@@ -42,7 +42,7 @@ export class FormIndicatorsController {
   }
 
   @Patch(':indicatorId')
-  @QldlPermission('DESIGN_FORMS', 'WRITE')
+  @Permissions('forms.manage')
   async patch(
     @Param('formId', ParseUUIDPipe) formId: string,
     @Param('indicatorId', ParseUUIDPipe) indicatorId: string,
@@ -52,7 +52,7 @@ export class FormIndicatorsController {
   }
 
   @Delete(':indicatorId')
-  @QldlPermission('DESIGN_FORMS', 'DELETE')
+  @Permissions('forms.manage')
   async remove(
     @Param('formId', ParseUUIDPipe) formId: string,
     @Param('indicatorId', ParseUUIDPipe) indicatorId: string,
@@ -61,7 +61,7 @@ export class FormIndicatorsController {
   }
 
   @Post('reorder')
-  @QldlPermission('DESIGN_FORMS', 'WRITE')
+  @Permissions('forms.manage')
   async reorder(
     @Param('formId', ParseUUIDPipe) formId: string,
     @Body() dto: ReorderIndicatorsDto,
@@ -70,7 +70,7 @@ export class FormIndicatorsController {
   }
 
   @Post('import')
-  @QldlPermission('DESIGN_FORMS', 'WRITE')
+  @Permissions('forms.manage')
   async importJob(
     @Param('formId', ParseUUIDPipe) _formId: string,
     @CurrentUser() user: User,

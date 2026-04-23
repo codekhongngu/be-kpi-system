@@ -10,6 +10,7 @@ import { randomBytes } from 'crypto';
 import { Form } from './entities/form.entity';
 import { FormAttribute } from './entities/form-attribute.entity';
 import { FormIndicator } from './entities/form-indicator.entity';
+import { FieldCategory } from './entities/field-category.entity';
 import { IndicatorCatalog } from './entities/indicator-catalog.entity';
 import { ImportJob } from '../user/entities/import-job.entity';
 import { User } from '../user/entities/user.entity';
@@ -22,6 +23,9 @@ import { PatchFormAttributeDto } from './dto/patch-form-attribute.dto';
 import { CreateFormIndicatorDto } from './dto/create-form-indicator.dto';
 import { PatchFormIndicatorDto } from './dto/patch-form-indicator.dto';
 import { CreateIndicatorCatalogDto } from './dto/create-indicator-catalog.dto';
+import { CreateFieldCategoryDto } from './dto/create-field-category.dto';
+import { PatchFieldCategoryDto } from './dto/patch-field-category.dto';
+import { FieldCategoryQueryDto } from './dto/field-category-query.dto';
 
 @Injectable()
 export class FormDesignerService {
@@ -32,6 +36,8 @@ export class FormDesignerService {
     private readonly attrRepo: Repository<FormAttribute>,
     @InjectRepository(FormIndicator)
     private readonly indRepo: Repository<FormIndicator>,
+    @InjectRepository(FieldCategory)
+    private readonly fieldCategoryRepo: Repository<FieldCategory>,
     @InjectRepository(IndicatorCatalog)
     private readonly catalogRepo: Repository<IndicatorCatalog>,
     @InjectRepository(ImportJob)
@@ -71,8 +77,9 @@ export class FormDesignerService {
       id: f.id,
       code: f.code,
       name: f.name,
-      fieldCategory: f.fieldCategory,
-      periodType: f.periodType,
+      fieldCategoryId: f.fieldCategoryRef?.id ?? null,
+      /** Mã `code` từ bảng `field_categories` (join), không còn cột `forms.field_category`. */
+      fieldCategory: f.fieldCategoryRef?.code ?? null,
       isActive: f.isActive,
       templateFileUrl: f.templateFile,
       parentFormId: f.parentFormId,
@@ -115,7 +122,9 @@ export class FormDesignerService {
     const limit = Math.min(query.limit ?? 20, 200);
     const skip = (page - 1) * limit;
 
-    const qb = this.formRepo.createQueryBuilder('f');
+    const qb = this.formRepo
+      .createQueryBuilder('f')
+      .leftJoinAndSelect('f.fieldCategoryRef', 'fc');
     if (query.q?.trim()) {
       const q = `%${query.q.trim().toLowerCase()}%`;
       qb.andWhere(
@@ -124,10 +133,10 @@ export class FormDesignerService {
       );
     }
     if (query.fieldCategory !== undefined) {
-      qb.andWhere('f.field_category = :fc', { fc: query.fieldCategory });
+      qb.andWhere('fc.code = :fcc', { fcc: query.fieldCategory });
     }
-    if (query.periodType !== undefined) {
-      qb.andWhere('f.period_type = :pt', { pt: query.periodType });
+    if (query.fieldCategoryId !== undefined) {
+      qb.andWhere('f.field_category_id = :fcid', { fcid: query.fieldCategoryId });
     }
     if (query.isActive !== undefined) {
       qb.andWhere('f.is_active = :ia', { ia: query.isActive });
@@ -141,12 +150,12 @@ export class FormDesignerService {
   }
 
   async createForm(dto: CreateFormDto, userId: string | undefined) {
+    const fc = await this.requireActiveFieldCategory(dto.fieldCategoryId);
     const code = await this.generateUniqueFormCode();
     const created = this.formRepo.create({
       code,
       name: dto.name.trim(),
-      fieldCategory: dto.fieldCategory.trim(),
-      periodType: dto.periodType,
+      fieldCategoryRef: { id: fc.id } as FieldCategory,
       description: dto.description?.trim() ?? null,
       parentFormId: dto.parentFormId ?? null,
       createdBy: userId ?? null,
@@ -157,7 +166,10 @@ export class FormDesignerService {
   }
 
   async findOneForm(id: string) {
-    const f = await this.formRepo.findOne({ where: { id } });
+    const f = await this.formRepo.findOne({
+      where: { id },
+      relations: { fieldCategoryRef: true },
+    });
     if (!f) throw new NotFoundException('Không tìm thấy biểu mẫu');
     const [attrs, inds] = await Promise.all([
       this.attrRepo.find({
@@ -178,14 +190,20 @@ export class FormDesignerService {
   }
 
   async patchForm(id: string, dto: PatchFormDto) {
-    const f = await this.formRepo.findOne({ where: { id } });
+    const f = await this.formRepo.findOne({
+      where: { id },
+      relations: { fieldCategoryRef: true },
+    });
     if (!f) throw new NotFoundException('Không tìm thấy biểu mẫu');
     if (dto.name !== undefined) f.name = dto.name.trim();
-    if (dto.fieldCategory !== undefined) {
-      f.fieldCategory =
-        dto.fieldCategory === null ? null : dto.fieldCategory.trim();
+    if (dto.fieldCategoryId !== undefined) {
+      if (dto.fieldCategoryId === null) {
+        f.fieldCategoryRef = null;
+      } else {
+        const fc = await this.requireActiveFieldCategory(dto.fieldCategoryId);
+        f.fieldCategoryRef = { id: fc.id } as FieldCategory;
+      }
     }
-    if (dto.periodType !== undefined) f.periodType = dto.periodType;
     if (dto.description !== undefined) {
       f.description =
         dto.description === null || dto.description === ''
@@ -234,23 +252,33 @@ export class FormDesignerService {
   }
 
   async copyForm(sourceId: string, dto: CopyFormDto, userId: string | undefined) {
-    const src = await this.formRepo.findOne({ where: { id: sourceId } });
+    const src = await this.formRepo.findOne({
+      where: { id: sourceId },
+      relations: { fieldCategoryRef: true },
+    });
     if (!src) throw new NotFoundException('Không tìm thấy biểu mẫu nguồn');
 
     const code = await this.generateUniqueFormCode();
     const attrs = await this.attrRepo.find({ where: { formId: sourceId } });
     const inds = await this.indRepo.find({ where: { formId: sourceId } });
 
+    const targetCategoryId =
+      dto.fieldCategoryId ?? src.fieldCategoryRef?.id ?? null;
+    let fieldCategoryRef: FieldCategory | null = null;
+    if (targetCategoryId) {
+      const fc = await this.requireActiveFieldCategory(targetCategoryId);
+      fieldCategoryRef = { id: fc.id } as FieldCategory;
+    }
+
     const newId = await this.dataSource.transaction(async (manager) => {
       const formRepo = manager.getRepository(Form);
       const attrRepo = manager.getRepository(FormAttribute);
       const indRepo = manager.getRepository(FormIndicator);
 
-      const f = formRepo.create({
+    const f = formRepo.create({
         code,
         name: dto.name.trim(),
-        fieldCategory: (dto.fieldCategory ?? src.fieldCategory)?.trim() ?? null,
-        periodType: dto.periodType ?? src.periodType,
+        fieldCategoryRef,
         description: src.description,
         isActive: false,
         templateFile: src.templateFile,
@@ -508,6 +536,87 @@ export class FormDesignerService {
     });
     const saved = await this.catalogRepo.save(row);
     return { id: saved.id };
+  }
+
+  async findAllFieldCategories(query: FieldCategoryQueryDto) {
+    const page = query.page ?? 1;
+    const limit = Math.min(query.limit ?? 100, 200);
+    const skip = (page - 1) * limit;
+    const qb = this.fieldCategoryRepo.createQueryBuilder('c');
+    if (query.isActive !== undefined) {
+      qb.andWhere('c.is_active = :ia', { ia: query.isActive });
+    }
+    if (query.q?.trim()) {
+      const q = `%${query.q.trim().toLowerCase()}%`;
+      qb.andWhere(
+        '(LOWER(c.name) LIKE :q OR LOWER(c.code) LIKE :q)',
+        { q },
+      );
+    }
+    qb.orderBy('c.sort_order', 'ASC').addOrderBy('c.name', 'ASC').skip(skip).take(limit);
+    const [rows, total] = await qb.getManyAndCount();
+    return {
+      items: rows.map((c) => ({
+        id: c.id,
+        code: c.code,
+        name: c.name,
+        description: c.description,
+        sortOrder: c.sortOrder,
+        isActive: c.isActive,
+      })),
+      meta: { page, limit, total },
+    };
+  }
+
+  async createFieldCategory(dto: CreateFieldCategoryDto) {
+    const code = dto.code.trim().toLowerCase();
+    const dup = await this.fieldCategoryRepo.exist({ where: { code } });
+    if (dup) throw new ConflictException('FIELD_CATEGORY_CODE_DUPLICATE');
+    const row = this.fieldCategoryRepo.create({
+      code,
+      name: dto.name.trim(),
+      description: dto.description?.trim() ?? null,
+      sortOrder: dto.sortOrder ?? 0,
+      isActive: dto.isActive ?? true,
+    });
+    const saved = await this.fieldCategoryRepo.save(row);
+    return { id: saved.id };
+  }
+
+  async patchFieldCategory(id: string, dto: PatchFieldCategoryDto) {
+    const row = await this.fieldCategoryRepo.findOne({ where: { id } });
+    if (!row) throw new NotFoundException('Không tìm thấy lĩnh vực');
+    if (dto.code !== undefined) {
+      const code = dto.code.trim().toLowerCase();
+      if (code !== row.code) {
+        const dup = await this.fieldCategoryRepo.exist({ where: { code } });
+        if (dup) throw new ConflictException('FIELD_CATEGORY_CODE_DUPLICATE');
+        row.code = code;
+      }
+    }
+    if (dto.name !== undefined) row.name = dto.name.trim();
+    if (dto.description !== undefined) {
+      row.description =
+        dto.description === null || dto.description === ''
+          ? null
+          : dto.description.trim();
+    }
+    if (dto.sortOrder !== undefined) row.sortOrder = dto.sortOrder;
+    if (dto.isActive !== undefined) row.isActive = dto.isActive;
+    await this.fieldCategoryRepo.save(row);
+    return { ok: true };
+  }
+
+  private async requireActiveFieldCategory(id: string): Promise<FieldCategory> {
+    const row = await this.fieldCategoryRepo.findOne({
+      where: { id, isActive: true },
+    });
+    if (!row) {
+      throw new BadRequestException(
+        'fieldCategoryId không tồn tại, không hợp lệ hoặc đã ngưng sử dụng',
+      );
+    }
+    return row;
   }
 
   private async ensureForm(id: string): Promise<Form> {

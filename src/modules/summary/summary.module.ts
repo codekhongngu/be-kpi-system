@@ -3,13 +3,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ReportSummary } from './entities/report-summary.entity';
 import { SummaryService } from './summary.service';
 import { SummaryController } from './summary.controller';
-import { QldlRbacGuard } from '../../common/guards/qldl-rbac.guard';
-import { RoleGroup } from '../user/entities/role-group.entity';
-import { UserRoleGroup } from '../user/entities/user-role-group.entity';
+import { Role } from '../role/entities/role.entity';
+import { Permission } from '../role/entities/permission.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ReportSummary, RoleGroup, UserRoleGroup])],
+  imports: [TypeOrmModule.forFeature([ReportSummary, Role, Permission])],
   controllers: [SummaryController],
-  providers: [SummaryService, QldlRbacGuard],
+  providers: [SummaryService],
 })
 export class SummaryModule {}

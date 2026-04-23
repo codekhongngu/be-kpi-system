@@ -1,5 +1,4 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
-import { PeriodType } from '../../report-period/entities/report-period.entity';
+import { IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class CopyFormDto {
   @IsString()
@@ -8,13 +7,8 @@ export class CopyFormDto {
   name: string;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  fieldCategory?: string;
-
-  @IsOptional()
-  @IsEnum(PeriodType)
-  periodType?: PeriodType;
+  @IsUUID()
+  fieldCategoryId?: string;
 
   @IsOptional()
   @IsUUID()

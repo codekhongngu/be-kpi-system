@@ -47,11 +47,6 @@ export class CreateUserDto {
   @IsOptional()
   @IsArray()
   @IsUUID('4', { each: true })
-  roleGroupIds?: string[];
-
-  @IsOptional()
-  @IsArray()
-  @IsUUID('4', { each: true })
   roleIds?: string[];
 
   @IsOptional()

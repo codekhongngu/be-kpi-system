@@ -9,23 +9,23 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/entities/user.entity';
-import { QldlPermission, QldlRbacGuard } from '../../common';
+import { Permissions, PermissionsGuard } from '../../common';
 import { QueryService } from './query.service';
 import { QueryReportsDto } from './dto/query-reports.dto';
 
 @Controller('query')
-@UseGuards(JwtAuthGuard, QldlRbacGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class QueryController {
   constructor(private readonly queryService: QueryService) {}
 
   @Get('reports')
-  @QldlPermission('QUERY_REPORTS', 'READ')
+  @Permissions('reports.read')
   async reports(@CurrentUser() user: User, @Query() query: QueryReportsDto) {
     return await this.queryService.listReports(user, query);
   }
 
   @Get('reports/:submissionId')
-  @QldlPermission('QUERY_REPORTS', 'READ')
+  @Permissions('reports.read')
   async detail(
     @Param('submissionId', ParseUUIDPipe) submissionId: string,
     @CurrentUser() user: User,
@@ -34,7 +34,7 @@ export class QueryController {
   }
 
   @Get('reports/:submissionId/export')
-  @QldlPermission('QUERY_REPORTS', 'EXPORT')
+  @Permissions('reports.export')
   async export(
     @Param('submissionId', ParseUUIDPipe) submissionId: string,
     @Query('format') format = 'excel',

@@ -12,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { QldlPermission, QldlRbacGuard } from '../../common';
+import { Permissions, PermissionsGuard } from '../../common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/entities/user.entity';
 import { CreateReportPeriodDto } from './dto/create-report-period.dto';
@@ -21,18 +21,18 @@ import { ReportPeriodQueryDto } from './dto/report-period-query.dto';
 import { ReportPeriodService } from './report-period.service';
 
 @Controller('report-periods')
-@UseGuards(JwtAuthGuard, QldlRbacGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class ReportPeriodController {
   constructor(private readonly service: ReportPeriodService) {}
 
   @Get()
-  @QldlPermission('ADMIN_PERIODS', 'READ')
+  @Permissions('periods.manage')
   async list(@Query() query: ReportPeriodQueryDto) {
     return await this.service.findAll(query);
   }
 
   @Post()
-  @QldlPermission('ADMIN_PERIODS', 'WRITE')
+  @Permissions('periods.manage')
   @HttpCode(HttpStatus.CREATED)
   async create(
     @CurrentUser() user: User,
@@ -42,19 +42,19 @@ export class ReportPeriodController {
   }
 
   @Get(':id')
-  @QldlPermission('ADMIN_PERIODS', 'READ')
+  @Permissions('periods.manage')
   async detail(@Param('id') id: string) {
     return await this.service.findOne(id);
   }
 
   @Patch(':id')
-  @QldlPermission('ADMIN_PERIODS', 'WRITE')
+  @Permissions('periods.manage')
   async patch(@Param('id') id: string, @Body() dto: UpdateReportPeriodDto) {
     return await this.service.update(id, dto);
   }
 
   @Delete(':id')
-  @QldlPermission('ADMIN_PERIODS', 'DELETE')
+  @Permissions('periods.manage')
   async remove(@Param('id') id: string) {
     return await this.service.remove(id);
   }

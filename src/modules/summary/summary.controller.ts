@@ -13,37 +13,37 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/entities/user.entity';
-import { QldlPermission, QldlRbacGuard } from '../../common';
+import { Permissions, PermissionsGuard } from '../../common';
 import { SummaryService } from './summary.service';
 import { SummaryQueryDto } from './dto/summary-query.dto';
 import { CreateSummaryDto } from './dto/create-summary.dto';
 
 @Controller('summaries')
-@UseGuards(JwtAuthGuard, QldlRbacGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class SummaryController {
   constructor(private readonly summaryService: SummaryService) {}
 
   @Get()
-  @QldlPermission('OPS_SUMMARIES', 'READ')
+  @Permissions('summaries.manage')
   async list(@Query() query: SummaryQueryDto) {
     return await this.summaryService.findAll(query);
   }
 
   @Post()
-  @QldlPermission('OPS_SUMMARIES', 'WRITE')
+  @Permissions('summaries.manage')
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateSummaryDto, @CurrentUser() user: User) {
     return await this.summaryService.create(dto, user?.id);
   }
 
   @Get(':id')
-  @QldlPermission('OPS_SUMMARIES', 'READ')
+  @Permissions('summaries.manage')
   async getOne(@Param('id', ParseUUIDPipe) id: string) {
     return await this.summaryService.findOne(id);
   }
 
   @Post(':id/recompute')
-  @QldlPermission('OPS_SUMMARIES', 'WRITE')
+  @Permissions('summaries.manage')
   async recompute(@Param('id', ParseUUIDPipe) id: string) {
     return await this.summaryService.recompute(id);
   }

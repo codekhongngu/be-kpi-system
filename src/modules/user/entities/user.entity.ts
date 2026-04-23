@@ -47,9 +47,6 @@ export class User {
   @Column({ name: 'org_id', type: 'uuid', nullable: true })
   orgId: string | null;
 
-  @Column({ name: 'role_group_id', type: 'uuid', nullable: true })
-  roleGroupId: string | null;
-
   @Column({ name: 'avatar_url', type: 'text', nullable: true })
   avatarUrl: string | null;
 

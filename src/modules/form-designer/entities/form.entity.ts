@@ -3,10 +3,12 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { PeriodType } from '../../report-period/entities/report-period.entity';
+import { FieldCategory } from './field-category.entity';
 
 @Entity('forms')
 export class Form {
@@ -19,11 +21,9 @@ export class Form {
   @Column({ type: 'varchar', length: 255 })
   name: string;
 
-  @Column({ name: 'field_category', type: 'varchar', length: 100, nullable: true })
-  fieldCategory: string | null;
-
-  @Column({ name: 'period_type', type: 'varchar', length: 10, nullable: true })
-  periodType: PeriodType | null;
+  @ManyToOne(() => FieldCategory, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'field_category_id' })
+  fieldCategoryRef: FieldCategory | null;
 
   @Column({ type: 'text', nullable: true })
   description: string | null;

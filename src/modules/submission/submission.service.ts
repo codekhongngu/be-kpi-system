@@ -277,19 +277,18 @@ export class SubmissionService {
   }
 
   private async findApproverUserIds(orgId: string): Promise<string[]> {
+    // Nest RBAC (roles/permissions) — find users in org that have approvals permission.
     const rows = await this.dataSource.query<{ id: string }[]>(
       `
       SELECT DISTINCT u.id
       FROM users u
-      LEFT JOIN role_groups rg_primary ON rg_primary.id = u.role_group_id
-      LEFT JOIN user_role_groups urg ON urg.user_id = u.id
-      LEFT JOIN role_groups rg2 ON rg2.id = urg.role_group_id
+      INNER JOIN user_roles ur ON ur.user_id = u.id
+      INNER JOIN roles r ON r.id = ur.role_id
+      INNER JOIN role_permissions rp ON rp.role_id = r.id
+      INNER JOIN permissions p ON p.id = rp.permission_id
       WHERE u.org_id = $1
         AND u.status = $2
-        AND (
-          (COALESCE(rg_primary.permissions, '{}'::jsonb)->'APPROVALS') ? 'WRITE'
-          OR (COALESCE(rg2.permissions, '{}'::jsonb)->'APPROVALS') ? 'WRITE'
-        )
+        AND p.code = 'approvals.manage'
       `,
       [orgId, UserStatus.ACTIVE],
     );

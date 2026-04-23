@@ -12,9 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { User, UserStatus } from './entities/user.entity';
 import { Role } from '../role/entities/role.entity';
 import { Organization } from '../organization/entities/organization.entity';
-import { RoleGroup } from './entities/role-group.entity';
 import { ImportJob, ImportJobStatus } from './entities/import-job.entity';
-import { UserRoleGroup } from './entities/user-role-group.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserQueryDto } from './dto/user-query.dto';
@@ -37,25 +35,16 @@ export class UserService {
     private readonly roleRepository: Repository<Role>,
     @InjectRepository(Organization)
     private readonly orgRepository: Repository<Organization>,
-    @InjectRepository(RoleGroup)
-    private readonly roleGroupRepository: Repository<RoleGroup>,
     @InjectRepository(ImportJob)
     private readonly importJobRepository: Repository<ImportJob>,
-    @InjectRepository(UserRoleGroup)
-    private readonly userRoleGroupRepository: Repository<UserRoleGroup>,
     private readonly configService: ConfigService,
   ) {}
 
   async create(
     createUserDto: CreateUserDto,
-    options?: { requireQldlRoleGroups?: boolean },
+    _options?: { requireQldlRoleGroups?: boolean },
   ): Promise<{ id: string }> {
-    const requireRg = options?.requireQldlRoleGroups ?? true;
-    const roleGroupIds = createUserDto.roleGroupIds ?? [];
-    if (requireRg && (!roleGroupIds || roleGroupIds.length === 0)) {
-      throw new BadRequestException('roleGroupIds là bắt buộc');
-    }
-    if (requireRg && !createUserDto.orgId) {
+    if (!createUserDto.orgId) {
       throw new BadRequestException('orgId là bắt buộc');
     }
 
@@ -63,16 +52,14 @@ export class UserService {
       createUserDto.username,
       createUserDto.email,
     );
-    await this.assertFkReferences(createUserDto.orgId, roleGroupIds);
+    await this.assertFkReferences(createUserDto.orgId);
 
     const pwdInput = createUserDto.password?.trim();
     let passwordPlain: string;
     if (pwdInput) {
       passwordPlain = pwdInput;
-    } else if (requireRg) {
-      passwordPlain = this.generateStrongPassword();
     } else {
-      throw new BadRequestException('Mật khẩu là bắt buộc');
+      passwordPlain = this.generateStrongPassword();
     }
     this.assertPasswordPolicy(passwordPlain);
 
@@ -87,7 +74,7 @@ export class UserService {
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(passwordPlain, saltRounds);
 
-    const { roleIds, roleGroupIds: _rg, password: _pw, isActive: _ia, ...rest } =
+    const { roleIds, password: _pw, isActive: _ia, ...rest } =
       createUserDto as any;
 
     let status: UserStatus = createUserDto.status ?? UserStatus.ACTIVE;
@@ -102,17 +89,12 @@ export class UserService {
       phone: rest.phone ?? null,
       code: rest.code ?? null,
       orgId: rest.orgId ?? null,
-      roleGroupId: roleGroupIds[0] ?? null,
       departmentId: rest.departmentId ?? null,
       passwordHash,
       status,
     });
 
     const saved = await this.userRepository.save(user);
-
-    if (roleGroupIds.length) {
-      await this.replaceUserRoleGroups(saved.id, roleGroupIds);
-    }
 
     if (roleIds?.length) {
       await this.assignRoles(saved.id, { roleIds });
@@ -155,13 +137,6 @@ export class UserService {
 
     if (query.roleId) {
       qb.andWhere('roles.id = :roleId', { roleId: query.roleId });
-    }
-
-    if (query.roleGroupId) {
-      qb.andWhere(
-        '(user.roleGroupId = :roleGroupId OR EXISTS (SELECT 1 FROM user_role_groups urg WHERE urg.user_id = user.id AND urg.role_group_id = :roleGroupId))',
-        { roleGroupId: query.roleGroupId },
-      );
     }
 
     const kw = query.search ?? query.q;
@@ -230,13 +205,11 @@ export class UserService {
 
   async findOneDetail(id: string): Promise<UserDetail> {
     const user = await this.findOne(id);
-    const map = await this.loadRoleGroupIdsMap([user.id]);
-    return this.toUserDetail(user, map);
+    return this.toUserDetail(user);
   }
 
   async getMeResponse(userId: string): Promise<MeResponse> {
     const user = await this.findOne(userId);
-    const map = await this.loadRoleGroupIdsMap([user.id]);
     return {
       id: user.id,
       code: user.code ?? '',
@@ -246,7 +219,7 @@ export class UserService {
       phone: user.phone ?? null,
       avatarUrl: user.avatarUrl ?? null,
       orgId: user.orgId,
-      roleGroupIds: this.resolveRoleGroupIds(user, map),
+      roleIds: user.roles?.map((r) => r.id) ?? [],
       language: user.language ?? 'vi',
       timezone: user.timezone ?? 'Asia/Ho_Chi_Minh',
       notifyChannel: this.normalizeNotifyChannel(user.notifyChannel),
@@ -308,12 +281,9 @@ export class UserService {
       }
     }
 
-    if (updateUserDto.orgId !== undefined || updateUserDto.roleGroupIds !== undefined) {
+    if (updateUserDto.orgId !== undefined) {
       const nextOrgId = updateUserDto.orgId ?? user.orgId ?? null;
-      const nextRgIds =
-        updateUserDto.roleGroupIds ??
-        (user.roleGroupId ? [user.roleGroupId] : []);
-      await this.assertFkReferences(nextOrgId, nextRgIds);
+      await this.assertFkReferences(nextOrgId);
     }
 
     if (updateUserDto.password) {
@@ -324,9 +294,8 @@ export class UserService {
       delete updateUserDto.password;
     }
 
-    const { roleIds, roleGroupIds, isActive, ...patch } = updateUserDto as UpdateUserDto & {
+    const { roleIds, isActive, ...patch } = updateUserDto as UpdateUserDto & {
       roleIds?: string[];
-      roleGroupIds?: string[];
       isActive?: boolean;
     };
 
@@ -336,11 +305,6 @@ export class UserService {
       user.status = UserStatus.ACTIVE;
     } else if (isActive === false) {
       user.status = UserStatus.INACTIVE;
-    }
-
-    if (roleGroupIds) {
-      user.roleGroupId = roleGroupIds[0] ?? null;
-      await this.replaceUserRoleGroups(user.id, roleGroupIds);
     }
 
     const saved = await this.userRepository.save(user);
@@ -549,11 +513,6 @@ export class UserService {
           `CSV thiếu cột: ${missing.join(', ')}. Header yêu cầu: ${expected.join(',')}`,
         );
       }
-      if (!header.includes('rolegroupids') && !header.includes('rolegroupid')) {
-        throw new BadRequestException(
-          'CSV thiếu cột rolegroupids (hoặc rolegroupid tương thích ngược).',
-        );
-      }
 
       for (let i = 1; i < lines.length; i++) {
         const rowNum = i + 1; // 1-based including header
@@ -567,17 +526,6 @@ export class UserService {
             row[h] = cols[idx]?.trim() ?? '';
           });
 
-          const rgFromIds = row.rolegroupids
-            ? row.rolegroupids.split('|').map((s) => s.trim()).filter(Boolean)
-            : [];
-          const rgFromLegacy = row.rolegroupid
-            ? row.rolegroupid.split('|').map((s) => s.trim()).filter(Boolean)
-            : [];
-          const roleGroupIds = rgFromIds.length ? rgFromIds : rgFromLegacy;
-          if (!roleGroupIds.length) {
-            throw new Error('roleGroupIds trống (cột rolegroupids hoặc rolegroupid)');
-          }
-
           const plainPassword = row.password || this.generateStrongPassword();
           const dto: CreateUserDto = {
             code: row.code || undefined,
@@ -586,7 +534,6 @@ export class UserService {
             username: row.username,
             password: plainPassword,
             orgId: row.orgid || undefined,
-            roleGroupIds,
             status: (row.status as UserStatus) || UserStatus.ACTIVE,
             roleIds: row.roleids
               ? row.roleids.split('|').map((s) => s.trim()).filter(Boolean)
@@ -611,7 +558,6 @@ export class UserService {
               password: dto.password,
               code: dto.code,
               orgId: dto.orgId ?? null,
-              roleGroupIds: dto.roleGroupIds,
               status: dto.status,
               roleIds: dto.roleIds,
             });
@@ -653,30 +599,6 @@ export class UserService {
     }
   }
 
-  private async loadRoleGroupIdsMap(userIds: string[]): Promise<Map<string, string[]>> {
-    const map = new Map<string, string[]>();
-    for (const id of userIds) map.set(id, []);
-    if (userIds.length === 0) return map;
-
-    const rows = await this.userRoleGroupRepository.find({
-      where: { userId: In(userIds) },
-      select: { userId: true, roleGroupId: true },
-    });
-    for (const r of rows) {
-      const cur = map.get(r.userId) ?? [];
-      cur.push(r.roleGroupId);
-      map.set(r.userId, cur);
-    }
-    return map;
-  }
-
-  private resolveRoleGroupIds(user: User, map: Map<string, string[]>): string[] {
-    const fromJoin = map.get(user.id) ?? [];
-    if (fromJoin.length) return [...new Set(fromJoin)];
-    if (user.roleGroupId) return [user.roleGroupId];
-    return [];
-  }
-
   private toUserListItem(user: User, map: Map<string, string[]>): UserListItem {
     const last = user.lastLogin;
     return {
@@ -686,7 +608,7 @@ export class UserService {
       email: user.email,
       username: user.username,
       orgId: user.orgId,
-      roleGroupIds: this.resolveRoleGroupIds(user, map),
+      roleIds: user.roles?.map((r) => r.id) ?? [],
       isActive: user.status === UserStatus.ACTIVE,
       lastLoginAt: last ? new Date(last).toISOString() : null,
     };
@@ -699,8 +621,8 @@ export class UserService {
     return 'BOTH';
   }
 
-  private toUserDetail(user: User, map: Map<string, string[]>): UserDetail {
-    const base = this.toUserListItem(user, map);
+  private toUserDetail(user: User): UserDetail {
+    const base = this.toUserListItem(user, new Map());
     return {
       ...base,
       phone: user.phone ?? null,
@@ -715,8 +637,7 @@ export class UserService {
   }
 
   private async toUserListItems(users: User[]): Promise<UserListItem[]> {
-    const map = await this.loadRoleGroupIdsMap(users.map((u) => u.id));
-    return users.map((u) => this.toUserListItem(u, map));
+    return users.map((u) => this.toUserListItem(u, new Map()));
   }
 
   private async assertUniqueUsernameEmail(username: string, email: string) {
@@ -737,34 +658,11 @@ export class UserService {
     }
   }
 
-  private async assertFkReferences(
-    orgId?: string | null,
-    roleGroupIds?: string[] | null,
-  ) {
+  private async assertFkReferences(orgId?: string | null) {
     if (orgId) {
       const org = await this.orgRepository.findOne({ where: { id: orgId } });
       if (!org) throw new NotFoundException('FK_NOT_FOUND: org không tồn tại');
     }
-    const ids = roleGroupIds?.filter(Boolean) ?? [];
-    if (ids.length === 0) return;
-
-    const rows = await this.roleGroupRepository.find({ where: { id: In(ids) } });
-    if (rows.length !== ids.length) {
-      throw new NotFoundException('FK_NOT_FOUND: một hoặc nhiều role_group không tồn tại');
-    }
-  }
-
-  private async replaceUserRoleGroups(userId: string, roleGroupIds: string[]) {
-    const ids = Array.from(new Set(roleGroupIds.filter(Boolean)));
-    await this.userRoleGroupRepository.delete({ userId });
-    if (ids.length === 0) return;
-    await this.userRoleGroupRepository.insert(
-      ids.map((roleGroupId) => ({
-        userId,
-        roleGroupId,
-        createdAt: new Date(),
-      })),
-    );
   }
 
   private assertPasswordPolicy(password: string) {

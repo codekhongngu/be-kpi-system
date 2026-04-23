@@ -7,7 +7,7 @@ export type UserListItem = {
   email: string;
   username: string;
   orgId: string | null;
-  roleGroupIds: string[];
+  roleIds: string[];
   isActive: boolean;
   lastLoginAt: string | null;
 };
@@ -38,7 +38,7 @@ export type MeResponse = {
   phone?: string | null;
   avatarUrl?: string | null;
   orgId: string | null;
-  roleGroupIds: string[];
+  roleIds: string[];
   language: string;
   timezone: string;
   notifyChannel: 'IN_APP' | 'EMAIL' | 'BOTH';

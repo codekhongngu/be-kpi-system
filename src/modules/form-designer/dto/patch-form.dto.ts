@@ -1,5 +1,11 @@
-import { IsBoolean, IsEnum, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
-import { PeriodType } from '../../report-period/entities/report-period.entity';
+import {
+  IsBoolean,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  ValidateIf,
+} from 'class-validator';
 
 export class PatchFormDto {
   @IsOptional()
@@ -7,14 +13,11 @@ export class PatchFormDto {
   @MaxLength(255)
   name?: string;
 
+  /** Đổi lĩnh vực theo ID; gửi `null` để gỡ liên kết. */
   @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  fieldCategory?: string | null;
-
-  @IsOptional()
-  @IsEnum(PeriodType)
-  periodType?: PeriodType | null;
+  @ValidateIf((o) => o.fieldCategoryId !== null && o.fieldCategoryId !== undefined)
+  @IsUUID()
+  fieldCategoryId?: string | null;
 
   @IsOptional()
   @IsString()

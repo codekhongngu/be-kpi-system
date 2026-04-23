@@ -12,11 +12,13 @@
 
 Tài liệu này mô tả **bảng core theo `QLDL_CauTruc_Database_v1.0`** và các **bảng đề xuất** để đáp ứng đầy đủ API/nghiệp vụ (auth refresh/otp, import job, history ô, RBAC nhiều nhóm, prefs thông báo, catalog chỉ tiêu).
 
+**Bổ sung triển khai backend (repo):** bảng **`field_categories`** (danh mục lĩnh vực nghiệp vụ) + cột **`forms.field_category_id`** (FK). Cột **`forms.field_category`** (chuỗi denormalized) **đã loại bỏ**; mã lĩnh vực chỉ còn trên `field_categories.code`, có thể join khi đọc API. Kiểu khóa chính/FK trong code migration dùng **UUID**; tài liệu bên dưới đã được cập nhật theo migration TypeORM trong repo.
+
 ### Core tables (v1.0)
 13 bảng core (v1.0):
 
 1) organizations
-2) role_groups
+2) users
 3) users
 4) report_periods
 5) forms
@@ -29,7 +31,9 @@ Tài liệu này mô tả **bảng core theo `QLDL_CauTruc_Database_v1.0`** và 
 12) notifications
 13) audit_logs
 
-8 bảng đề xuất (khuyến nghị): 14) user_role_groups
+Các bảng RBAC theo QLDL (`role_groups`, `user_role_groups`) **đã loại bỏ** để chuyển sang Nest RBAC (`roles`, `permissions`, `user_roles`, `role_permissions`).
+
+8 bảng đề xuất (khuyến nghị): 14) auth_refresh_tokens
 15) auth_refresh_tokens
 16) auth_otp_challenges
 17) auth_password_resets
@@ -38,18 +42,18 @@ Tài liệu này mô tả **bảng core theo `QLDL_CauTruc_Database_v1.0`** và 
 20) user_notification_prefs
 21) indicator_catalog
 
-→ Tổng cộng: 21 bảng (13 core + 8 đề xuất).
+**Triển khai repo (ngoài đếm 21 bảng gốc):** `field_categories` — danh mục lĩnh vực cho biểu mẫu; liên kết `forms.field_category_id` → `field_categories.id`.
 
 Vai trò của từng nhóm bảng
 Tổ chức & phân quyền
 
 organizations: cây đơn vị hành chính, gán user/assignment theo đơn vị
-role_groups: “nhóm quyền” dạng JSONB (RBAC cấp nghiệp vụ QLDL)
-users: tài khoản + trạng thái + khoá + 2FA metadata + FK tới org/role_group
-user_role_groups (đề xuất): N–N user ↔ role_groups (khi 1 user có nhiều nhóm)
+users: tài khoản + trạng thái + khoá + 2FA metadata + FK tới org
+(RBAC): dùng mô hình Nest RBAC (`roles`, `permissions`, `user_roles`, `role_permissions`) thay cho `role_groups` JSONB
 Thiết kế biểu mẫu
 
-forms: định nghĩa biểu mẫu (template), có thể phân cấp cha–con
+forms: định nghĩa biểu mẫu (template), có thể phân cấp cha–con; tham chiếu lĩnh vực qua `field_category_id` → `field_categories`
+field_categories (triển khai repo): danh mục lĩnh vực nghiệp vụ (`code`, `name`, …)
 form_attributes: thuộc tính/metadata các cột/field
 form_indicators: chỉ tiêu cần nhập/tính (có thể có công thức)
 indicator_catalog (đề xuất): “từ điển chỉ tiêu” dùng chung để tái sử dụng giữa nhiều form
@@ -79,13 +83,13 @@ Import/ETL
 
 import_jobs (đề xuất): theo dõi job import (status/summary)
 
-#### `organizations`
+#### `organizations` *(migration thực tế: UUID PK/FK + ON DELETE SET NULL)*
 
-- `id BIGSERIAL PK`
+- `id UUID PK DEFAULT gen_random_uuid()`
 - `code VARCHAR(50) NOT NULL UNIQUE`
 - `name VARCHAR(255) NOT NULL`
-- `parent_id BIGINT NULL REFERENCES organizations(id)`
-- `head_user_id BIGINT NULL REFERENCES users(id)`
+- `parent_id UUID NULL REFERENCES organizations(id) ON DELETE SET NULL`
+- `head_user_id UUID NULL REFERENCES users(id) ON DELETE SET NULL`
 - `level INT NOT NULL DEFAULT 1`
 - `is_active BOOLEAN NOT NULL DEFAULT TRUE`
 - `description TEXT NULL`
@@ -93,28 +97,26 @@ import_jobs (đề xuất): theo dõi job import (status/summary)
 - `updated_at TIMESTAMPTZ NULL`
 - `deleted_at TIMESTAMPTZ NULL`
 
-#### `role_groups`
+#### RBAC (Nest RBAC — nguồn quyết định cuối)
 
-- `id BIGSERIAL PK`
-- `name VARCHAR(100) NOT NULL UNIQUE`
-- `description TEXT NULL`
-- `permissions JSONB NULL`
-- `is_system BOOLEAN NOT NULL DEFAULT FALSE`
-- `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
-- `updated_at TIMESTAMPTZ NULL`
+RBAC sử dụng mô hình chuẩn hoá:
 
-#### `users`
+- `roles` (vai trò)
+- `permissions` (mã quyền)
+- `user_roles` (N–N users ↔ roles)
+- `role_permissions` (N–N roles ↔ permissions)
 
-- `id BIGSERIAL PK`
-- `code VARCHAR(20) NOT NULL UNIQUE`
+#### `users` *(bảng sẵn có; migration 0000 chỉ ALTER để thêm cột/FK UUID)*
+
+- `id UUID PK` *(theo codebase hiện tại; không tạo mới trong migration này)*
+- `code VARCHAR(20) NULL` *(unique khi khác NULL — partial unique index)*
 - `username VARCHAR(100) NOT NULL UNIQUE`
 - `email VARCHAR(255) NOT NULL UNIQUE`
 - `password_hash VARCHAR(255) NOT NULL`
 - `full_name VARCHAR(255) NULL`
 - `phone VARCHAR(20) NULL`
 - `avatar_url TEXT NULL`
-- `org_id BIGINT NULL REFERENCES organizations(id)`
-- `role_group_id BIGINT NULL REFERENCES role_groups(id)` *(default/primary group nếu dùng multi-group)*
+- `org_id UUID NULL REFERENCES organizations(id) ON DELETE SET NULL`
 - `is_active BOOLEAN NOT NULL DEFAULT TRUE`
 - `last_login_at TIMESTAMPTZ NULL`
 - `failed_login_attempts INT NOT NULL DEFAULT 0`
@@ -128,38 +130,60 @@ import_jobs (đề xuất): theo dõi job import (status/summary)
 - `updated_at TIMESTAMPTZ NULL`
 - `deleted_at TIMESTAMPTZ NULL`
 
-#### `report_periods`
+#### `report_periods` *(migration thực tế: UUID PK/FK + ON DELETE SET NULL cho created_by)*
 
-- `id BIGSERIAL PK`
+- `id UUID PK DEFAULT gen_random_uuid()`
 - `code VARCHAR(30) NOT NULL UNIQUE`
 - `name VARCHAR(255) NOT NULL`
 - `period_type VARCHAR(10) NOT NULL` — `TUAN|THANG|QUY|NAM`
 - `date_from DATE NOT NULL`
 - `date_to DATE NOT NULL`
 - `is_active BOOLEAN NOT NULL DEFAULT TRUE`
-- `created_by BIGINT NULL REFERENCES users(id)`
+- `created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL`
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
 
-#### `forms`
+#### `field_categories` *(migration 0004: UUID PK + seed mặc định)*
 
-- `id BIGSERIAL PK`
+- `id UUID PK DEFAULT gen_random_uuid()`
+- `code VARCHAR(50) NOT NULL UNIQUE` — mã ổn định (`kt_xh`, `yte`, …)
+- `name VARCHAR(255) NOT NULL`
+- `description TEXT NULL`
+- `sort_order INT NOT NULL DEFAULT 0`
+- `is_active BOOLEAN NOT NULL DEFAULT TRUE`
+- `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
+- `updated_at TIMESTAMPTZ NULL`
+
+#### `forms` *(migration thực tế: UUID PK; đã drop `field_category` và `period_type`)*
+
+- `id UUID PK DEFAULT gen_random_uuid()`
 - `code VARCHAR(20) NOT NULL UNIQUE`
 - `name VARCHAR(255) NOT NULL`
-- `field_category VARCHAR(100) NULL`
-- `period_type VARCHAR(10) NULL`
+- `field_category_id UUID NULL REFERENCES field_categories(id) ON DELETE SET NULL`
 - `description TEXT NULL`
 - `is_active BOOLEAN NOT NULL DEFAULT TRUE`
 - `template_file VARCHAR(500) NULL`
-- `parent_form_id BIGINT NULL REFERENCES forms(id)`
-- `created_by BIGINT NULL REFERENCES users(id)`
+- `parent_form_id UUID NULL REFERENCES forms(id) ON DELETE SET NULL`
+- `created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL`
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
 - `updated_at TIMESTAMPTZ NULL`
 - `deleted_at TIMESTAMPTZ NULL`
+  - *(đã loại bỏ)* `field_category VARCHAR(...)` *(migration 0005)*
+  - *(đã loại bỏ)* `period_type VARCHAR(10)` *(migration 0006)*
 
-#### `form_indicators`
+#### `indicator_catalog` *(migration thực tế: đã tạo và dùng được ngay)*
 
-- `id BIGSERIAL PK`
-- `form_id BIGINT NOT NULL REFERENCES forms(id) ON DELETE CASCADE`
+- `id UUID PK DEFAULT gen_random_uuid()`
+- `code VARCHAR(50) NOT NULL UNIQUE`
+- `name VARCHAR(500) NOT NULL`
+- `unit VARCHAR(100) NULL`
+- `data_type VARCHAR(20) NOT NULL`
+- `created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL`
+- `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
+
+#### `form_indicators` *(migration thực tế: UUID PK/FK + thêm catalog_indicator_id)*
+
+- `id UUID PK DEFAULT gen_random_uuid()`
+- `form_id UUID NOT NULL REFERENCES forms(id) ON DELETE CASCADE`
 - `code VARCHAR(50) NOT NULL`
 - `name VARCHAR(500) NOT NULL`
 - `unit VARCHAR(100) NULL`
@@ -172,13 +196,14 @@ import_jobs (đề xuất): theo dõi job import (status/summary)
 - `min_value NUMERIC NULL`
 - `max_value NUMERIC NULL`
 - `is_active BOOLEAN NOT NULL DEFAULT TRUE`
+- `catalog_indicator_id UUID NULL REFERENCES indicator_catalog(id) ON DELETE SET NULL`
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
 - **Unique**: `UNIQUE(form_id, code)`
 
-#### `form_attributes`
+#### `form_attributes` *(migration thực tế: UUID PK/FK)*
 
-- `id BIGSERIAL PK`
-- `form_id BIGINT NOT NULL REFERENCES forms(id) ON DELETE CASCADE`
+- `id UUID PK DEFAULT gen_random_uuid()`
+- `form_id UUID NOT NULL REFERENCES forms(id) ON DELETE CASCADE`
 - `name VARCHAR(255) NOT NULL`
 - `data_type VARCHAR(20) NULL`
 - `is_required BOOLEAN NOT NULL DEFAULT FALSE`
@@ -188,72 +213,72 @@ import_jobs (đề xuất): theo dõi job import (status/summary)
 - `options JSONB NULL`
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
 
-#### `form_assignments`
+#### `form_assignments` *(migration thực tế: UUID PK/FK; ON DELETE RESTRICT)*
 
-- `id BIGSERIAL PK`
-- `form_id BIGINT NOT NULL REFERENCES forms(id)`
-- `org_id BIGINT NOT NULL REFERENCES organizations(id)`
-- `period_id BIGINT NOT NULL REFERENCES report_periods(id)`
+- `id UUID PK DEFAULT gen_random_uuid()`
+- `form_id UUID NOT NULL REFERENCES forms(id) ON DELETE RESTRICT`
+- `org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT`
+- `period_id UUID NOT NULL REFERENCES report_periods(id) ON DELETE RESTRICT`
 - `deadline_from DATE NOT NULL`
 - `deadline_to DATE NOT NULL`
 - `is_cancelled BOOLEAN NOT NULL DEFAULT FALSE`
 - `cancel_reason TEXT NULL`
 - `auto_assign BOOLEAN NOT NULL DEFAULT FALSE`
-- `assigned_by BIGINT NULL REFERENCES users(id)`
+- `assigned_by UUID NULL REFERENCES users(id) ON DELETE SET NULL`
 - `assigned_at TIMESTAMPTZ NOT NULL DEFAULT now()`
 - **Unique**: `UNIQUE(form_id, org_id, period_id)`
 
-#### `report_submissions`
+#### `report_submissions` *(migration thực tế: UUID PK/FK; assignment_id RESTRICT)*
 
-- `id BIGSERIAL PK`
+- `id UUID PK DEFAULT gen_random_uuid()`
 - `code VARCHAR(25) NOT NULL UNIQUE`
-- `assignment_id BIGINT NOT NULL REFERENCES form_assignments(id)`
+- `assignment_id UUID NOT NULL REFERENCES form_assignments(id) ON DELETE RESTRICT`
 - `status VARCHAR(20) NOT NULL DEFAULT 'DRAFT'` — `DRAFT|PENDING|APPROVED|REJECTED|OVERDUE`
 - `version INT NOT NULL DEFAULT 1`
 - `note TEXT NULL`
 - `reject_reason TEXT NULL`
 - `completion_pct NUMERIC(5,2) NULL`
-- `submitted_by BIGINT NULL REFERENCES users(id)`
+- `submitted_by UUID NULL REFERENCES users(id) ON DELETE SET NULL`
 - `submitted_at TIMESTAMPTZ NULL`
-- `approved_by BIGINT NULL REFERENCES users(id)`
+- `approved_by UUID NULL REFERENCES users(id) ON DELETE SET NULL`
 - `approved_at TIMESTAMPTZ NULL`
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
 - `updated_at TIMESTAMPTZ NULL`
 
-#### `report_data`
+#### `report_data` *(migration thực tế: UUID PK/FK; indicator/attribute RESTRICT)*
 
-- `id BIGSERIAL PK`
-- `submission_id BIGINT NOT NULL REFERENCES report_submissions(id) ON DELETE CASCADE`
-- `indicator_id BIGINT NOT NULL REFERENCES form_indicators(id)`
-- `attribute_id BIGINT NOT NULL REFERENCES form_attributes(id)`
+- `id UUID PK DEFAULT gen_random_uuid()`
+- `submission_id UUID NOT NULL REFERENCES report_submissions(id) ON DELETE CASCADE`
+- `indicator_id UUID NOT NULL REFERENCES form_indicators(id) ON DELETE RESTRICT`
+- `attribute_id UUID NOT NULL REFERENCES form_attributes(id) ON DELETE RESTRICT`
 - `value TEXT NULL`
 - `value_numeric NUMERIC NULL`
-- `updated_by BIGINT NULL REFERENCES users(id)`
+- `updated_by UUID NULL REFERENCES users(id) ON DELETE SET NULL`
 - `updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`
 - **Unique**: `UNIQUE(submission_id, indicator_id, attribute_id)`
 
-#### `report_summaries`
+#### `report_summaries` *(migration thực tế: UUID PK/FK; FK RESTRICT)*
 
-- `id BIGSERIAL PK`
-- `form_id BIGINT NOT NULL REFERENCES forms(id)`
-- `period_id BIGINT NOT NULL REFERENCES report_periods(id)`
-- `org_id BIGINT NOT NULL REFERENCES organizations(id)`
+- `id UUID PK DEFAULT gen_random_uuid()`
+- `form_id UUID NOT NULL REFERENCES forms(id) ON DELETE RESTRICT`
+- `period_id UUID NOT NULL REFERENCES report_periods(id) ON DELETE RESTRICT`
+- `org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT`
 - `status VARCHAR(20) NOT NULL DEFAULT 'DRAFT'`
 - `total_units INT NULL`
 - `submitted_units INT NULL`
 - `approved_units INT NULL`
 - `summary_data JSONB NULL`
-- `summarized_by BIGINT NULL REFERENCES users(id)`
+- `summarized_by UUID NULL REFERENCES users(id) ON DELETE SET NULL`
 - `summarized_at TIMESTAMPTZ NULL`
-- `approved_by BIGINT NULL REFERENCES users(id)`
+- `approved_by UUID NULL REFERENCES users(id) ON DELETE SET NULL`
 - `approved_at TIMESTAMPTZ NULL`
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
 - **Unique**: `UNIQUE(form_id, period_id, org_id)`
 
-#### `notifications`
+#### `notifications` *(migration thực tế: UUID PK; user_id CASCADE)*
 
-- `id BIGSERIAL PK`
-- `user_id BIGINT NOT NULL REFERENCES users(id)`
+- `id UUID PK DEFAULT gen_random_uuid()`
+- `user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE`
 - `type VARCHAR(50) NOT NULL`
 - `title VARCHAR(500) NULL`
 - `body TEXT NULL`
@@ -266,10 +291,10 @@ import_jobs (đề xuất): theo dõi job import (status/summary)
 - `sent_at TIMESTAMPTZ NULL`
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
 
-#### `audit_logs`
+#### `audit_logs` *(migration thực tế: UUID PK/FK; record_id vẫn BIGINT như doc)*
 
-- `id BIGSERIAL PK`
-- `user_id BIGINT NULL REFERENCES users(id)`
+- `id UUID PK DEFAULT gen_random_uuid()`
+- `user_id UUID NULL REFERENCES users(id) ON DELETE SET NULL`
 - `action VARCHAR(20) NOT NULL`
 - `table_name VARCHAR(100) NOT NULL`
 - `record_id BIGINT NULL`
@@ -283,17 +308,12 @@ import_jobs (đề xuất): theo dõi job import (status/summary)
 
 ### Proposed additional tables (khuyến nghị)
 
-#### `user_role_groups` (N–N user ↔ role_groups)
+*(đã loại bỏ)* `user_role_groups` — thay bằng `user_roles` (N–N users ↔ roles) trong Nest RBAC.
 
-- `user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE`
-- `role_group_id BIGINT NOT NULL REFERENCES role_groups(id) ON DELETE CASCADE`
-- `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
-- **PK**: `(user_id, role_group_id)`
+#### `auth_refresh_tokens` *(migration thực tế: UUID PK/FK)*
 
-#### `auth_refresh_tokens`
-
-- `id BIGSERIAL PK`
-- `user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE`
+- `id UUID PK DEFAULT gen_random_uuid()`
+- `user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE`
 - `token_hash VARCHAR(128) NOT NULL UNIQUE`
 - `expires_at TIMESTAMPTZ NOT NULL`
 - `revoked_at TIMESTAMPTZ NULL`
@@ -301,10 +321,10 @@ import_jobs (đề xuất): theo dõi job import (status/summary)
 - `ip_address VARCHAR(45) NULL`
 - `user_agent TEXT NULL`
 
-#### `auth_otp_challenges` (OTP email / challengeId)
+#### `auth_otp_challenges` (OTP email / challengeId) *(migration thực tế: user_id UUID)*
 
 - `id VARCHAR(64) PRIMARY KEY`
-- `user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE`
+- `user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE`
 - `channel VARCHAR(20) NOT NULL`
 - `otp_hash VARCHAR(128) NOT NULL`
 - `expires_at TIMESTAMPTZ NOT NULL`
@@ -312,72 +332,86 @@ import_jobs (đề xuất): theo dõi job import (status/summary)
 - `retry_count INT NOT NULL DEFAULT 0`
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
 
-#### `auth_password_resets`
+#### `auth_password_resets` *(migration thực tế: UUID PK/FK)*
 
-- `id BIGSERIAL PK`
-- `user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE`
+- `id UUID PK DEFAULT gen_random_uuid()`
+- `user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE`
 - `token_hash VARCHAR(128) NOT NULL UNIQUE`
 - `expires_at TIMESTAMPTZ NOT NULL`
 - `used_at TIMESTAMPTZ NULL`
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
 
-#### `import_jobs`
+#### `import_jobs` *(migration thực tế: UUID PK; created_by ON DELETE SET NULL)*
 
-- `id BIGSERIAL PK`
+- `id UUID PK DEFAULT gen_random_uuid()`
 - `type VARCHAR(30) NOT NULL`
 - `status VARCHAR(20) NOT NULL`
-- `created_by BIGINT NULL REFERENCES users(id)`
+- `created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL`
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
 - `finished_at TIMESTAMPTZ NULL`
 - `summary JSONB NULL`
 
-#### `report_data_history` (history theo ô)
+#### `report_data_history` (history theo ô) *(migration thực tế: UUID PK/FK; indicator/attribute RESTRICT)*
 
-- `id BIGSERIAL PK`
-- `submission_id BIGINT NOT NULL REFERENCES report_submissions(id) ON DELETE CASCADE`
-- `indicator_id BIGINT NOT NULL REFERENCES form_indicators(id)`
-- `attribute_id BIGINT NOT NULL REFERENCES form_attributes(id)`
+- `id UUID PK DEFAULT gen_random_uuid()`
+- `submission_id UUID NOT NULL REFERENCES report_submissions(id) ON DELETE CASCADE`
+- `indicator_id UUID NOT NULL REFERENCES form_indicators(id) ON DELETE RESTRICT`
+- `attribute_id UUID NOT NULL REFERENCES form_attributes(id) ON DELETE RESTRICT`
 - `old_value TEXT NULL`
 - `new_value TEXT NULL`
-- `changed_by BIGINT NULL REFERENCES users(id)`
+- `changed_by UUID NULL REFERENCES users(id) ON DELETE SET NULL`
 - `changed_at TIMESTAMPTZ NOT NULL DEFAULT now()`
 
-#### `user_notification_prefs`
+#### `user_notification_prefs` *(migration thực tế: UUID FK)*
 
-- `user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE`
+- `user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE`
 - `type VARCHAR(50) NOT NULL`
 - `in_app_enabled BOOLEAN NOT NULL DEFAULT TRUE`
 - `email_enabled BOOLEAN NOT NULL DEFAULT TRUE`
 - `updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`
 - **PK**: `(user_id, type)`
 
-#### `indicator_catalog`
+*(đã triển khai)* `indicator_catalog` — xem ở phần Core tables phía trên (migration 0000).
 
-- `id BIGSERIAL PK`
-- `code VARCHAR(50) NOT NULL UNIQUE`
-- `name VARCHAR(500) NOT NULL`
-- `unit VARCHAR(100) NULL`
-- `data_type VARCHAR(20) NOT NULL`
-- `created_by BIGINT NULL REFERENCES users(id)`
-- `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
-
-> Optional: thêm `catalog_indicator_id BIGINT NULL REFERENCES indicator_catalog(id)` vào `form_indicators`.
+> Đã triển khai: `form_indicators.catalog_indicator_id UUID NULL REFERENCES indicator_catalog(id) ON DELETE SET NULL`.
 
 ---
 
 ### Quan hệ tóm tắt (FK graph)
 
-- `organizations` self `parent_id`
-- `users.org_id` → `organizations`
-- `users.role_group_id` → `role_groups` (+ `user_role_groups` nếu bổ sung)
-- `forms` self `parent_form_id`
-- `form_indicators/form_attributes.form_id` → `forms`
-- `form_assignments(form_id, org_id, period_id)` → `forms`, `organizations`, `report_periods`
-- `report_submissions.assignment_id` → `form_assignments`
-- `report_data(submission_id, indicator_id, attribute_id)` → `report_submissions`, `form_indicators`, `form_attributes`
-- `report_summaries(form_id, period_id, org_id)` → `forms`, `report_periods`, `organizations`
-- `notifications.user_id` → `users`
-- `audit_logs.user_id` → `users` (nullable)
+- `organizations.parent_id` → `organizations.id` *(ON DELETE SET NULL)*
+- `organizations.head_user_id` → `users.id` *(ON DELETE SET NULL)*
+- `users.org_id` → `organizations.id` *(ON DELETE SET NULL)*
+- (RBAC) `user_roles.user_id` → `users.id` *(ON DELETE CASCADE)*
+- (RBAC) `user_roles.role_id` → `roles.id` *(ON DELETE CASCADE)*
+- (RBAC) `role_permissions.role_id` → `roles.id` *(ON DELETE CASCADE)*
+- (RBAC) `role_permissions.permission_id` → `permissions.id` *(ON DELETE CASCADE)*
+- `report_periods.created_by` → `users.id` *(ON DELETE SET NULL)*
+- `forms.parent_form_id` → `forms.id` *(ON DELETE SET NULL)*
+- `forms.created_by` → `users.id` *(ON DELETE SET NULL)*
+- `forms.field_category_id` → `field_categories.id` *(ON DELETE SET NULL)*
+- `indicator_catalog.created_by` → `users.id` *(ON DELETE SET NULL)*
+- `form_indicators.form_id` → `forms.id` *(ON DELETE CASCADE)*
+- `form_indicators.catalog_indicator_id` → `indicator_catalog.id` *(ON DELETE SET NULL)*
+- `form_attributes.form_id` → `forms.id` *(ON DELETE CASCADE)*
+- `form_assignments.form_id` → `forms.id` *(ON DELETE RESTRICT)*
+- `form_assignments.org_id` → `organizations.id` *(ON DELETE RESTRICT)*
+- `form_assignments.period_id` → `report_periods.id` *(ON DELETE RESTRICT)*
+- `form_assignments.assigned_by` → `users.id` *(ON DELETE SET NULL)*
+- `report_submissions.assignment_id` → `form_assignments.id` *(ON DELETE RESTRICT)*
+- `report_submissions.submitted_by/approved_by` → `users.id` *(ON DELETE SET NULL)*
+- `report_data.submission_id` → `report_submissions.id` *(ON DELETE CASCADE)*
+- `report_data.indicator_id` → `form_indicators.id` *(ON DELETE RESTRICT)*
+- `report_data.attribute_id` → `form_attributes.id` *(ON DELETE RESTRICT)*
+- `report_data.updated_by` → `users.id` *(ON DELETE SET NULL)*
+- `report_data_history.submission_id` → `report_submissions.id` *(ON DELETE CASCADE)*
+- `report_data_history.indicator_id` → `form_indicators.id` *(ON DELETE RESTRICT)*
+- `report_data_history.attribute_id` → `form_attributes.id` *(ON DELETE RESTRICT)*
+- `report_data_history.changed_by` → `users.id` *(ON DELETE SET NULL)*
+- `report_summaries.form_id/period_id/org_id` → `forms.id`/`report_periods.id`/`organizations.id` *(ON DELETE RESTRICT)*
+- `report_summaries.summarized_by/approved_by` → `users.id` *(ON DELETE SET NULL)*
+- `notifications.user_id` → `users.id` *(ON DELETE CASCADE)*
+- `audit_logs.user_id` → `users.id` *(ON DELETE SET NULL, nullable)*
 
 ---
 
@@ -422,11 +456,11 @@ import_jobs (đề xuất): theo dõi job import (status/summary)
 
 #### `GET/POST/PATCH/DELETE /users*`
 
-- **Tables**: `users` (**R/C/U** soft delete), `organizations` (**R** FK), `role_groups` (**R**), `user_role_groups` (**C/U/D** nếu có), `audit_logs` (**C**)
+- **Tables**: `users` (**R/C/U** soft delete), `organizations` (**R** FK), `roles`/`permissions` (**R**), `user_roles`/`role_permissions` (**C/U/D** khi gán quyền), `audit_logs` (**C**)
 
 #### `POST /users/import` + `GET /users/import/{jobId}`
 
-- **Tables**: `import_jobs` (**C/U**), `users` (**C/U**), `user_role_groups` (**C**), `audit_logs` (**C**)
+- **Tables**: `import_jobs` (**C/U**), `users` (**C/U**), `user_roles` (**C/U**), `audit_logs` (**C**)
 
 #### `GET/PATCH /me`
 
@@ -438,7 +472,7 @@ import_jobs (đề xuất): theo dõi job import (status/summary)
 
 #### `GET/POST/PATCH/DELETE /role-groups*`
 
-- **Tables**: `role_groups` (**R/C/U/D**), `users`/`user_role_groups` (**R** check references), `audit_logs` (**C**)
+- **(đã thay đổi)**: quản trị RBAC dùng `roles`/`permissions` (Nest RBAC).
 
 #### `GET /permissions`
 
@@ -468,13 +502,17 @@ import_jobs (đề xuất): theo dõi job import (status/summary)
 
 ### Forms / attributes / indicators
 
+#### `GET/POST/PATCH /field-categories*`
+
+- **Tables**: `field_categories` (**R/C/U**), `audit_logs` (**C** tuỳ policy)
+
 #### `GET/POST/PATCH/DELETE /forms*`
 
-- **Tables**: `forms` (**R/C/U** soft delete), `audit_logs` (**C**)
+- **Tables**: `forms` (**R/C/U** soft delete), `field_categories` (**R** khi validate/set `field_category_id`), `audit_logs` (**C**)
 
 #### `POST /forms/{id}/copy`
 
-- **Tables**: `forms` (**C**), `form_attributes` (**C**), `form_indicators` (**C**), `audit_logs` (**C**)
+- **Tables**: `forms` (**C**), `form_attributes` (**C**), `form_indicators` (**C**), `field_categories` (**R** nếu đổi `field_category_id`), `audit_logs` (**C**)
 
 #### `POST /forms/{id}/template`
 

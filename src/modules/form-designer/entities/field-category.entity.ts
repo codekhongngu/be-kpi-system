@@ -6,22 +6,25 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity('role_groups')
-export class RoleGroup {
+@Entity('field_categories')
+export class FieldCategory {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ length: 100, unique: true })
+  @Column({ type: 'varchar', length: 50, unique: true })
+  code: string;
+
+  @Column({ type: 'varchar', length: 255 })
   name: string;
 
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
-  @Column({ type: 'jsonb', nullable: true })
-  permissions: Record<string, string[]> | null;
+  @Column({ name: 'sort_order', type: 'int', default: 0 })
+  sortOrder: number;
 
-  @Column({ name: 'is_system', default: false })
-  isSystem: boolean;
+  @Column({ name: 'is_active', type: 'boolean', default: true })
+  isActive: boolean;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

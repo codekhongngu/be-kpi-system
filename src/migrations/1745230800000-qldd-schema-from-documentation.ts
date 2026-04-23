@@ -1,13 +1,14 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
- * Schema QLDL theo `docs/QLDL_CLUSTER_03_DATA_MODEL.md`:
- * - Bảng core: organizations, role_groups, report_periods, forms, form_attributes,
+ * Schema QLDL theo `docs/QLDL_CLUSTER_03_DATA_MODEL.md` (fresh DB):
+ * - RBAC: sử dụng Nest RBAC (roles/permissions) — KHÔNG tạo QLDL RBAC tables (role_groups/user_role_groups).
+ * - Bảng core nghiệp vụ: organizations, report_periods, forms, form_attributes,
  *   form_indicators, form_assignments, report_submissions, report_data, report_summaries,
  *   notifications, audit_logs
- * - Bảng đề xuất: user_role_groups, auth_refresh_tokens, auth_otp_challenges,
- *   auth_password_resets, import_jobs, report_data_history, user_notification_prefs,
- *   indicator_catalog
+ * - Bảng hỗ trợ: auth_refresh_tokens, auth_otp_challenges, auth_password_resets,
+ *   import_jobs, report_data_history, user_notification_prefs, indicator_catalog
+ * - Danh mục: field_categories + forms.field_category_id
  *
  * Lưu ý: codebase hiện dùng `users.id` kiểu UUID — migration này dùng UUID cho PK/FK
  * của các bảng QLDL và các cột FK trỏ tới `users`, thay cho BIGSERIAL trong tài liệu gốc.
@@ -19,19 +20,6 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
   name = 'QLDLSchemaFromDocumentation1745230800000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`
-      CREATE TABLE IF NOT EXISTS "role_groups" (
-        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        "name" varchar(100) NOT NULL,
-        "description" text NULL,
-        "permissions" jsonb NULL,
-        "is_system" boolean NOT NULL DEFAULT false,
-        "created_at" timestamptz NOT NULL DEFAULT now(),
-        "updated_at" timestamptz NULL,
-        CONSTRAINT "UQ_role_groups_name" UNIQUE ("name")
-      )
-    `);
-
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "organizations" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -50,19 +38,9 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
-      CREATE TABLE IF NOT EXISTS "user_role_groups" (
-        "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
-        "role_group_id" uuid NOT NULL REFERENCES "role_groups"("id") ON DELETE CASCADE,
-        "created_at" timestamptz NOT NULL DEFAULT now(),
-        CONSTRAINT "PK_user_role_groups" PRIMARY KEY ("user_id", "role_group_id")
-      )
-    `);
-
-    await queryRunner.query(`
       ALTER TABLE "users"
         ADD COLUMN IF NOT EXISTS "code" varchar(20) NULL,
         ADD COLUMN IF NOT EXISTS "org_id" uuid NULL REFERENCES "organizations"("id") ON DELETE SET NULL,
-        ADD COLUMN IF NOT EXISTS "role_group_id" uuid NULL REFERENCES "role_groups"("id") ON DELETE SET NULL,
         ADD COLUMN IF NOT EXISTS "avatar_url" text NULL,
         ADD COLUMN IF NOT EXISTS "failed_login_attempts" integer NOT NULL DEFAULT 0,
         ADD COLUMN IF NOT EXISTS "locked_until" timestamptz NULL,
@@ -95,12 +73,25 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS "field_categories" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "code" varchar(50) NOT NULL,
+        "name" varchar(255) NOT NULL,
+        "description" text NULL,
+        "sort_order" integer NOT NULL DEFAULT 0,
+        "is_active" boolean NOT NULL DEFAULT true,
+        "created_at" timestamptz NOT NULL DEFAULT now(),
+        "updated_at" timestamptz NULL,
+        CONSTRAINT "UQ_field_categories_code" UNIQUE ("code")
+      )
+    `);
+
+    await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "forms" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "code" varchar(20) NOT NULL,
         "name" varchar(255) NOT NULL,
-        "field_category" varchar(100) NULL,
-        "period_type" varchar(10) NULL,
+        "field_category_id" uuid NULL REFERENCES "field_categories"("id") ON DELETE SET NULL,
         "description" text NULL,
         "is_active" boolean NOT NULL DEFAULT true,
         "template_file" varchar(500) NULL,
@@ -111,6 +102,22 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
         "deleted_at" timestamptz NULL,
         CONSTRAINT "UQ_forms_code" UNIQUE ("code")
       )
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS "IDX_forms_field_category_id"
+      ON "forms" ("field_category_id")
+    `);
+
+    await queryRunner.query(`
+      INSERT INTO "field_categories" ("code", "name", "description", "sort_order", "is_active", "created_at")
+      VALUES
+        ('kt_xh', 'Kinh tế – xã hội', '', 10, true, now()),
+        ('yte', 'Y tế', NULL, 20, true, now()),
+        ('giao_duc', 'Giáo dục', NULL, 30, true, now()),
+        ('an_ninh_tt', 'An ninh – trật tự', NULL, 40, true, now()),
+        ('hanh_chinh', 'Hành chính', NULL, 50, true, now())
+      ON CONFLICT ("code") DO NOTHING
     `);
 
     await queryRunner.query(`
@@ -376,13 +383,11 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     await queryRunner.query(`DROP TABLE IF EXISTS "forms"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "indicator_catalog"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "report_periods"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "user_role_groups"`);
 
     await queryRunner.query(`
       ALTER TABLE "users"
         DROP COLUMN IF EXISTS "code",
         DROP COLUMN IF EXISTS "org_id",
-        DROP COLUMN IF EXISTS "role_group_id",
         DROP COLUMN IF EXISTS "avatar_url",
         DROP COLUMN IF EXISTS "failed_login_attempts",
         DROP COLUMN IF EXISTS "locked_until",
@@ -394,6 +399,8 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`DROP TABLE IF EXISTS "organizations"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "role_groups"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_forms_field_category_id"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "forms"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "field_categories"`);
   }
 }

@@ -34,3 +34,4 @@ Theo tài liệu nghiệp vụ:
 
 - **Async email/notification**: nên queue ngoài DB; DB lưu `notifications` + retry metadata.
 - **Audit**: ghi `audit_logs` cho các hành động nhạy cảm (login/logout/export/approve/reject/assignment changes/password).
+- **Lĩnh vực biểu mẫu (backend repo)**: bảng `field_categories` + API `GET/POST/PATCH /field-categories`; tạo/sửa biểu mẫu dùng `fieldCategoryId` (UUID). Chi tiết DTO/endpoint trong **Cụm 2**; schema trong **Cụm 3**. Collection Postman gốc `postman.json` có nhóm request tương ứng.

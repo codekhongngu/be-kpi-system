@@ -3,11 +3,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ReportSubmission } from '../submission/entities/report-submission.entity';
 import { FormAssignment } from '../assignment/entities/form-assignment.entity';
 import { Notification } from '../notification/entities/notification.entity';
-import { RoleGroup } from '../user/entities/role-group.entity';
-import { UserRoleGroup } from '../user/entities/user-role-group.entity';
 import { ApprovalService } from './approval.service';
 import { ApprovalController } from './approval.controller';
-import { QldlRbacGuard } from '../../common/guards/qldl-rbac.guard';
+import { Role } from '../role/entities/role.entity';
+import { Permission } from '../role/entities/permission.entity';
 
 @Module({
   imports: [
@@ -15,11 +14,11 @@ import { QldlRbacGuard } from '../../common/guards/qldl-rbac.guard';
       ReportSubmission,
       FormAssignment,
       Notification,
-      RoleGroup,
-      UserRoleGroup,
+      Role,
+      Permission,
     ]),
   ],
   controllers: [ApprovalController],
-  providers: [ApprovalService, QldlRbacGuard],
+  providers: [ApprovalService],
 })
 export class ApprovalModule {}

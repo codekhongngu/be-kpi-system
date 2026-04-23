@@ -55,10 +55,6 @@ export class UserQueryDto {
   roleId?: string;
 
   @IsOptional()
-  @IsUUID()
-  roleGroupId?: string;
-
-  @IsOptional()
   @IsString()
   departmentId?: string;
 

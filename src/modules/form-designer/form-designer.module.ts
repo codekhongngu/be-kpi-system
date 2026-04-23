@@ -3,16 +3,17 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Form } from './entities/form.entity';
 import { FormAttribute } from './entities/form-attribute.entity';
 import { FormIndicator } from './entities/form-indicator.entity';
+import { FieldCategory } from './entities/field-category.entity';
 import { IndicatorCatalog } from './entities/indicator-catalog.entity';
 import { ImportJob } from '../user/entities/import-job.entity';
-import { RoleGroup } from '../user/entities/role-group.entity';
-import { UserRoleGroup } from '../user/entities/user-role-group.entity';
 import { FormDesignerService } from './form-designer.service';
 import { FormsController } from './forms.controller';
 import { FormAttributesController } from './form-attributes.controller';
 import { FormIndicatorsController } from './form-indicators.controller';
 import { IndicatorCatalogController } from './indicator-catalog.controller';
-import { QldlRbacGuard } from '../../common/guards/qldl-rbac.guard';
+import { FieldCategoriesController } from './field-categories.controller';
+import { Role } from '../role/entities/role.entity';
+import { Permission } from '../role/entities/permission.entity';
 
 @Module({
   imports: [
@@ -20,10 +21,11 @@ import { QldlRbacGuard } from '../../common/guards/qldl-rbac.guard';
       Form,
       FormAttribute,
       FormIndicator,
+      FieldCategory,
       IndicatorCatalog,
       ImportJob,
-      RoleGroup,
-      UserRoleGroup,
+      Role,
+      Permission,
     ]),
   ],
   controllers: [
@@ -31,8 +33,9 @@ import { QldlRbacGuard } from '../../common/guards/qldl-rbac.guard';
     FormAttributesController,
     FormIndicatorsController,
     IndicatorCatalogController,
+    FieldCategoriesController,
   ],
-  providers: [FormDesignerService, QldlRbacGuard],
+  providers: [FormDesignerService],
   exports: [FormDesignerService],
 })
 export class FormDesignerModule {}
