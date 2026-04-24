@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityManager, ILike, Repository } from 'typeorm';
 import { randomBytes } from 'crypto';
 import { Form } from './entities/form.entity';
 import { FormAttribute } from './entities/form-attribute.entity';
@@ -23,9 +23,18 @@ import { PatchFormAttributeDto } from './dto/patch-form-attribute.dto';
 import { CreateFormIndicatorDto } from './dto/create-form-indicator.dto';
 import { PatchFormIndicatorDto } from './dto/patch-form-indicator.dto';
 import { CreateIndicatorCatalogDto } from './dto/create-indicator-catalog.dto';
+import { UpdateIndicatorCatalogDto } from './dto/update-indicator-catalog.dto';
+import { IndicatorCatalogQueryDto } from './dto/indicator-catalog-query.dto';
 import { CreateFieldCategoryDto } from './dto/create-field-category.dto';
 import { PatchFieldCategoryDto } from './dto/patch-field-category.dto';
 import { FieldCategoryQueryDto } from './dto/field-category-query.dto';
+
+const DEFAULT_FORM_SYSTEM_ATTRIBUTES = [
+  { name: 'Thứ tự', dataType: 'integer', sortOrder: 0 },
+  { name: 'Mã chỉ tiêu', dataType: 'text', sortOrder: 1 },
+  { name: 'Tên chỉ tiêu', dataType: 'text', sortOrder: 2 },
+  { name: 'Đơn vị tính', dataType: 'text', sortOrder: 3 },
+];
 
 @Injectable()
 export class FormDesignerService {
@@ -45,12 +54,52 @@ export class FormDesignerService {
     private readonly dataSource: DataSource,
   ) {}
 
-  private async generateUniqueFormCode(): Promise<string> {
+  private async seedDefaultFormAttributes(
+    manager: EntityManager,
+    formId: string,
+  ): Promise<void> {
+    const attrRepo = manager.getRepository(FormAttribute);
+    for (const def of DEFAULT_FORM_SYSTEM_ATTRIBUTES) {
+      await attrRepo.save(
+        attrRepo.create({
+          formId,
+          name: def.name,
+          dataType: def.dataType,
+          isRequired: false,
+          isVisible: true,
+          isSystem: true,
+          sortOrder: def.sortOrder,
+          options: null,
+        }),
+      );
+    }
+  }
+
+  private async resolveFormCode(
+    requested: string | undefined,
+    repo: Repository<Form>,
+  ): Promise<string> {
+    const trimmed = requested?.trim() ?? '';
+    if (!trimmed) {
+      return this.generateUniqueFormCode(repo);
+    }
+    const exists = await repo.exist({
+      where: { code: ILike(trimmed) },
+      withDeleted: true,
+    });
+    if (exists) {
+      throw new ConflictException('FORM_CODE_DUPLICATE');
+    }
+    return trimmed;
+  }
+
+  private async generateUniqueFormCode(repo?: Repository<Form>): Promise<string> {
+    const targetRepo = repo ?? this.formRepo;
     for (let i = 0; i < 20; i++) {
       const suffix = randomBytes(3).toString('hex').toUpperCase();
       const code = `FM-${suffix}`;
-      const exists = await this.formRepo.exist({
-        where: { code },
+      const exists = await targetRepo.exist({
+        where: { code: ILike(code) },
         withDeleted: true,
       });
       if (!exists) return code;
@@ -136,12 +185,12 @@ export class FormDesignerService {
       qb.andWhere('fc.code = :fcc', { fcc: query.fieldCategory });
     }
     if (query.fieldCategoryId !== undefined) {
-      qb.andWhere('f.field_category_id = :fcid', { fcid: query.fieldCategoryId });
+      qb.andWhere('f.fieldCategoryRef = :fcid', { fcid: query.fieldCategoryId });
     }
     if (query.isActive !== undefined) {
-      qb.andWhere('f.is_active = :ia', { ia: query.isActive });
+      qb.andWhere('f.isActive = :ia', { ia: query.isActive });
     }
-    qb.orderBy('f.created_at', 'DESC').skip(skip).take(limit);
+    qb.orderBy('f.createdAt', 'DESC').skip(skip).take(limit);
     const [rows, total] = await qb.getManyAndCount();
     return {
       items: rows.map((f) => this.toListItem(f)),
@@ -151,18 +200,23 @@ export class FormDesignerService {
 
   async createForm(dto: CreateFormDto, userId: string | undefined) {
     const fc = await this.requireActiveFieldCategory(dto.fieldCategoryId);
-    const code = await this.generateUniqueFormCode();
-    const created = this.formRepo.create({
-      code,
-      name: dto.name.trim(),
-      fieldCategoryRef: { id: fc.id } as FieldCategory,
-      description: dto.description?.trim() ?? null,
-      parentFormId: dto.parentFormId ?? null,
-      createdBy: userId ?? null,
-      isActive: true,
+    const id = await this.dataSource.transaction(async (manager) => {
+      const formRepo = manager.getRepository(Form);
+      const code = await this.resolveFormCode(dto.code, formRepo);
+      const created = formRepo.create({
+        code,
+        name: dto.name.trim(),
+        fieldCategoryRef: { id: fc.id } as FieldCategory,
+        description: dto.description?.trim() ?? null,
+        parentFormId: dto.parentFormId ?? null,
+        createdBy: userId ?? null,
+        isActive: true,
+      });
+      const saved = await formRepo.save(created);
+      await this.seedDefaultFormAttributes(manager, saved.id);
+      return saved.id;
     });
-    const saved = await this.formRepo.save(created);
-    return { id: saved.id };
+    return { id };
   }
 
   async findOneForm(id: string) {
@@ -195,6 +249,19 @@ export class FormDesignerService {
       relations: { fieldCategoryRef: true },
     });
     if (!f) throw new NotFoundException('Không tìm thấy biểu mẫu');
+
+    if (dto.code !== undefined) {
+      const code = dto.code.trim();
+      if (code !== f.code) {
+        const exists = await this.formRepo.exist({
+          where: { code: ILike(code) },
+          withDeleted: true,
+        });
+        if (exists) throw new ConflictException('FORM_CODE_DUPLICATE');
+        f.code = code;
+      }
+    }
+
     if (dto.name !== undefined) f.name = dto.name.trim();
     if (dto.fieldCategoryId !== undefined) {
       if (dto.fieldCategoryId === null) {
@@ -258,7 +325,7 @@ export class FormDesignerService {
     });
     if (!src) throw new NotFoundException('Không tìm thấy biểu mẫu nguồn');
 
-    const code = await this.generateUniqueFormCode();
+    const code = await this.resolveFormCode(dto.code, this.formRepo);
     const attrs = await this.attrRepo.find({ where: { formId: sourceId } });
     const inds = await this.indRepo.find({ where: { formId: sourceId } });
 
@@ -511,6 +578,21 @@ export class FormDesignerService {
     return { jobId: saved.id };
   }
 
+  async reorderAttributes(formId: string, orderedIds: string[]) {
+    await this.ensureForm(formId);
+    const existing = await this.attrRepo.find({ where: { formId } });
+    const idSet = new Set(existing.map((x) => x.id));
+    for (const oid of orderedIds) {
+      if (!idSet.has(oid)) {
+        throw new BadRequestException(`attributeId không thuộc form: ${oid}`);
+      }
+    }
+    for (let idx = 0; idx < orderedIds.length; idx++) {
+      await this.attrRepo.update({ id: orderedIds[idx] }, { sortOrder: idx });
+    }
+    return { ok: true };
+  }
+
   async enqueueIndicatorsImport(userId: string | undefined) {
     const job = this.importJobRepo.create({
       type: 'FORM_INDICATORS_IMPORT',
@@ -520,6 +602,27 @@ export class FormDesignerService {
     });
     const saved = await this.importJobRepo.save(job);
     return { jobId: saved.id };
+  }
+
+  async findAllCatalogEntries(query: IndicatorCatalogQueryDto) {
+    const page = query.page ?? 1;
+    const limit = Math.min(query.limit ?? 100, 200);
+    const skip = (page - 1) * limit;
+
+    const qb = this.catalogRepo.createQueryBuilder('cat');
+
+    if (query.q?.trim()) {
+      const q = `%${query.q.trim().toLowerCase()}%`;
+      qb.andWhere('(LOWER(cat.name) LIKE :q OR LOWER(cat.code) LIKE :q)', { q });
+    }
+
+    qb.orderBy('cat.name', 'ASC').skip(skip).take(limit);
+
+    const [rows, total] = await qb.getManyAndCount();
+    return {
+      items: rows,
+      meta: { page, limit, total },
+    };
   }
 
   async createCatalogEntry(dto: CreateIndicatorCatalogDto, userId: string | undefined) {
@@ -538,13 +641,48 @@ export class FormDesignerService {
     return { id: saved.id };
   }
 
+  async patchCatalogEntry(id: string, dto: UpdateIndicatorCatalogDto) {
+    const row = await this.catalogRepo.findOne({ where: { id } });
+    if (!row) throw new NotFoundException('Không tìm thấy chỉ tiêu trong danh mục');
+
+    if (dto.code !== undefined) {
+      const code = dto.code.trim();
+      if (code !== row.code) {
+        const dup = await this.catalogRepo.exist({ where: { code } });
+        if (dup) throw new ConflictException('CATALOG_CODE_DUPLICATE');
+        row.code = code;
+      }
+    }
+
+    if (dto.name !== undefined) row.name = dto.name.trim();
+    if (dto.unit !== undefined) row.unit = dto.unit;
+    if (dto.dataType !== undefined) row.dataType = dto.dataType.trim();
+
+    await this.catalogRepo.save(row);
+    return { ok: true };
+  }
+
+  async removeCatalogEntry(id: string) {
+    const row = await this.catalogRepo.findOne({ where: { id } });
+    if (!row) throw new NotFoundException('Không tìm thấy chỉ tiêu trong danh mục');
+
+    // Check if being used in any form indicators
+    const used = await this.indRepo.exist({ where: { catalogIndicatorId: id } });
+    if (used) {
+      throw new ConflictException('CATALOG_ENTRY_IN_USE');
+    }
+
+    await this.catalogRepo.remove(row);
+    return { ok: true };
+  }
+
   async findAllFieldCategories(query: FieldCategoryQueryDto) {
     const page = query.page ?? 1;
     const limit = Math.min(query.limit ?? 100, 200);
     const skip = (page - 1) * limit;
     const qb = this.fieldCategoryRepo.createQueryBuilder('c');
     if (query.isActive !== undefined) {
-      qb.andWhere('c.is_active = :ia', { ia: query.isActive });
+      qb.andWhere('c.isActive = :ia', { ia: query.isActive });
     }
     if (query.q?.trim()) {
       const q = `%${query.q.trim().toLowerCase()}%`;

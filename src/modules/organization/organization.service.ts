@@ -48,11 +48,10 @@ export class OrganizationService {
 
   async findAll(query: OrganizationQueryDto) {
     const qb = this.orgRepo
-      .createQueryBuilder('o')
-      .where('o.deleted_at IS NULL');
+      .createQueryBuilder('o');
 
     if (query.isActive !== undefined) {
-      qb.andWhere('o.is_active = :isActive', { isActive: query.isActive });
+      qb.andWhere('o.isActive = :isActive', { isActive: query.isActive });
     }
 
     if (query.q) {

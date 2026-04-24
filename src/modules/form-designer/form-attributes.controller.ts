@@ -18,6 +18,7 @@ import { Permissions, PermissionsGuard } from '../../common';
 import { FormDesignerService } from './form-designer.service';
 import { CreateFormAttributeDto } from './dto/create-form-attribute.dto';
 import { PatchFormAttributeDto } from './dto/patch-form-attribute.dto';
+import { ReorderAttributesDto } from './dto/reorder-attributes.dto';
 
 @Controller('forms/:formId/attributes')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -28,6 +29,15 @@ export class FormAttributesController {
   @Permissions('forms.manage')
   async list(@Param('formId', ParseUUIDPipe) formId: string) {
     return await this.formDesigner.listAttributes(formId);
+  }
+
+  @Post('reorder')
+  @Permissions('forms.manage')
+  async reorder(
+    @Param('formId', ParseUUIDPipe) formId: string,
+    @Body() dto: ReorderAttributesDto,
+  ) {
+    return await this.formDesigner.reorderAttributes(formId, dto.orderedIds);
   }
 
   @Post()

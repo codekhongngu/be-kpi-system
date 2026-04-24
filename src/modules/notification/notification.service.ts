@@ -13,9 +13,9 @@ export class NotificationService {
   async listInbox(userId: string, isRead?: boolean, page = 1, limit = 20) {
     const take = Math.min(limit, 200);
     const skip = (page - 1) * take;
-    const qb = this.repo.createQueryBuilder('n').where('n.user_id = :userId', { userId });
-    if (isRead !== undefined) qb.andWhere('n.is_read = :ir', { ir: isRead });
-    qb.orderBy('n.created_at', 'DESC').skip(skip).take(take);
+    const qb = this.repo.createQueryBuilder('n').where('n.userId = :userId', { userId });
+    if (isRead !== undefined) qb.andWhere('n.isRead = :ir', { ir: isRead });
+    qb.orderBy('n.createdAt', 'DESC').skip(skip).take(take);
     const [items, total] = await qb.getManyAndCount();
     return {
       items: items.map((n) => ({

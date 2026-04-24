@@ -54,18 +54,18 @@ export class ReportPeriodService {
     const qb = this.repo.createQueryBuilder('p');
 
     if (query.type) {
-      qb.andWhere('p.period_type = :type', { type: query.type });
+      qb.andWhere('p.periodType = :type', { type: query.type });
     }
 
     if (query.from) {
-      qb.andWhere('p.date_to >= :from', { from: query.from });
+      qb.andWhere('p.dateTo >= :from', { from: query.from });
     }
 
     if (query.to) {
-      qb.andWhere('p.date_from <= :to', { to: query.to });
+      qb.andWhere('p.dateFrom <= :to', { to: query.to });
     }
 
-    qb.orderBy('p.date_from', 'DESC').addOrderBy('p.period_type', 'ASC');
+    qb.orderBy('p.dateFrom', 'DESC').addOrderBy('p.periodType', 'ASC');
     qb.skip(skip).take(limit);
 
     const [items, total] = await qb.getManyAndCount();

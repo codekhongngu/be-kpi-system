@@ -32,13 +32,13 @@ export class AssignmentService {
     const limit = Math.min(query.limit ?? 20, 200);
     const skip = (page - 1) * limit;
     const qb = this.assignmentRepo.createQueryBuilder('a');
-    if (query.formId) qb.andWhere('a.form_id = :formId', { formId: query.formId });
-    if (query.periodId) qb.andWhere('a.period_id = :periodId', { periodId: query.periodId });
-    if (query.orgId) qb.andWhere('a.org_id = :orgId', { orgId: query.orgId });
+    if (query.formId) qb.andWhere('a.formId = :formId', { formId: query.formId });
+    if (query.periodId) qb.andWhere('a.periodId = :periodId', { periodId: query.periodId });
+    if (query.orgId) qb.andWhere('a.orgId = :orgId', { orgId: query.orgId });
     if (query.isCancelled !== undefined) {
-      qb.andWhere('a.is_cancelled = :ic', { ic: query.isCancelled });
+      qb.andWhere('a.isCancelled = :ic', { ic: query.isCancelled });
     }
-    qb.orderBy('a.assigned_at', 'DESC').skip(skip).take(limit);
+    qb.orderBy('a.assignedAt', 'DESC').skip(skip).take(limit);
     const [items, total] = await qb.getManyAndCount();
     return { items, meta: { page, limit, total } };
   }

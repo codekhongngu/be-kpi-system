@@ -14,33 +14,6 @@ Tài liệu này mô tả **bảng core theo `QLDL_CauTruc_Database_v1.0`** và 
 
 **Bổ sung triển khai backend (repo):** bảng **`field_categories`** (danh mục lĩnh vực nghiệp vụ) + cột **`forms.field_category_id`** (FK). Cột **`forms.field_category`** (chuỗi denormalized) **đã loại bỏ**; mã lĩnh vực chỉ còn trên `field_categories.code`, có thể join khi đọc API. Kiểu khóa chính/FK trong code migration dùng **UUID**; tài liệu bên dưới đã được cập nhật theo migration TypeORM trong repo.
 
-### Core tables (v1.0)
-13 bảng core (v1.0):
-
-1) organizations
-2) users
-3) users
-4) report_periods
-5) forms
-6) form_indicators
-7) form_attributes
-8) form_assignments
-9) report_submissions
-10) report_data
-11) report_summaries
-12) notifications
-13) audit_logs
-
-Các bảng RBAC theo QLDL (`role_groups`, `user_role_groups`) **đã loại bỏ** để chuyển sang Nest RBAC (`roles`, `permissions`, `user_roles`, `role_permissions`).
-
-8 bảng đề xuất (khuyến nghị): 14) auth_refresh_tokens
-15) auth_refresh_tokens
-16) auth_otp_challenges
-17) auth_password_resets
-18) import_jobs
-19) report_data_history
-20) user_notification_prefs
-21) indicator_catalog
 
 **Triển khai repo (ngoài đếm 21 bảng gốc):** `field_categories` — danh mục lĩnh vực cho biểu mẫu; liên kết `forms.field_category_id` → `field_categories.id`.
 

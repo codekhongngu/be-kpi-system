@@ -61,14 +61,14 @@ export class SubmissionService {
     }
     const qb = this.assignmentRepo
       .createQueryBuilder('a')
-      .leftJoin(ReportSubmission, 's', 's.assignment_id = a.id')
-      .innerJoin('forms', 'f', 'f.id = a.form_id')
-      .innerJoin('report_periods', 'p', 'p.id = a.period_id')
-      .where('a.org_id = :orgId', { orgId: user.orgId })
-      .andWhere('a.is_cancelled = false')
+      .leftJoin(ReportSubmission, 's', 's.assignmentId = a.id')
+      .innerJoin('forms', 'f', 'f.id = a.formId')
+      .innerJoin('report_periods', 'p', 'p.id = a.periodId')
+      .where('a.orgId = :orgId', { orgId: user.orgId })
+      .andWhere('a.isCancelled = false')
       .select([
         'a.id AS "assignmentId"',
-        'a.deadline_to AS "deadlineTo"',
+        'a.deadlineTo AS "deadlineTo"',
         'f.id AS "formId"',
         'f.code AS "formCode"',
         'f.name AS "formName"',
@@ -88,7 +88,7 @@ export class SubmissionService {
       qb.andWhere('s.status = :st', { st: query.status });
     }
     if (query.overdue === true) {
-      qb.andWhere('a.deadline_to < CURRENT_DATE');
+      qb.andWhere('a.deadlineTo < CURRENT_DATE');
       qb.andWhere(
         '(s.id IS NULL OR s.status IN (:...open))',
         { open: ['DRAFT', 'REJECTED'] },

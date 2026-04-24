@@ -22,18 +22,18 @@ export class QueryService {
 
     const qb = this.assignmentRepo
       .createQueryBuilder('a')
-      .leftJoin(ReportSubmission, 's', 's.assignment_id = a.id')
-      .innerJoin('organizations', 'o', 'o.id = a.org_id')
-      .innerJoin('forms', 'f', 'f.id = a.form_id')
-      .innerJoin('report_periods', 'p', 'p.id = a.period_id')
-      .where('a.is_cancelled = false');
+      .leftJoin(ReportSubmission, 's', 's.assignmentId = a.id')
+      .innerJoin('organizations', 'o', 'o.id = a.orgId')
+      .innerJoin('forms', 'f', 'f.id = a.formId')
+      .innerJoin('report_periods', 'p', 'p.id = a.periodId')
+      .where('a.isCancelled = false');
 
     if (user.orgId) {
-      qb.andWhere('a.org_id = :userOrg', { userOrg: user.orgId });
+      qb.andWhere('a.orgId = :userOrg', { userOrg: user.orgId });
     }
-    if (query.orgId) qb.andWhere('a.org_id = :orgId', { orgId: query.orgId });
-    if (query.formId) qb.andWhere('a.form_id = :formId', { formId: query.formId });
-    if (query.periodId) qb.andWhere('a.period_id = :periodId', { periodId: query.periodId });
+    if (query.orgId) qb.andWhere('a.orgId = :orgId', { orgId: query.orgId });
+    if (query.formId) qb.andWhere('a.formId = :formId', { formId: query.formId });
+    if (query.periodId) qb.andWhere('a.periodId = :periodId', { periodId: query.periodId });
     if (query.status) {
       qb.andWhere('COALESCE(s.status, :draft) = :st', {
         st: query.status,
@@ -41,10 +41,10 @@ export class QueryService {
       });
     }
     if (query.deadlineFrom) {
-      qb.andWhere('a.deadline_to >= :df', { df: query.deadlineFrom.slice(0, 10) });
+      qb.andWhere('a.deadlineTo >= :df', { df: query.deadlineFrom.slice(0, 10) });
     }
     if (query.deadlineTo) {
-      qb.andWhere('a.deadline_to <= :dt', { dt: query.deadlineTo.slice(0, 10) });
+      qb.andWhere('a.deadlineTo <= :dt', { dt: query.deadlineTo.slice(0, 10) });
     }
     if (query.q?.trim()) {
       const q = `%${query.q.trim().toLowerCase()}%`;
@@ -70,10 +70,10 @@ export class QueryService {
       's.completion_pct AS "completionPct"',
       's.submitted_at AS "submittedAt"',
       's.approved_at AS "approvedAt"',
-      'a.deadline_to AS "deadlineTo"',
+      'a.deadlineTo AS "deadlineTo"',
     ])
       .setParameter('draft2', 'DRAFT')
-      .orderBy('a.deadline_to', 'ASC')
+      .orderBy('a.deadlineTo', 'ASC')
       .skip(skip)
       .take(limit);
 
@@ -81,13 +81,13 @@ export class QueryService {
 
     const countQb = this.assignmentRepo
       .createQueryBuilder('a')
-      .leftJoin(ReportSubmission, 's', 's.assignment_id = a.id')
-      .innerJoin('forms', 'f', 'f.id = a.form_id')
-      .where('a.is_cancelled = false');
-    if (user.orgId) countQb.andWhere('a.org_id = :userOrg', { userOrg: user.orgId });
-    if (query.orgId) countQb.andWhere('a.org_id = :orgId', { orgId: query.orgId });
-    if (query.formId) countQb.andWhere('a.form_id = :formId', { formId: query.formId });
-    if (query.periodId) countQb.andWhere('a.period_id = :periodId', { periodId: query.periodId });
+      .leftJoin(ReportSubmission, 's', 's.assignmentId = a.id')
+      .innerJoin('forms', 'f', 'f.id = a.formId')
+      .where('a.isCancelled = false');
+    if (user.orgId) countQb.andWhere('a.orgId = :userOrg', { userOrg: user.orgId });
+    if (query.orgId) countQb.andWhere('a.orgId = :orgId', { orgId: query.orgId });
+    if (query.formId) countQb.andWhere('a.formId = :formId', { formId: query.formId });
+    if (query.periodId) countQb.andWhere('a.periodId = :periodId', { periodId: query.periodId });
     if (query.status) {
       countQb.andWhere('COALESCE(s.status, :draft) = :st', {
         st: query.status,
@@ -95,7 +95,7 @@ export class QueryService {
       });
     }
     if (query.deadlineFrom) {
-      countQb.andWhere('a.deadline_to >= :df', { df: query.deadlineFrom.slice(0, 10) });
+      countQb.andWhere('a.deadlineTo >= :df', { df: query.deadlineFrom.slice(0, 10) });
     }
     if (query.deadlineTo) {
       countQb.andWhere('a.deadline_to <= :dt', { dt: query.deadlineTo.slice(0, 10) });
