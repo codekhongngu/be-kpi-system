@@ -4,6 +4,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Form } from './form.entity';
@@ -16,9 +17,21 @@ export class FormIndicator {
   @Column({ name: 'form_id', type: 'uuid' })
   formId: string;
 
+  @Column({ name: 'parent_id', type: 'uuid', nullable: true })
+  parentId: string | null;
+
   @ManyToOne(() => Form, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'form_id' })
   form: Form;
+
+  @ManyToOne(() => FormIndicator, (indicator) => indicator.children, {
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'parent_id' })
+  parent: FormIndicator | null;
+
+  @OneToMany(() => FormIndicator, (indicator) => indicator.parent)
+  children: FormIndicator[];
 
   @Column({ type: 'varchar', length: 50 })
   code: string;

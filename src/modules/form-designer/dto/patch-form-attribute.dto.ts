@@ -1,6 +1,10 @@
-import { IsBoolean, IsInt, IsObject, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsObject, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
 
 export class PatchFormAttributeDto {
+  @IsOptional()
+  @IsUUID()
+  parentId?: string | null;
+
   @IsOptional()
   @IsString()
   @MaxLength(255)

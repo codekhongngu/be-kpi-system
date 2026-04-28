@@ -1,6 +1,10 @@
-import { IsBoolean, IsInt, IsNotEmpty, IsObject, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsNotEmpty, IsObject, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
 
 export class CreateFormAttributeDto {
+  @IsOptional()
+  @IsUUID()
+  parentId?: string | null;
+
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)

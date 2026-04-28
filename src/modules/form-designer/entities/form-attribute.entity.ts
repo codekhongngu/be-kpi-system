@@ -4,6 +4,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Form } from './form.entity';
@@ -16,9 +17,21 @@ export class FormAttribute {
   @Column({ name: 'form_id', type: 'uuid' })
   formId: string;
 
+  @Column({ name: 'parent_id', type: 'uuid', nullable: true })
+  parentId: string | null;
+
   @ManyToOne(() => Form, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'form_id' })
   form: Form;
+
+  @ManyToOne(() => FormAttribute, (attribute) => attribute.children, {
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'parent_id' })
+  parent: FormAttribute | null;
+
+  @OneToMany(() => FormAttribute, (attribute) => attribute.parent)
+  children: FormAttribute[];
 
   @Column({ type: 'varchar', length: 255 })
   name: string;
@@ -37,13 +50,6 @@ export class FormAttribute {
 
   @Column({ name: 'sort_order', type: 'int', default: 0 })
   sortOrder: number;
-
-  @Column({ name: 'parent_id', type: 'uuid', nullable: true })
-  parentId: string | null;
-
-  @ManyToOne(() => FormAttribute, { nullable: true, onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'parent_id' })
-  parent: FormAttribute | null;
 
   @Column({ type: 'jsonb', nullable: true })
   options: Record<string, unknown> | null;

@@ -138,6 +138,7 @@ export class FormDesignerService {
   private mapAttribute(a: FormAttribute) {
     return {
       id: a.id,
+      parentId: a.parentId,
       name: a.name,
       dataType: a.dataType,
       isRequired: a.isRequired,
@@ -151,6 +152,7 @@ export class FormDesignerService {
   private mapIndicator(i: FormIndicator) {
     return {
       id: i.id,
+      parentId: i.parentId,
       code: i.code,
       name: i.name,
       unit: i.unit,
@@ -393,10 +395,14 @@ export class FormDesignerService {
     return { id: newId };
   }
 
-  async listAttributes(formId: string) {
+  async listAttributes(formId: string, parentId?: string) {
     await this.ensureForm(formId);
+    const where: any = { formId };
+    if (parentId !== undefined) {
+      where.parentId = parentId === '' || parentId === 'null' ? null : parentId;
+    }
     const rows = await this.attrRepo.find({
-      where: { formId },
+      where,
       order: { sortOrder: 'ASC', name: 'ASC' },
     });
     return { items: rows.map((a) => this.mapAttribute(a)) };
@@ -407,6 +413,7 @@ export class FormDesignerService {
     const nextSort = await this.nextSortOrder(this.attrRepo, formId, dto.sortOrder);
     const a = this.attrRepo.create({
       formId,
+      parentId: dto.parentId ?? null,
       name: dto.name.trim(),
       dataType: dto.dataType ?? null,
       isRequired: dto.isRequired ?? false,
@@ -428,6 +435,7 @@ export class FormDesignerService {
       where: { id: attrId, formId },
     });
     if (!a) throw new NotFoundException('Không tìm thấy thuộc tính');
+    if (dto.parentId !== undefined) a.parentId = dto.parentId;
     if (dto.name !== undefined) a.name = dto.name.trim();
     if (dto.dataType !== undefined) a.dataType = dto.dataType;
     if (dto.isRequired !== undefined) a.isRequired = dto.isRequired;
@@ -450,10 +458,14 @@ export class FormDesignerService {
     return { ok: true };
   }
 
-  async listIndicators(formId: string) {
+  async listIndicators(formId: string, parentId?: string) {
     await this.ensureForm(formId);
+    const where: any = { formId };
+    if (parentId !== undefined) {
+      where.parentId = parentId === '' || parentId === 'null' ? null : parentId;
+    }
     const rows = await this.indRepo.find({
-      where: { formId },
+      where,
       order: { sortOrder: 'ASC', code: 'ASC' },
     });
     return { items: rows.map((i) => this.mapIndicator(i)) };
@@ -474,6 +486,7 @@ export class FormDesignerService {
     const nextSort = await this.nextSortOrder(this.indRepo, formId, dto.sortOrder);
     const i = this.indRepo.create({
       formId,
+      parentId: dto.parentId ?? null,
       code: dto.code.trim(),
       name: dto.name.trim(),
       unit: dto.unit ?? null,
@@ -501,6 +514,7 @@ export class FormDesignerService {
       where: { id: indicatorId, formId },
     });
     if (!i) throw new NotFoundException('Không tìm thấy chỉ tiêu');
+    if (dto.parentId !== undefined) i.parentId = dto.parentId;
     if (dto.code !== undefined && dto.code.trim() !== i.code) {
       const dup = await this.indRepo
         .createQueryBuilder('ind')

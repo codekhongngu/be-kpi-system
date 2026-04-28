@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -27,8 +28,11 @@ export class FormIndicatorsController {
 
   @Get()
   @Permissions('forms.manage')
-  async list(@Param('formId', ParseUUIDPipe) formId: string) {
-    return await this.formDesigner.listIndicators(formId);
+  async list(
+    @Param('formId', ParseUUIDPipe) formId: string,
+    @Query('parentId') parentId?: string,
+  ) {
+    return await this.formDesigner.listIndicators(formId, parentId);
   }
 
   @Post()

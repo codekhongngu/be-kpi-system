@@ -1513,7 +1513,7 @@
 							"request": {
 								"method": "GET",
 								"header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-								"url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/attributes", "host": ["{{baseUrl}}"], "path": ["api","v1","forms","{{formId}}","attributes"] },
+								"url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/attributes?parentId=", "host": ["{{baseUrl}}"], "path": ["api","v1","forms","{{formId}}","attributes"], "query": [{ "key": "parentId", "value": "", "description": "Lọc theo ID cha (để trống để lấy tất cả hoặc root)" }] },
 								"description": "GET /forms/:id/attributes — JWT + DESIGN_FORMS:READ"
 						},
 						"response": []
@@ -1544,7 +1544,7 @@
 									{ "key": "Content-Type", "value": "application/json" },
 									{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
 								],
-								"body": { "mode": "raw", "raw": "{\n  \"name\": \"Thuộc tính mới\",\n  \"dataType\": \"text\",\n  \"isRequired\": false,\n  \"isVisible\": true\n}", "options": { "raw": { "language": "json" } } },
+								"body": { "mode": "raw", "raw": "{\n  \"parentId\": null,\n  \"name\": \"Thuộc tính mới\",\n  \"dataType\": \"text\",\n  \"isRequired\": false,\n  \"isVisible\": true\n}", "options": { "raw": { "language": "json" } } },
 								"url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/attributes", "host": ["{{baseUrl}}"], "path": ["api","v1","forms","{{formId}}","attributes"] },
 								"description": "POST /forms/:id/attributes — JWT + DESIGN_FORMS:WRITE"
 							},
@@ -1558,7 +1558,7 @@
 									{ "key": "Content-Type", "value": "application/json" },
 									{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
 								],
-								"body": { "mode": "raw", "raw": "{\n  \"name\": \"Đổi tên thuộc tính\",\n  \"isRequired\": true\n}", "options": { "raw": { "language": "json" } } },
+								"body": { "mode": "raw", "raw": "{\n  \"parentId\": null,\n  \"name\": \"Đổi tên thuộc tính\",\n  \"isRequired\": true\n}", "options": { "raw": { "language": "json" } } },
 								"url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/attributes/{{attrId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","forms","{{formId}}","attributes","{{attrId}}"] },
 								"description": "PATCH /forms/:id/attributes/:attrId — JWT + DESIGN_FORMS:WRITE"
 							},
@@ -1594,7 +1594,7 @@
 							"request": {
 								"method": "GET",
 								"header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-								"url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/indicators", "host": ["{{baseUrl}}"], "path": ["api","v1","forms","{{formId}}","indicators"] },
+								"url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/indicators?parentId=", "host": ["{{baseUrl}}"], "path": ["api","v1","forms","{{formId}}","indicators"], "query": [{ "key": "parentId", "value": "", "description": "Lọc theo ID cha (để trống để lấy tất cả hoặc root)" }] },
 								"description": "GET /forms/:id/indicators — JWT + DESIGN_FORMS:READ"
 							},
 							"response": []
@@ -1607,7 +1607,7 @@
 									{ "key": "Content-Type", "value": "application/json" },
 									{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
 								],
-								"body": { "mode": "raw", "raw": "{\n  \"code\": \"I001\",\n  \"name\": \"Chỉ tiêu 01\",\n  \"unit\": \"%\",\n  \"dataType\": \"number\",\n  \"isRequired\": true,\n  \"isCalculated\": false,\n  \"sortOrder\": 0,\n  \"isActive\": true\n}", "options": { "raw": { "language": "json" } } },
+								"body": { "mode": "raw", "raw": "{\n  \"parentId\": null,\n  \"code\": \"I001\",\n  \"name\": \"Chỉ tiêu 01\",\n  \"unit\": \"%\",\n  \"dataType\": \"number\",\n  \"isRequired\": true,\n  \"isCalculated\": false,\n  \"sortOrder\": 0,\n  \"isActive\": true\n}", "options": { "raw": { "language": "json" } } },
 								"url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/indicators", "host": ["{{baseUrl}}"], "path": ["api","v1","forms","{{formId}}","indicators"] },
 								"description": "POST /forms/:id/indicators — JWT + DESIGN_FORMS:WRITE"
 							},
@@ -1621,7 +1621,7 @@
 									{ "key": "Content-Type", "value": "application/json" },
 									{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
 								],
-								"body": { "mode": "raw", "raw": "{\n  \"name\": \"Đổi tên chỉ tiêu\",\n  \"unit\": \"Cái\"\n}", "options": { "raw": { "language": "json" } } },
+								"body": { "mode": "raw", "raw": "{\n  \"parentId\": null,\n  \"name\": \"Đổi tên chỉ tiêu\",\n  \"unit\": \"Cái\"\n}", "options": { "raw": { "language": "json" } } },
 								"url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/indicators/{{indicatorId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","forms","{{formId}}","indicators","{{indicatorId}}"] },
 								"description": "PATCH /forms/:id/indicators/:indicatorId — JWT + DESIGN_FORMS:WRITE"
 							},

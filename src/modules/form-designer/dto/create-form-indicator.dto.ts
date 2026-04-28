@@ -10,6 +10,10 @@ import {
 } from 'class-validator';
 
 export class CreateFormIndicatorDto {
+  @IsOptional()
+  @IsUUID()
+  parentId?: string | null;
+
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)

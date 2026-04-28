@@ -10,6 +10,10 @@ import {
 
 export class PatchFormIndicatorDto {
   @IsOptional()
+  @IsUUID()
+  parentId?: string | null;
+
+  @IsOptional()
   @IsString()
   @MaxLength(50)
   code?: string;
