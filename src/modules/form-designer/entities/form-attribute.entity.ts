@@ -38,6 +38,13 @@ export class FormAttribute {
   @Column({ name: 'sort_order', type: 'int', default: 0 })
   sortOrder: number;
 
+  @Column({ name: 'parent_id', type: 'uuid', nullable: true })
+  parentId: string | null;
+
+  @ManyToOne(() => FormAttribute, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'parent_id' })
+  parent: FormAttribute | null;
+
   @Column({ type: 'jsonb', nullable: true })
   options: Record<string, unknown> | null;
 

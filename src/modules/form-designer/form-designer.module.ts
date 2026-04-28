@@ -5,7 +5,7 @@ import { FormAttribute } from './entities/form-attribute.entity';
 import { FormIndicator } from './entities/form-indicator.entity';
 import { FieldCategory } from './entities/field-category.entity';
 import { IndicatorCatalog } from './entities/indicator-catalog.entity';
-import { ImportJob } from '../user/entities/import-job.entity';
+import { ImportJob } from '../import-job/entities/import-job.entity';
 import { FormDesignerService } from './form-designer.service';
 import { FormsController } from './forms.controller';
 import { FormAttributesController } from './form-attributes.controller';

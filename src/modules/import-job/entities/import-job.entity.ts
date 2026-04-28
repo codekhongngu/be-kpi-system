@@ -2,15 +2,18 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
+  Index,
   ManyToOne,
+  JoinColumn,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { User } from './user.entity';
+import { User } from '../../user/entities/user.entity';
 
 export type ImportJobStatus = 'QUEUED' | 'RUNNING' | 'DONE' | 'FAILED';
 
 @Entity('import_jobs')
+@Index(['status'])
+@Index(['createdById'])
 export class ImportJob {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -21,7 +24,10 @@ export class ImportJob {
   @Column({ type: 'varchar', length: 20 })
   status: ImportJobStatus;
 
-  @ManyToOne(() => User, { nullable: true })
+  @Column({ name: 'created_by', type: 'uuid', nullable: true })
+  createdById: string | null;
+
+  @ManyToOne(() => User)
   @JoinColumn({ name: 'created_by' })
   createdBy: User | null;
 

@@ -5,7 +5,7 @@ import { UserController } from './user.controller';
 import { User } from './entities/user.entity';
 import { Role } from '../role/entities/role.entity';
 import { Organization } from '../organization/entities/organization.entity';
-import { ImportJob } from './entities/import-job.entity';
+import { ImportJob } from '../import-job/entities/import-job.entity';
 
 @Module({
   imports: [

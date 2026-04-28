@@ -12,7 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { User, UserStatus } from './entities/user.entity';
 import { Role } from '../role/entities/role.entity';
 import { Organization } from '../organization/entities/organization.entity';
-import { ImportJob, ImportJobStatus } from './entities/import-job.entity';
+import { ImportJob, ImportJobStatus } from '../import-job/entities/import-job.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserQueryDto } from './dto/user-query.dto';

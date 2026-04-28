@@ -18,6 +18,10 @@ import { MonitoringModule } from './modules/monitoring/monitoring.module';
 import { QueryModule } from './modules/query/query.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { AuditLogModule } from './modules/audit-log/audit-log.module';
+import { FileModule } from './modules/file/file.module';
+import { ImportJobModule } from './modules/import-job/import-job.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import {
   LoggingMiddleware,
   RequestIdMiddleware,
@@ -88,6 +92,10 @@ import { URL } from 'url';
     OrganizationModule,
     ReportPeriodModule,
     ExampleModule,
+    AuditLogModule,
+    FileModule,
+    ImportJobModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
