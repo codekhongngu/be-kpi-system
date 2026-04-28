@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/entities/user.entity';
@@ -21,11 +14,13 @@ export class AnalyticsController {
 
   @Get('kpis')
   @Permissions('analytics.read')
-  async kpis(
-    @CurrentUser() user: User,
-    @Query() query: AnalyticsKpiQueryDto,
-  ) {
-    return await this.analyticsService.kpis(user, query.from, query.to, query.orgId);
+  async kpis(@CurrentUser() user: User, @Query() query: AnalyticsKpiQueryDto) {
+    return await this.analyticsService.kpis(
+      user,
+      query.from,
+      query.to,
+      query.orgId,
+    );
   }
 
   @Get('charts')

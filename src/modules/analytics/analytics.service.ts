@@ -39,7 +39,10 @@ export class AnalyticsService {
         sub: ['PENDING', 'APPROVED', 'REJECTED'],
       })
       .getCount();
-    const approved = await qbS.clone().andWhere('s.status = :st', { st: 'APPROVED' }).getCount();
+    const approved = await qbS
+      .clone()
+      .andWhere('s.status = :st', { st: 'APPROVED' })
+      .getCount();
     const overdue = await qbS
       .clone()
       .andWhere('a.deadline_to < CURRENT_DATE')
@@ -50,7 +53,9 @@ export class AnalyticsService {
   }
 
   async charts() {
-    return { series: [] as { name: string; points: { x: string; y: number }[] }[] };
+    return {
+      series: [] as { name: string; points: { x: string; y: number }[] }[],
+    };
   }
 
   async pivot(_dto: PivotRequestDto) {

@@ -1,9 +1,4 @@
-import {
-  Controller,
-  Get,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Permissions, PermissionsGuard } from '../../common';
 import { DashboardService } from './dashboard.service';

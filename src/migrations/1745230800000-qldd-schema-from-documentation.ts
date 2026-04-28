@@ -362,8 +362,12 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP INDEX IF EXISTS "IDX_audit_logs_created_at"`);
-    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_form_assignments_org_period"`);
-    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_report_data_submission_id"`);
+    await queryRunner.query(
+      `DROP INDEX IF EXISTS "IDX_form_assignments_org_period"`,
+    );
+    await queryRunner.query(
+      `DROP INDEX IF EXISTS "IDX_report_data_submission_id"`,
+    );
     await queryRunner.query(`DROP INDEX IF EXISTS "UQ_users_code"`);
 
     await queryRunner.query(`DROP TABLE IF EXISTS "user_notification_prefs"`);
@@ -399,7 +403,9 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
     `);
 
     await queryRunner.query(`DROP TABLE IF EXISTS "organizations"`);
-    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_forms_field_category_id"`);
+    await queryRunner.query(
+      `DROP INDEX IF EXISTS "IDX_forms_field_category_id"`,
+    );
     await queryRunner.query(`DROP TABLE IF EXISTS "forms"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "field_categories"`);
   }

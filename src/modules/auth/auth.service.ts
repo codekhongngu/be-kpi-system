@@ -67,7 +67,9 @@ export class AuthService {
         'AUTH_LOCK_MINUTES',
         15,
       );
-      const failed = await this.userService.incrementFailedLoginAttempt(user.id);
+      const failed = await this.userService.incrementFailedLoginAttempt(
+        user.id,
+      );
       if (failed >= maxFailed) {
         const lockedUntil = new Date(Date.now() + lockMinutes * 60_000);
         await this.userService.lockUntil(user.id, lockedUntil);
@@ -327,7 +329,6 @@ export class AuthService {
   }
 
   private sanitizeUser(user: User): PublicUser {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const {
       passwordHash,
       deletedAt,

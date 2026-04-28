@@ -33,7 +33,10 @@ export class SubmissionsController {
 
   @Get(':id')
   @Permissions('submissions.manage')
-  async getOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+  async getOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: User,
+  ) {
     return await this.submissionService.findOne(id, user);
   }
 

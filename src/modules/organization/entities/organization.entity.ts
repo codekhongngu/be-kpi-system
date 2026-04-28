@@ -57,4 +57,3 @@ export class Organization {
   @DeleteDateColumn({ name: 'deleted_at', nullable: true })
   deletedAt: Date | null;
 }
-

@@ -31,10 +31,7 @@ export class AssignmentController {
 
   @Post()
   @Permissions('assignments.manage')
-  async create(
-    @Body() dto: CreateAssignmentsDto,
-    @CurrentUser() user: User,
-  ) {
+  async create(@Body() dto: CreateAssignmentsDto, @CurrentUser() user: User) {
     return await this.assignmentService.createBulk(dto, user?.id);
   }
 

@@ -41,7 +41,7 @@ export class FormAttributesController {
     @Param('formId', ParseUUIDPipe) formId: string,
     @Body() dto: ReorderAttributesDto,
   ) {
-    return await this.formDesigner.reorderAttributes(formId, dto.orderedIds);
+    return await this.formDesigner.reorderAttributes(formId, dto.items);
   }
 
   @Post()

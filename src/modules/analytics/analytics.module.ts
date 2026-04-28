@@ -9,7 +9,12 @@ import { Permission } from '../role/entities/permission.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([FormAssignment, ReportSubmission, Role, Permission]),
+    TypeOrmModule.forFeature([
+      FormAssignment,
+      ReportSubmission,
+      Role,
+      Permission,
+    ]),
   ],
   controllers: [AnalyticsController],
   providers: [AnalyticsService],

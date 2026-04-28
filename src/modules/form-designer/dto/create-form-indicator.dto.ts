@@ -4,15 +4,24 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUUID,
+  Matches,
   MaxLength,
   Min,
 } from 'class-validator';
 
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export class CreateFormIndicatorDto {
   @IsOptional()
-  @IsUUID()
+  @IsString()
+  @Matches(UUID_REGEX, { message: 'parentId phải là định dạng UUID' })
   parentId?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  displayIndex?: string | null;
 
   @IsString()
   @IsNotEmpty()
@@ -69,6 +78,7 @@ export class CreateFormIndicatorDto {
   isActive?: boolean;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
+  @Matches(UUID_REGEX, { message: 'catalogIndicatorId phải là định dạng UUID' })
   catalogIndicatorId?: string | null;
 }

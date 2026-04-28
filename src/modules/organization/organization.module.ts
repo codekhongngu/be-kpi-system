@@ -8,12 +8,9 @@ import { Role } from '../role/entities/role.entity';
 import { Permission } from '../role/entities/permission.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Organization, User, Role, Permission]),
-  ],
+  imports: [TypeOrmModule.forFeature([Organization, User, Role, Permission])],
   controllers: [OrganizationController],
   providers: [OrganizationService],
   exports: [OrganizationService],
 })
 export class OrganizationModule {}
-

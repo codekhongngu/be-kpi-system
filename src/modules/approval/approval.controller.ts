@@ -60,6 +60,10 @@ export class ApprovalController {
     @Body() dto: PatchRejectNoteDto,
     @CurrentUser() user: User,
   ) {
-    return await this.approvalService.patchRejectNote(submissionId, dto.reason, user);
+    return await this.approvalService.patchRejectNote(
+      submissionId,
+      dto.reason,
+      user,
+    );
   }
 }

@@ -40,7 +40,7 @@ export class ImportJobService {
       job.finishedAt = new Date();
     }
     if (summary) {
-      job.summary = { ...(job.summary as any || {}), ...summary };
+      job.summary = { ...((job.summary as any) || {}), ...summary };
     }
     await this.repo.save(job);
   }

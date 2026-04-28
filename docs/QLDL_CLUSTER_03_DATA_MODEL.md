@@ -157,6 +157,8 @@ RBAC sử dụng mô hình chuẩn hoá:
 
 - `id UUID PK DEFAULT gen_random_uuid()`
 - `form_id UUID NOT NULL REFERENCES forms(id) ON DELETE CASCADE`
+- `parent_id UUID NULL REFERENCES form_indicators(id) ON DELETE SET NULL`
+- `display_index VARCHAR(50) NULL` — Chỉ mục hiển thị (2, 2.1, 2.3...)
 - `code VARCHAR(50) NOT NULL`
 - `name VARCHAR(500) NOT NULL`
 - `unit VARCHAR(100) NULL`
@@ -177,6 +179,7 @@ RBAC sử dụng mô hình chuẩn hoá:
 
 - `id UUID PK DEFAULT gen_random_uuid()`
 - `form_id UUID NOT NULL REFERENCES forms(id) ON DELETE CASCADE`
+- `parent_id UUID NULL REFERENCES form_attributes(id) ON DELETE SET NULL`
 - `name VARCHAR(255) NOT NULL`
 - `data_type VARCHAR(20) NULL`
 - `is_required BOOLEAN NOT NULL DEFAULT FALSE`
@@ -365,8 +368,10 @@ RBAC sử dụng mô hình chuẩn hoá:
 - `forms.field_category_id` → `field_categories.id` *(ON DELETE SET NULL)*
 - `indicator_catalog.created_by` → `users.id` *(ON DELETE SET NULL)*
 - `form_indicators.form_id` → `forms.id` *(ON DELETE CASCADE)*
+- `form_indicators.parent_id` → `form_indicators.id` *(ON DELETE SET NULL)*
 - `form_indicators.catalog_indicator_id` → `indicator_catalog.id` *(ON DELETE SET NULL)*
 - `form_attributes.form_id` → `forms.id` *(ON DELETE CASCADE)*
+- `form_attributes.parent_id` → `form_attributes.id` *(ON DELETE SET NULL)*
 - `form_assignments.form_id` → `forms.id` *(ON DELETE RESTRICT)*
 - `form_assignments.org_id` → `organizations.id` *(ON DELETE RESTRICT)*
 - `form_assignments.period_id` → `report_periods.id` *(ON DELETE RESTRICT)*

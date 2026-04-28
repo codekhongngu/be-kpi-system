@@ -23,7 +23,7 @@ export class ParseUuidPipe implements PipeTransform<string, string> {
         `Validation failed. "${metadata.data || 'value'}" must be a valid UUID`,
       );
     }
-    
+
     return value;
   }
 }

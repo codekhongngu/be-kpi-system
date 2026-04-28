@@ -1,8 +1,21 @@
-import { IsBoolean, IsInt, IsObject, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsObject,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  Min,
+} from 'class-validator';
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export class PatchFormAttributeDto {
   @IsOptional()
-  @IsUUID()
+  @IsString()
+  @Matches(UUID_REGEX, { message: 'parentId phải là định dạng UUID' })
   parentId?: string | null;
 
   @IsOptional()

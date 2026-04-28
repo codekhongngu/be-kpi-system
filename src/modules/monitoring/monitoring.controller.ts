@@ -14,10 +14,7 @@ export class MonitoringController {
 
   @Get('reports')
   @Permissions('monitoring.read')
-  async reports(
-    @CurrentUser() user: User,
-    @Query() query: MonitoringQueryDto,
-  ) {
+  async reports(@CurrentUser() user: User, @Query() query: MonitoringQueryDto) {
     return await this.monitoringService.listReports(user, query);
   }
 

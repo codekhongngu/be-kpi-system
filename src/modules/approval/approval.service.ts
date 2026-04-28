@@ -46,8 +46,10 @@ export class ApprovalService {
       qb.andWhere('a.org_id = :orgId', { orgId: user.orgId });
     }
     if (query.orgId) qb.andWhere('a.org_id = :qOrg', { qOrg: query.orgId });
-    if (query.formId) qb.andWhere('a.form_id = :formId', { formId: query.formId });
-    if (query.periodId) qb.andWhere('a.period_id = :periodId', { periodId: query.periodId });
+    if (query.formId)
+      qb.andWhere('a.form_id = :formId', { formId: query.formId });
+    if (query.periodId)
+      qb.andWhere('a.period_id = :periodId', { periodId: query.periodId });
 
     qb.select([
       's.id AS "submissionId"',
@@ -71,10 +73,14 @@ export class ApprovalService {
       .createQueryBuilder('s')
       .innerJoin(FormAssignment, 'a', 'a.id = s.assignment_id')
       .where('s.status = :st', { st: 'PENDING' });
-    if (user.orgId) countQb.andWhere('a.org_id = :orgId', { orgId: user.orgId });
-    if (query.orgId) countQb.andWhere('a.org_id = :qOrg', { qOrg: query.orgId });
-    if (query.formId) countQb.andWhere('a.form_id = :formId', { formId: query.formId });
-    if (query.periodId) countQb.andWhere('a.period_id = :periodId', { periodId: query.periodId });
+    if (user.orgId)
+      countQb.andWhere('a.org_id = :orgId', { orgId: user.orgId });
+    if (query.orgId)
+      countQb.andWhere('a.org_id = :qOrg', { qOrg: query.orgId });
+    if (query.formId)
+      countQb.andWhere('a.form_id = :formId', { formId: query.formId });
+    if (query.periodId)
+      countQb.andWhere('a.period_id = :periodId', { periodId: query.periodId });
     const total = await countQb.getCount();
 
     const items = rows.map((r) => ({
@@ -88,12 +94,17 @@ export class ApprovalService {
   }
 
   async approve(submissionId: string, user: User) {
-    const s = await this.submissionRepo.findOne({ where: { id: submissionId } });
+    const s = await this.submissionRepo.findOne({
+      where: { id: submissionId },
+    });
     if (!s) throw new NotFoundException('Không tìm thấy bản nộp');
-    const a = await this.assignmentRepo.findOne({ where: { id: s.assignmentId } });
+    const a = await this.assignmentRepo.findOne({
+      where: { id: s.assignmentId },
+    });
     if (!a) throw new NotFoundException('Không tìm thấy giao việc');
     this.assertApproverOrg(user, a);
-    if (s.status !== 'PENDING') throw new ConflictException('APPROVAL_NOT_PENDING');
+    if (s.status !== 'PENDING')
+      throw new ConflictException('APPROVAL_NOT_PENDING');
     s.status = 'APPROVED';
     s.approvedBy = user.id;
     s.approvedAt = new Date();
@@ -116,16 +127,24 @@ export class ApprovalService {
         }),
       );
     }
-    return { status: 'APPROVED' as const, approvedAt: s.approvedAt.toISOString() };
+    return {
+      status: 'APPROVED' as const,
+      approvedAt: s.approvedAt.toISOString(),
+    };
   }
 
   async reject(submissionId: string, reason: string, user: User) {
-    const s = await this.submissionRepo.findOne({ where: { id: submissionId } });
+    const s = await this.submissionRepo.findOne({
+      where: { id: submissionId },
+    });
     if (!s) throw new NotFoundException('Không tìm thấy bản nộp');
-    const a = await this.assignmentRepo.findOne({ where: { id: s.assignmentId } });
+    const a = await this.assignmentRepo.findOne({
+      where: { id: s.assignmentId },
+    });
     if (!a) throw new NotFoundException('Không tìm thấy giao việc');
     this.assertApproverOrg(user, a);
-    if (s.status !== 'PENDING') throw new ConflictException('APPROVAL_NOT_PENDING');
+    if (s.status !== 'PENDING')
+      throw new ConflictException('APPROVAL_NOT_PENDING');
     s.status = 'REJECTED';
     s.rejectReason = reason.trim();
     await this.submissionRepo.save(s);
@@ -153,9 +172,13 @@ export class ApprovalService {
   }
 
   async patchRejectNote(submissionId: string, reason: string, user: User) {
-    const s = await this.submissionRepo.findOne({ where: { id: submissionId } });
+    const s = await this.submissionRepo.findOne({
+      where: { id: submissionId },
+    });
     if (!s) throw new NotFoundException('Không tìm thấy bản nộp');
-    const a = await this.assignmentRepo.findOne({ where: { id: s.assignmentId } });
+    const a = await this.assignmentRepo.findOne({
+      where: { id: s.assignmentId },
+    });
     if (!a) throw new NotFoundException('Không tìm thấy giao việc');
     this.assertApproverOrg(user, a);
     s.rejectReason = reason.trim();

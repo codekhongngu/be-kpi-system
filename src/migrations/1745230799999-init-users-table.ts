@@ -57,4 +57,3 @@ export class InitUsersTable1745230799999 implements MigrationInterface {
     `);
   }
 }
-

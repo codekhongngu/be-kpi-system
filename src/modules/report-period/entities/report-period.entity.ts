@@ -41,4 +41,3 @@ export class ReportPeriod {
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }
-

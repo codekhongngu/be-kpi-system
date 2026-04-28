@@ -68,4 +68,3 @@ export class OrganizationController {
     return await this.service.remove(id);
   }
 }
-

@@ -17,8 +17,10 @@ export class SummaryService {
     const limit = Math.min(query.limit ?? 20, 200);
     const skip = (page - 1) * limit;
     const qb = this.summaryRepo.createQueryBuilder('s');
-    if (query.formId) qb.andWhere('s.form_id = :formId', { formId: query.formId });
-    if (query.periodId) qb.andWhere('s.period_id = :periodId', { periodId: query.periodId });
+    if (query.formId)
+      qb.andWhere('s.form_id = :formId', { formId: query.formId });
+    if (query.periodId)
+      qb.andWhere('s.period_id = :periodId', { periodId: query.periodId });
     if (query.orgId) qb.andWhere('s.org_id = :orgId', { orgId: query.orgId });
     qb.orderBy('s.created_at', 'DESC').skip(skip).take(limit);
     const [items, total] = await qb.getManyAndCount();
@@ -41,7 +43,10 @@ export class SummaryService {
       periodId: dto.periodId,
       orgId: dto.orgId,
       status: 'DRAFT',
-      summaryData: { indicators: {}, note: 'Tổng hợp tối thiểu — mở rộng theo rule cha–con sau' },
+      summaryData: {
+        indicators: {},
+        note: 'Tổng hợp tối thiểu — mở rộng theo rule cha–con sau',
+      },
       summarizedBy: userId ?? null,
       summarizedAt: new Date(),
     });

@@ -13,10 +13,7 @@ export class MyAssignmentsController {
 
   @Get('assignments')
   @Permissions('submissions.manage')
-  async list(
-    @CurrentUser() user: User,
-    @Query() query: MyAssignmentsQueryDto,
-  ) {
+  async list(@CurrentUser() user: User, @Query() query: MyAssignmentsQueryDto) {
     return await this.submissionService.myAssignments(user, query);
   }
 }

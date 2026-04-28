@@ -145,6 +145,8 @@ Tài liệu này liệt kê **các table** và **ý nghĩa các trường** theo
 
 - **id**: khóa chính (UUID).
 - **form_id**: FK forms (ON DELETE CASCADE).
+- **parent_id**: FK tự tham chiếu (ON DELETE SET NULL), tạo cấu trúc cây chỉ tiêu.
+- **display_index**: chỉ mục hiển thị (ví dụ: 1, 1.1, 1.2.1...).
 - **code**: mã chỉ tiêu (unique trong phạm vi 1 form).
 - **name**: tên chỉ tiêu.
 - **unit**: đơn vị tính.
@@ -166,6 +168,7 @@ Tài liệu này liệt kê **các table** và **ý nghĩa các trường** theo
 
 - **id**: khóa chính (UUID).
 - **form_id**: FK forms (ON DELETE CASCADE).
+- **parent_id**: FK tự tham chiếu (ON DELETE SET NULL), tạo cấu trúc cây thuộc tính.
 - **name**: tên thuộc tính/cột.
 - **data_type**: kiểu dữ liệu.
 - **is_required**: bắt buộc.

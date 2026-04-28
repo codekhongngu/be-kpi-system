@@ -13,4 +13,3 @@ import { Permission } from '../role/entities/permission.entity';
   exports: [ReportPeriodService],
 })
 export class ReportPeriodModule {}
-

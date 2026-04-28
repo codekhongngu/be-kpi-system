@@ -45,12 +45,9 @@ export class FileController {
     @Body('category') category: FileCategory,
     @Body('isPublic') isPublic?: string,
   ) {
-    return await this.fileService.upload(
-      file,
-      category,
-      null,
-      { isPublic: isPublic === 'true' },
-    );
+    return await this.fileService.upload(file, category, null, {
+      isPublic: isPublic === 'true',
+    });
   }
 
   @Get()

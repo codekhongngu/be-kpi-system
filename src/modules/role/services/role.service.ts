@@ -53,10 +53,7 @@ export class RoleService {
       );
     }
 
-    queryBuilder
-      .skip(skip)
-      .take(limit)
-      .orderBy('role.createdAt', 'DESC');
+    queryBuilder.skip(skip).take(limit).orderBy('role.createdAt', 'DESC');
 
     const [data, total] = await queryBuilder.getManyAndCount();
 

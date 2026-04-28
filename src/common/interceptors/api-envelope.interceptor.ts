@@ -17,7 +17,10 @@ import { map } from 'rxjs/operators';
 export class ApiEnvelopeInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const ctx = context.switchToHttp();
-    const res = ctx.getResponse<{ statusCode?: number; getHeader?: (n: string) => unknown }>();
+    const res = ctx.getResponse<{
+      statusCode?: number;
+      getHeader?: (n: string) => unknown;
+    }>();
 
     return next.handle().pipe(
       map((body) => {

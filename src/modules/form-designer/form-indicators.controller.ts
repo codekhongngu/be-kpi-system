@@ -70,7 +70,7 @@ export class FormIndicatorsController {
     @Param('formId', ParseUUIDPipe) formId: string,
     @Body() dto: ReorderIndicatorsDto,
   ) {
-    return await this.formDesigner.reorderIndicators(formId, dto.orderedIds);
+    return await this.formDesigner.reorderIndicators(formId, dto.items);
   }
 
   @Post('import')

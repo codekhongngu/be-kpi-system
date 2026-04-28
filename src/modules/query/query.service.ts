@@ -32,8 +32,10 @@ export class QueryService {
       qb.andWhere('a.orgId = :userOrg', { userOrg: user.orgId });
     }
     if (query.orgId) qb.andWhere('a.orgId = :orgId', { orgId: query.orgId });
-    if (query.formId) qb.andWhere('a.formId = :formId', { formId: query.formId });
-    if (query.periodId) qb.andWhere('a.periodId = :periodId', { periodId: query.periodId });
+    if (query.formId)
+      qb.andWhere('a.formId = :formId', { formId: query.formId });
+    if (query.periodId)
+      qb.andWhere('a.periodId = :periodId', { periodId: query.periodId });
     if (query.status) {
       qb.andWhere('COALESCE(s.status, :draft) = :st', {
         st: query.status,
@@ -41,7 +43,9 @@ export class QueryService {
       });
     }
     if (query.deadlineFrom) {
-      qb.andWhere('a.deadlineTo >= :df', { df: query.deadlineFrom.slice(0, 10) });
+      qb.andWhere('a.deadlineTo >= :df', {
+        df: query.deadlineFrom.slice(0, 10),
+      });
     }
     if (query.deadlineTo) {
       qb.andWhere('a.deadlineTo <= :dt', { dt: query.deadlineTo.slice(0, 10) });
@@ -84,10 +88,14 @@ export class QueryService {
       .leftJoin(ReportSubmission, 's', 's.assignmentId = a.id')
       .innerJoin('forms', 'f', 'f.id = a.formId')
       .where('a.isCancelled = false');
-    if (user.orgId) countQb.andWhere('a.orgId = :userOrg', { userOrg: user.orgId });
-    if (query.orgId) countQb.andWhere('a.orgId = :orgId', { orgId: query.orgId });
-    if (query.formId) countQb.andWhere('a.formId = :formId', { formId: query.formId });
-    if (query.periodId) countQb.andWhere('a.periodId = :periodId', { periodId: query.periodId });
+    if (user.orgId)
+      countQb.andWhere('a.orgId = :userOrg', { userOrg: user.orgId });
+    if (query.orgId)
+      countQb.andWhere('a.orgId = :orgId', { orgId: query.orgId });
+    if (query.formId)
+      countQb.andWhere('a.formId = :formId', { formId: query.formId });
+    if (query.periodId)
+      countQb.andWhere('a.periodId = :periodId', { periodId: query.periodId });
     if (query.status) {
       countQb.andWhere('COALESCE(s.status, :draft) = :st', {
         st: query.status,
@@ -95,10 +103,14 @@ export class QueryService {
       });
     }
     if (query.deadlineFrom) {
-      countQb.andWhere('a.deadlineTo >= :df', { df: query.deadlineFrom.slice(0, 10) });
+      countQb.andWhere('a.deadlineTo >= :df', {
+        df: query.deadlineFrom.slice(0, 10),
+      });
     }
     if (query.deadlineTo) {
-      countQb.andWhere('a.deadline_to <= :dt', { dt: query.deadlineTo.slice(0, 10) });
+      countQb.andWhere('a.deadline_to <= :dt', {
+        dt: query.deadlineTo.slice(0, 10),
+      });
     }
     if (query.q?.trim()) {
       const q = `%${query.q.trim().toLowerCase()}%`;
@@ -125,9 +137,13 @@ export class QueryService {
   }
 
   async reportDetail(submissionId: string, user: User) {
-    const s = await this.submissionRepo.findOne({ where: { id: submissionId } });
+    const s = await this.submissionRepo.findOne({
+      where: { id: submissionId },
+    });
     if (!s) throw new NotFoundException('Không tìm thấy bản nộp');
-    const a = await this.assignmentRepo.findOne({ where: { id: s.assignmentId } });
+    const a = await this.assignmentRepo.findOne({
+      where: { id: s.assignmentId },
+    });
     if (!a) throw new NotFoundException('Không tìm thấy giao việc');
     if (user.orgId && a.orgId !== user.orgId) {
       throw new NotFoundException('Không tìm thấy bản nộp');

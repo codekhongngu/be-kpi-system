@@ -33,6 +33,14 @@ export class FormIndicator {
   @OneToMany(() => FormIndicator, (indicator) => indicator.parent)
   children: FormIndicator[];
 
+  @Column({
+    name: 'display_index',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
+  displayIndex: string | null;
+
   @Column({ type: 'varchar', length: 50 })
   code: string;
 

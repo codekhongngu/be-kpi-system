@@ -1528,7 +1528,7 @@
 							],
 							"body": {
 								"mode": "raw",
-								"raw": "{\n  \"orderedIds\": [\n    \"{{attrId1}}\",\n    \"{{attrId2}}\"\n  ]\n}",
+								"raw": "{\n  \"items\": [\n    { \"id\": \"{{attrId1}}\", \"parentId\": null },\n    { \"id\": \"{{attrId2}}\", \"parentId\": \"{{attrId1}}\" }\n  ]\n}",
 								"options": { "raw": { "language": "json" } }
 							},
 							"url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/attributes/reorder", "host": ["{{baseUrl}}"], "path": ["api","v1","forms","{{formId}}","attributes","reorder"] },
@@ -1607,7 +1607,7 @@
 									{ "key": "Content-Type", "value": "application/json" },
 									{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
 								],
-								"body": { "mode": "raw", "raw": "{\n  \"parentId\": null,\n  \"code\": \"I001\",\n  \"name\": \"Chỉ tiêu 01\",\n  \"unit\": \"%\",\n  \"dataType\": \"number\",\n  \"isRequired\": true,\n  \"isCalculated\": false,\n  \"sortOrder\": 0,\n  \"isActive\": true\n}", "options": { "raw": { "language": "json" } } },
+								"body": { "mode": "raw", "raw": "{\n  \"parentId\": null,\n  \"displayIndex\": \"1\",\n  \"code\": \"I001\",\n  \"name\": \"Chỉ tiêu 01\",\n  \"unit\": \"%\",\n  \"dataType\": \"number\",\n  \"isRequired\": true,\n  \"isCalculated\": false,\n  \"sortOrder\": 0,\n  \"isActive\": true\n}", "options": { "raw": { "language": "json" } } },
 								"url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/indicators", "host": ["{{baseUrl}}"], "path": ["api","v1","forms","{{formId}}","indicators"] },
 								"description": "POST /forms/:id/indicators — JWT + DESIGN_FORMS:WRITE"
 							},
@@ -1621,7 +1621,7 @@
 									{ "key": "Content-Type", "value": "application/json" },
 									{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
 								],
-								"body": { "mode": "raw", "raw": "{\n  \"parentId\": null,\n  \"name\": \"Đổi tên chỉ tiêu\",\n  \"unit\": \"Cái\"\n}", "options": { "raw": { "language": "json" } } },
+								"body": { "mode": "raw", "raw": "{\n  \"parentId\": null,\n  \"displayIndex\": \"1.1\",\n  \"name\": \"Đổi tên chỉ tiêu\",\n  \"unit\": \"Cái\"\n}", "options": { "raw": { "language": "json" } } },
 								"url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/indicators/{{indicatorId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","forms","{{formId}}","indicators","{{indicatorId}}"] },
 								"description": "PATCH /forms/:id/indicators/:indicatorId — JWT + DESIGN_FORMS:WRITE"
 							},
@@ -1645,7 +1645,7 @@
 									{ "key": "Content-Type", "value": "application/json" },
 									{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
 								],
-								"body": { "mode": "raw", "raw": "{\n  \"orderedIds\": [\"id-1\", \"id-2\"]\n}", "options": { "raw": { "language": "json" } } },
+								"body": { "mode": "raw", "raw": "{\n  \"items\": [\n    { \"id\": \"id-1\", \"parentId\": null },\n    { \"id\": \"id-2\", \"parentId\": \"id-1\" }\n  ]\n}", "options": { "raw": { "language": "json" } } },
 								"url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/indicators/reorder", "host": ["{{baseUrl}}"], "path": ["api","v1","forms","{{formId}}","indicators","reorder"] },
 								"description": "POST /forms/:id/indicators/reorder — Sắp xếp lại chỉ tiêu"
 							},

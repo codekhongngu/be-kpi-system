@@ -305,8 +305,18 @@ export class SeedDemoUsersNestRbac1745230800002 implements MigrationInterface {
       return;
     }
 
-    const usernames = ['system_admin', 'data_manager', 'data_entry', 'approver'];
-    const roleCodes = ['SYSTEM_ADMIN', 'DATA_MANAGER', 'DATA_ENTRY', 'APPROVER'];
+    const usernames = [
+      'system_admin',
+      'data_manager',
+      'data_entry',
+      'approver',
+    ];
+    const roleCodes = [
+      'SYSTEM_ADMIN',
+      'DATA_MANAGER',
+      'DATA_ENTRY',
+      'APPROVER',
+    ];
 
     await queryRunner.query(
       `
@@ -337,4 +347,3 @@ export class SeedDemoUsersNestRbac1745230800002 implements MigrationInterface {
     );
   }
 }
-

@@ -91,25 +91,120 @@ export class SeedSampleAdminRbacAndPeriods1745230800001 implements MigrationInte
       )
     `);
 
-    const permRows: Array<{ id: string; code: string; name: string; category: string }> = [
-      { id: PERMISSION_IDS.usersManage, code: 'users.manage', name: 'Quản lý tài khoản', category: 'admin' },
-      { id: PERMISSION_IDS.rolesManage, code: 'roles.manage', name: 'Quản lý vai trò & phân quyền', category: 'admin' },
-      { id: PERMISSION_IDS.orgsManage, code: 'orgs.manage', name: 'Quản lý đơn vị hành chính', category: 'QLDL' },
-      { id: PERMISSION_IDS.periodsManage, code: 'periods.manage', name: 'Quản lý kỳ báo cáo', category: 'QLDL' },
-      { id: PERMISSION_IDS.formsManage, code: 'forms.manage', name: 'Thiết kế biểu mẫu', category: 'QLDL' },
-      { id: PERMISSION_IDS.assignmentsManage, code: 'assignments.manage', name: 'Giao / hủy giao báo cáo', category: 'QLDL' },
-      { id: PERMISSION_IDS.submissionsManage, code: 'submissions.manage', name: 'Nhập liệu / gửi báo cáo', category: 'QLDL' },
-      { id: PERMISSION_IDS.approvalsManage, code: 'approvals.manage', name: 'Duyệt báo cáo', category: 'QLDL' },
-      { id: PERMISSION_IDS.summariesManage, code: 'summaries.manage', name: 'Tổng hợp báo cáo', category: 'QLDL' },
-      { id: PERMISSION_IDS.analyticsRead, code: 'analytics.read', name: 'Xem phân tích / KPI', category: 'QLDL' },
-      { id: PERMISSION_IDS.analyticsExport, code: 'analytics.export', name: 'Xuất dữ liệu phân tích / KPI', category: 'QLDL' },
-      { id: PERMISSION_IDS.notificationsRead, code: 'notifications.read', name: 'Xem thông báo', category: 'QLDL' },
-      { id: PERMISSION_IDS.monitoringRead, code: 'monitoring.read', name: 'Xem giám sát/nhắc hạn', category: 'QLDL' },
-      { id: PERMISSION_IDS.monitoringManage, code: 'monitoring.manage', name: 'Gửi nhắc hạn/điều hành', category: 'QLDL' },
-      { id: PERMISSION_IDS.reportsRead, code: 'reports.read', name: 'Tra cứu báo cáo', category: 'QLDL' },
-      { id: PERMISSION_IDS.reportsExport, code: 'reports.export', name: 'Xuất báo cáo tra cứu', category: 'QLDL' },
-      { id: PERMISSION_IDS.usersExport, code: 'users.export', name: 'Import/Export tài khoản', category: 'admin' },
-      { id: PERMISSION_IDS.auditRead, code: 'audit.read', name: 'Xem nhật ký kiểm toán', category: 'admin' },
+    const permRows: Array<{
+      id: string;
+      code: string;
+      name: string;
+      category: string;
+    }> = [
+      {
+        id: PERMISSION_IDS.usersManage,
+        code: 'users.manage',
+        name: 'Quản lý tài khoản',
+        category: 'admin',
+      },
+      {
+        id: PERMISSION_IDS.rolesManage,
+        code: 'roles.manage',
+        name: 'Quản lý vai trò & phân quyền',
+        category: 'admin',
+      },
+      {
+        id: PERMISSION_IDS.orgsManage,
+        code: 'orgs.manage',
+        name: 'Quản lý đơn vị hành chính',
+        category: 'QLDL',
+      },
+      {
+        id: PERMISSION_IDS.periodsManage,
+        code: 'periods.manage',
+        name: 'Quản lý kỳ báo cáo',
+        category: 'QLDL',
+      },
+      {
+        id: PERMISSION_IDS.formsManage,
+        code: 'forms.manage',
+        name: 'Thiết kế biểu mẫu',
+        category: 'QLDL',
+      },
+      {
+        id: PERMISSION_IDS.assignmentsManage,
+        code: 'assignments.manage',
+        name: 'Giao / hủy giao báo cáo',
+        category: 'QLDL',
+      },
+      {
+        id: PERMISSION_IDS.submissionsManage,
+        code: 'submissions.manage',
+        name: 'Nhập liệu / gửi báo cáo',
+        category: 'QLDL',
+      },
+      {
+        id: PERMISSION_IDS.approvalsManage,
+        code: 'approvals.manage',
+        name: 'Duyệt báo cáo',
+        category: 'QLDL',
+      },
+      {
+        id: PERMISSION_IDS.summariesManage,
+        code: 'summaries.manage',
+        name: 'Tổng hợp báo cáo',
+        category: 'QLDL',
+      },
+      {
+        id: PERMISSION_IDS.analyticsRead,
+        code: 'analytics.read',
+        name: 'Xem phân tích / KPI',
+        category: 'QLDL',
+      },
+      {
+        id: PERMISSION_IDS.analyticsExport,
+        code: 'analytics.export',
+        name: 'Xuất dữ liệu phân tích / KPI',
+        category: 'QLDL',
+      },
+      {
+        id: PERMISSION_IDS.notificationsRead,
+        code: 'notifications.read',
+        name: 'Xem thông báo',
+        category: 'QLDL',
+      },
+      {
+        id: PERMISSION_IDS.monitoringRead,
+        code: 'monitoring.read',
+        name: 'Xem giám sát/nhắc hạn',
+        category: 'QLDL',
+      },
+      {
+        id: PERMISSION_IDS.monitoringManage,
+        code: 'monitoring.manage',
+        name: 'Gửi nhắc hạn/điều hành',
+        category: 'QLDL',
+      },
+      {
+        id: PERMISSION_IDS.reportsRead,
+        code: 'reports.read',
+        name: 'Tra cứu báo cáo',
+        category: 'QLDL',
+      },
+      {
+        id: PERMISSION_IDS.reportsExport,
+        code: 'reports.export',
+        name: 'Xuất báo cáo tra cứu',
+        category: 'QLDL',
+      },
+      {
+        id: PERMISSION_IDS.usersExport,
+        code: 'users.export',
+        name: 'Import/Export tài khoản',
+        category: 'admin',
+      },
+      {
+        id: PERMISSION_IDS.auditRead,
+        code: 'audit.read',
+        name: 'Xem nhật ký kiểm toán',
+        category: 'admin',
+      },
     ];
 
     for (const p of permRows) {
@@ -289,7 +384,9 @@ export class SeedSampleAdminRbacAndPeriods1745230800001 implements MigrationInte
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DELETE FROM "report_periods" WHERE "code" IN ('K202601', 'K2026Q1')`);
+    await queryRunner.query(
+      `DELETE FROM "report_periods" WHERE "code" IN ('K202601', 'K2026Q1')`,
+    );
 
     await queryRunner.query(`
       UPDATE "organizations" SET "head_user_id" = NULL, "updated_at" = now()

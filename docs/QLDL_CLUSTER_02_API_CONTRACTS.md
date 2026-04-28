@@ -805,6 +805,7 @@ export type CreateFormRequest = {
 
 export type FormAttribute = {
   id: string;
+  parentId?: string | null;
   name: string;
   dataType?: string | null;
   isRequired: boolean;
@@ -816,6 +817,8 @@ export type FormAttribute = {
 
 export type FormIndicator = {
   id: string;
+  parentId?: string | null;
+  displayIndex?: string | null;
   code: string;
   name: string;
   unit?: string | null;

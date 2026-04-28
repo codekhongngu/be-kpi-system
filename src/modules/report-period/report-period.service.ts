@@ -21,7 +21,8 @@ function ymd(d: Date): string {
 function parseDateOnly(value: string): Date {
   // Expect YYYY-MM-DD (from IsDateString), force midnight UTC-like by using Date(value)
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) throw new BadRequestException('Ngày không hợp lệ');
+  if (Number.isNaN(d.getTime()))
+    throw new BadRequestException('Ngày không hợp lệ');
   return d;
 }
 
@@ -31,11 +32,15 @@ function quarterOf(d: Date): number {
 
 function isoWeekNumber(date: Date): { year: number; week: number } {
   // ISO week date weeks start on Monday
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const d = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+  );
   const dayNum = d.getUTCDay() || 7; // Mon=1..Sun=7
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const week = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  const week = Math.ceil(
+    ((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
+  );
   return { year: d.getUTCFullYear(), week };
 }
 
@@ -206,4 +211,3 @@ export class ReportPeriodService {
     }
   }
 }
-

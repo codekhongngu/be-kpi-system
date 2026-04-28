@@ -32,8 +32,10 @@ export class AssignmentService {
     const limit = Math.min(query.limit ?? 20, 200);
     const skip = (page - 1) * limit;
     const qb = this.assignmentRepo.createQueryBuilder('a');
-    if (query.formId) qb.andWhere('a.formId = :formId', { formId: query.formId });
-    if (query.periodId) qb.andWhere('a.periodId = :periodId', { periodId: query.periodId });
+    if (query.formId)
+      qb.andWhere('a.formId = :formId', { formId: query.formId });
+    if (query.periodId)
+      qb.andWhere('a.periodId = :periodId', { periodId: query.periodId });
     if (query.orgId) qb.andWhere('a.orgId = :orgId', { orgId: query.orgId });
     if (query.isCancelled !== undefined) {
       qb.andWhere('a.isCancelled = :ic', { ic: query.isCancelled });
@@ -47,9 +49,12 @@ export class AssignmentService {
     const form = await this.formRepo.findOne({ where: { id: dto.formId } });
     if (!form) throw new NotFoundException('Không tìm thấy biểu mẫu');
     if (!form.isActive) throw new ConflictException('ASSIGNMENT_FORM_INACTIVE');
-    const period = await this.periodRepo.findOne({ where: { id: dto.periodId } });
+    const period = await this.periodRepo.findOne({
+      where: { id: dto.periodId },
+    });
     if (!period) throw new NotFoundException('Không tìm thấy kỳ báo cáo');
-    if (!period.isActive) throw new BadRequestException('Kỳ báo cáo không hoạt động');
+    if (!period.isActive)
+      throw new BadRequestException('Kỳ báo cáo không hoạt động');
 
     let created = 0;
     let skipped = 0;
@@ -110,7 +115,11 @@ export class AssignmentService {
   async nextPeriod(dto: NextPeriodAssignmentsDto) {
     const confirm = dto.confirm === true;
     const fromRows = await this.assignmentRepo.find({
-      where: { formId: dto.formId, periodId: dto.fromPeriodId, isCancelled: false },
+      where: {
+        formId: dto.formId,
+        periodId: dto.fromPeriodId,
+        isCancelled: false,
+      },
     });
     if (!confirm) {
       return {

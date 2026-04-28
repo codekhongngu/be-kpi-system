@@ -22,10 +22,7 @@ import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import { FileModule } from './modules/file/file.module';
 import { ImportJobModule } from './modules/import-job/import-job.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
-import {
-  LoggingMiddleware,
-  RequestIdMiddleware,
-} from './common';
+import { LoggingMiddleware, RequestIdMiddleware } from './common';
 import { URL } from 'url';
 
 @Module({
@@ -103,8 +100,6 @@ import { URL } from 'url';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     // Apply middleware to all routes
-    consumer
-      .apply(RequestIdMiddleware, LoggingMiddleware)
-      .forRoutes('*');
+    consumer.apply(RequestIdMiddleware, LoggingMiddleware).forRoutes('*');
   }
 }

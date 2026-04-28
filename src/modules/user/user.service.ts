@@ -12,12 +12,19 @@ import { ConfigService } from '@nestjs/config';
 import { User, UserStatus } from './entities/user.entity';
 import { Role } from '../role/entities/role.entity';
 import { Organization } from '../organization/entities/organization.entity';
-import { ImportJob, ImportJobStatus } from '../import-job/entities/import-job.entity';
+import {
+  ImportJob,
+  ImportJobStatus,
+} from '../import-job/entities/import-job.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserQueryDto } from './dto/user-query.dto';
 import { AssignRolesDto } from './dto/assign-roles.dto';
-import type { MeResponse, UserDetail, UserListItem } from './types/user-contract.types';
+import type {
+  MeResponse,
+  UserDetail,
+  UserListItem,
+} from './types/user-contract.types';
 
 type ImportErrorRow = { row: number; message: string; field?: string };
 type ImportJobSummary = {
@@ -74,8 +81,12 @@ export class UserService {
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(passwordPlain, saltRounds);
 
-    const { roleIds, password: _pw, isActive: _ia, ...rest } =
-      createUserDto as any;
+    const {
+      roleIds,
+      password: _pw,
+      isActive: _ia,
+      ...rest
+    } = createUserDto as any;
 
     let status: UserStatus = createUserDto.status ?? UserStatus.ACTIVE;
     if (createUserDto.isActive === false) status = UserStatus.INACTIVE;
@@ -120,9 +131,13 @@ export class UserService {
     }
 
     if (query.isActive === true) {
-      qb.andWhere('user.status = :activeStatus', { activeStatus: UserStatus.ACTIVE });
+      qb.andWhere('user.status = :activeStatus', {
+        activeStatus: UserStatus.ACTIVE,
+      });
     } else if (query.isActive === false) {
-      qb.andWhere('user.status != :activeStatus', { activeStatus: UserStatus.ACTIVE });
+      qb.andWhere('user.status != :activeStatus', {
+        activeStatus: UserStatus.ACTIVE,
+      });
     }
 
     if (query.departmentId) {
@@ -156,8 +171,7 @@ export class UserService {
           : field === 'username'
             ? 'user.username'
             : 'user.createdAt';
-      const direction =
-        dirRaw?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+      const direction = dirRaw?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
       qb.orderBy(col, direction);
     } else {
       qb.orderBy('user.createdAt', 'DESC');
@@ -248,7 +262,10 @@ export class UserService {
     return await this.userRepository.findOne({ where: { email } });
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<{ ok: true }> {
+  async update(
+    id: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<{ ok: true }> {
     const user = await this.findOne(id);
 
     if (updateUserDto.username && updateUserDto.username !== user.username) {
@@ -289,7 +306,10 @@ export class UserService {
     if (updateUserDto.password) {
       this.assertPasswordPolicy(updateUserDto.password);
       const saltRounds = 10;
-      const passwordHash = await bcrypt.hash(updateUserDto.password, saltRounds);
+      const passwordHash = await bcrypt.hash(
+        updateUserDto.password,
+        saltRounds,
+      );
       user.passwordHash = passwordHash;
       delete updateUserDto.password;
     }
@@ -452,7 +472,9 @@ export class UserService {
   }
 
   async getImportJob(jobId: string) {
-    const job = await this.importJobRepository.findOne({ where: { id: jobId } });
+    const job = await this.importJobRepository.findOne({
+      where: { id: jobId },
+    });
     if (!job) throw new NotFoundException('Không tìm thấy import job');
 
     const summary = (job.summary ?? {}) as Partial<ImportJobSummary> & {
@@ -474,11 +496,16 @@ export class UserService {
     fileBuffer: Buffer,
     actorId: string | null,
   ) {
-    const job = await this.importJobRepository.findOne({ where: { id: jobId } });
+    const job = await this.importJobRepository.findOne({
+      where: { id: jobId },
+    });
     if (!job) return;
 
     job.status = 'RUNNING';
-    job.summary = { ...(job.summary ?? {}), startedAt: new Date().toISOString() };
+    job.summary = {
+      ...(job.summary ?? {}),
+      startedAt: new Date().toISOString(),
+    };
     await this.importJobRepository.save(job);
 
     const errors: ImportErrorRow[] = [];
@@ -493,10 +520,14 @@ export class UserService {
         .filter((l) => l.length > 0);
 
       if (lines.length < 2) {
-        throw new BadRequestException('File CSV không hợp lệ (thiếu header hoặc dữ liệu)');
+        throw new BadRequestException(
+          'File CSV không hợp lệ (thiếu header hoặc dữ liệu)',
+        );
       }
 
-      const header = this.parseCsvLine(lines[0]).map((h) => h.trim().toLowerCase());
+      const header = this.parseCsvLine(lines[0]).map((h) =>
+        h.trim().toLowerCase(),
+      );
       const expected = [
         'code',
         'fullname',
@@ -519,7 +550,9 @@ export class UserService {
         try {
           const cols = this.parseCsvLine(lines[i]);
           if (cols.length !== header.length) {
-            throw new Error(`Số cột không khớp header (${cols.length} vs ${header.length})`);
+            throw new Error(
+              `Số cột không khớp header (${cols.length} vs ${header.length})`,
+            );
           }
           const row: Record<string, string> = {};
           header.forEach((h, idx) => {
@@ -536,7 +569,10 @@ export class UserService {
             orgId: row.orgid || undefined,
             status: (row.status as UserStatus) || UserStatus.ACTIVE,
             roleIds: row.roleids
-              ? row.roleids.split('|').map((s) => s.trim()).filter(Boolean)
+              ? row.roleids
+                  .split('|')
+                  .map((s) => s.trim())
+                  .filter(Boolean)
               : [],
           };
 
@@ -614,7 +650,9 @@ export class UserService {
     };
   }
 
-  private normalizeNotifyChannel(raw: string | null | undefined): 'IN_APP' | 'EMAIL' | 'BOTH' {
+  private normalizeNotifyChannel(
+    raw: string | null | undefined,
+  ): 'IN_APP' | 'EMAIL' | 'BOTH' {
     const v = (raw ?? 'BOTH').toUpperCase().replace(/-/g, '_');
     if (v === 'EMAIL') return 'EMAIL';
     if (v === 'IN_APP' || v === 'INAPP') return 'IN_APP';

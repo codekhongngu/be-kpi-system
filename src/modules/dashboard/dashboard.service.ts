@@ -34,9 +34,15 @@ export class DashboardService {
     const summaryQb = this.summaryRepo.createQueryBuilder('r');
 
     if (organizationId) {
-      assignmentQb.andWhere('a.organizationId = :organizationId', { organizationId });
-      submissionQb.andWhere('s.organizationId = :organizationId', { organizationId });
-      summaryQb.andWhere('r.organizationId = :organizationId', { organizationId });
+      assignmentQb.andWhere('a.organizationId = :organizationId', {
+        organizationId,
+      });
+      submissionQb.andWhere('s.organizationId = :organizationId', {
+        organizationId,
+      });
+      summaryQb.andWhere('r.organizationId = :organizationId', {
+        organizationId,
+      });
     }
     if (periodId) {
       assignmentQb.andWhere('a.periodId = :periodId', { periodId });
@@ -54,17 +60,17 @@ export class DashboardService {
 
     const [totalAssignments, assignedCount] = await assignmentQb
       .select('COUNT(*)', 'total')
-      .addSelect('COUNT(*) FILTER (WHERE a.status = \'ASSIGNED\')', 'assigned')
+      .addSelect("COUNT(*) FILTER (WHERE a.status = 'ASSIGNED')", 'assigned')
       .getRawOne();
 
     const [totalSubmissions, submittedCount] = await submissionQb
       .select('COUNT(*)', 'total')
-      .addSelect('COUNT(*) FILTER (WHERE s.status = \'SUBMITTED\')', 'submitted')
+      .addSelect("COUNT(*) FILTER (WHERE s.status = 'SUBMITTED')", 'submitted')
       .getRawOne();
 
     const [totalSummaries, approvedSummaries] = await summaryQb
       .select('COUNT(*)', 'total')
-      .addSelect('COUNT(*) FILTER (WHERE r.status = \'APPROVED\')', 'approved')
+      .addSelect("COUNT(*) FILTER (WHERE r.status = 'APPROVED')", 'approved')
       .getRawOne();
 
     const totalOrgs = await this.orgRepo.count();
@@ -73,7 +79,7 @@ export class DashboardService {
 
     const overdueAssignments = await assignmentQb
       .andWhere('a.deadline < NOW()')
-      .andWhere('a.status = \'ASSIGNED\'')
+      .andWhere("a.status = 'ASSIGNED'")
       .getCount();
 
     return {
@@ -101,7 +107,7 @@ export class DashboardService {
 
     const qb = this.submissionRepo
       .createQueryBuilder('s')
-      .select('DATE_TRUNC(\'day\', s.submittedAt)', 'date')
+      .select("DATE_TRUNC('day', s.submittedAt)", 'date')
       .addSelect('COUNT(*)', 'count')
       .where('s.submittedAt IS NOT NULL');
 
@@ -113,7 +119,7 @@ export class DashboardService {
     }
 
     return await qb
-      .groupBy('DATE_TRUNC(\'day\', s.submittedAt)')
+      .groupBy("DATE_TRUNC('day', s.submittedAt)")
       .orderBy('date', 'ASC')
       .limit(30)
       .getRawMany();

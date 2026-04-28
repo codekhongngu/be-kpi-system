@@ -50,7 +50,9 @@ export class AuditLogService {
       qb.andWhere('log.action = :action', { action: query.action });
     }
     if (query.entityType) {
-      qb.andWhere('log.entityType = :entityType', { entityType: query.entityType });
+      qb.andWhere('log.entityType = :entityType', {
+        entityType: query.entityType,
+      });
     }
     if (query.entityId) {
       qb.andWhere('log.entityId = :entityId', { entityId: query.entityId });
@@ -62,10 +64,9 @@ export class AuditLogService {
       qb.andWhere('log.createdAt <= :to', { to: query.to });
     }
     if (query.q?.trim()) {
-      qb.andWhere(
-        '(log.description ILIKE :q OR log.entityType ILIKE :q)',
-        { q: `%${query.q.trim()}%` },
-      );
+      qb.andWhere('(log.description ILIKE :q OR log.entityType ILIKE :q)', {
+        q: `%${query.q.trim()}%`,
+      });
     }
 
     qb.orderBy('log.createdAt', 'DESC').skip(skip).take(limit);

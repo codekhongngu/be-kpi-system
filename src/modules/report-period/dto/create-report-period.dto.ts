@@ -1,4 +1,11 @@
-import { IsBoolean, IsDateString, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsDateString,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { PeriodType } from '../entities/report-period.entity';
 
 export class CreateReportPeriodDto {
@@ -19,4 +26,3 @@ export class CreateReportPeriodDto {
   @IsBoolean()
   isActive?: boolean;
 }
-

@@ -20,7 +20,11 @@ export class AddParentIdToAttributesAndIndicators1777343595993 implements Migrat
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`ALTER TABLE "form_indicators" DROP COLUMN IF EXISTS "parent_id"`);
-    await queryRunner.query(`ALTER TABLE "form_attributes" DROP COLUMN IF EXISTS "parent_id"`);
+    await queryRunner.query(
+      `ALTER TABLE "form_indicators" DROP COLUMN IF EXISTS "parent_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "form_attributes" DROP COLUMN IF EXISTS "parent_id"`,
+    );
   }
 }

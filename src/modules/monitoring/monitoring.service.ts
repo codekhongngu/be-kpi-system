@@ -36,8 +36,10 @@ export class MonitoringService {
       qb.andWhere('a.orgId = :userOrg', { userOrg: user.orgId });
     }
     if (query.orgId) qb.andWhere('a.orgId = :orgId', { orgId: query.orgId });
-    if (query.formId) qb.andWhere('a.formId = :formId', { formId: query.formId });
-    if (query.periodId) qb.andWhere('a.periodId = :periodId', { periodId: query.periodId });
+    if (query.formId)
+      qb.andWhere('a.formId = :formId', { formId: query.formId });
+    if (query.periodId)
+      qb.andWhere('a.periodId = :periodId', { periodId: query.periodId });
     if (query.status) {
       qb.andWhere('COALESCE(s.status, :draft) = :st', {
         st: query.status,
@@ -72,10 +74,14 @@ export class MonitoringService {
       .createQueryBuilder('a')
       .leftJoin(ReportSubmission, 's', 's.assignmentId = a.id')
       .where('a.isCancelled = false');
-    if (user.orgId) countQb.andWhere('a.orgId = :userOrg', { userOrg: user.orgId });
-    if (query.orgId) countQb.andWhere('a.orgId = :orgId', { orgId: query.orgId });
-    if (query.formId) countQb.andWhere('a.formId = :formId', { formId: query.formId });
-    if (query.periodId) countQb.andWhere('a.periodId = :periodId', { periodId: query.periodId });
+    if (user.orgId)
+      countQb.andWhere('a.orgId = :userOrg', { userOrg: user.orgId });
+    if (query.orgId)
+      countQb.andWhere('a.orgId = :orgId', { orgId: query.orgId });
+    if (query.formId)
+      countQb.andWhere('a.formId = :formId', { formId: query.formId });
+    if (query.periodId)
+      countQb.andWhere('a.periodId = :periodId', { periodId: query.periodId });
     if (query.status) {
       countQb.andWhere('COALESCE(s.status, :draft) = :st', {
         st: query.status,

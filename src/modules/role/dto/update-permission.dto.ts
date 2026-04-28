@@ -1,9 +1,4 @@
-import {
-  IsOptional,
-  IsString,
-  MaxLength,
-  Matches,
-} from 'class-validator';
+import { IsOptional, IsString, MaxLength, Matches } from 'class-validator';
 
 export class UpdatePermissionDto {
   @IsOptional()

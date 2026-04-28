@@ -16,4 +16,3 @@ export class UpdateOrganizationDto extends PartialType(CreateOrganizationDto) {
   @IsUUID()
   headUserId?: string | null;
 }
-

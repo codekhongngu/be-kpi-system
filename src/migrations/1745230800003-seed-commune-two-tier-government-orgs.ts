@@ -45,8 +45,20 @@ export class SeedCommuneTwoTierGovernmentOrgs1745230800003 implements MigrationI
       level: number;
       description: string | null;
     }> = [
-      { code: 'XA-HDND', name: 'Hội đồng nhân dân (HĐND)', parentCode: 'XA-ROOT', level: 2, description: null },
-      { code: 'XA-HDND-BPC', name: 'Ban Pháp chế', parentCode: 'XA-HDND', level: 3, description: null },
+      {
+        code: 'XA-HDND',
+        name: 'Hội đồng nhân dân (HĐND)',
+        parentCode: 'XA-ROOT',
+        level: 2,
+        description: null,
+      },
+      {
+        code: 'XA-HDND-BPC',
+        name: 'Ban Pháp chế',
+        parentCode: 'XA-HDND',
+        level: 3,
+        description: null,
+      },
       {
         code: 'XA-HDND-BKTXH',
         name: 'Ban Kinh tế - Xã hội',
@@ -54,8 +66,20 @@ export class SeedCommuneTwoTierGovernmentOrgs1745230800003 implements MigrationI
         level: 3,
         description: null,
       },
-      { code: 'XA-UBND', name: 'Ủy ban nhân dân (UBND)', parentCode: 'XA-ROOT', level: 2, description: null },
-      { code: 'XA-VPH', name: 'Văn phòng HĐND và UBND', parentCode: 'XA-UBND', level: 3, description: null },
+      {
+        code: 'XA-UBND',
+        name: 'Ủy ban nhân dân (UBND)',
+        parentCode: 'XA-ROOT',
+        level: 2,
+        description: null,
+      },
+      {
+        code: 'XA-VPH',
+        name: 'Văn phòng HĐND và UBND',
+        parentCode: 'XA-UBND',
+        level: 3,
+        description: null,
+      },
       {
         code: 'XA-KHOI-KT-HT',
         name: 'Khối Kinh tế & Hạ tầng',
@@ -78,7 +102,13 @@ export class SeedCommuneTwoTierGovernmentOrgs1745230800003 implements MigrationI
         level: 4,
         description: 'Biến thể tổ chức theo loại đơn vị.',
       },
-      { code: 'XA-PVHXH', name: 'Phòng Văn hóa - Xã hội', parentCode: 'XA-UBND', level: 3, description: null },
+      {
+        code: 'XA-PVHXH',
+        name: 'Phòng Văn hóa - Xã hội',
+        parentCode: 'XA-UBND',
+        level: 3,
+        description: null,
+      },
       {
         code: 'XA-TTPVHCC',
         name: 'Trung tâm phục vụ hành chính công',

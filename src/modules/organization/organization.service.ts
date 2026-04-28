@@ -47,8 +47,7 @@ export class OrganizationService {
   }
 
   async findAll(query: OrganizationQueryDto) {
-    const qb = this.orgRepo
-      .createQueryBuilder('o');
+    const qb = this.orgRepo.createQueryBuilder('o');
 
     if (query.isActive !== undefined) {
       qb.andWhere('o.isActive = :isActive', { isActive: query.isActive });
@@ -99,7 +98,8 @@ export class OrganizationService {
     Object.assign(org, {
       ...dto,
       parentId: dto.parentId !== undefined ? dto.parentId : org.parentId,
-      headUserId: dto.headUserId !== undefined ? dto.headUserId : org.headUserId,
+      headUserId:
+        dto.headUserId !== undefined ? dto.headUserId : org.headUserId,
     });
 
     return await this.orgRepo.save(org);
@@ -203,4 +203,3 @@ export class OrganizationService {
     }
   }
 }
-

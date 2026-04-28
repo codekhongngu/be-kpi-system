@@ -34,10 +34,7 @@ export class ReportPeriodController {
   @Post()
   @Permissions('periods.manage')
   @HttpCode(HttpStatus.CREATED)
-  async create(
-    @CurrentUser() user: User,
-    @Body() dto: CreateReportPeriodDto,
-  ) {
+  async create(@CurrentUser() user: User, @Body() dto: CreateReportPeriodDto) {
     return await this.service.create(dto, user?.id ?? null);
   }
 
@@ -59,4 +56,3 @@ export class ReportPeriodController {
     return await this.service.remove(id);
   }
 }
-

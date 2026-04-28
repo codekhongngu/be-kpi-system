@@ -89,10 +89,9 @@ export class SubmissionService {
     }
     if (query.overdue === true) {
       qb.andWhere('a.deadlineTo < CURRENT_DATE');
-      qb.andWhere(
-        '(s.id IS NULL OR s.status IN (:...open))',
-        { open: ['DRAFT', 'REJECTED'] },
-      );
+      qb.andWhere('(s.id IS NULL OR s.status IN (:...open))', {
+        open: ['DRAFT', 'REJECTED'],
+      });
     }
 
     const rows = await qb.getRawMany();
@@ -111,7 +110,8 @@ export class SubmissionService {
         ? {
             id: r.submissionId,
             status: r.submissionStatus,
-            completionPct: r.completionPct != null ? Number(r.completionPct) : null,
+            completionPct:
+              r.completionPct != null ? Number(r.completionPct) : null,
           }
         : null,
     }));
@@ -119,7 +119,9 @@ export class SubmissionService {
   }
 
   async create(dto: CreateSubmissionDto, user: User) {
-    const a = await this.assignmentRepo.findOne({ where: { id: dto.assignmentId } });
+    const a = await this.assignmentRepo.findOne({
+      where: { id: dto.assignmentId },
+    });
     if (!a) throw new NotFoundException('Không tìm thấy giao việc');
     if (a.isCancelled) throw new ConflictException('ASSIGNMENT_CANCELLED');
     this.assertOrgScope(user, a);
@@ -141,7 +143,9 @@ export class SubmissionService {
   async findOne(id: string, user: User) {
     const s = await this.submissionRepo.findOne({ where: { id } });
     if (!s) throw new NotFoundException('Không tìm thấy bản nộp');
-    const a = await this.assignmentRepo.findOne({ where: { id: s.assignmentId } });
+    const a = await this.assignmentRepo.findOne({
+      where: { id: s.assignmentId },
+    });
     if (!a) throw new NotFoundException('Không tìm thấy giao việc');
     this.assertOrgScope(user, a);
     const cells = await this.dataRepo.find({ where: { submissionId: id } });
@@ -153,8 +157,7 @@ export class SubmissionService {
       version: s.version,
       note: s.note,
       rejectReason: s.rejectReason,
-      completionPct:
-        s.completionPct != null ? Number(s.completionPct) : null,
+      completionPct: s.completionPct != null ? Number(s.completionPct) : null,
       submittedAt: s.submittedAt,
       approvedAt: s.approvedAt,
       cells: cells.map((c) => ({
@@ -171,7 +174,9 @@ export class SubmissionService {
   async patchCells(id: string, dto: PatchCellsDto, user: User) {
     const s = await this.submissionRepo.findOne({ where: { id } });
     if (!s) throw new NotFoundException('Không tìm thấy bản nộp');
-    const a = await this.assignmentRepo.findOne({ where: { id: s.assignmentId } });
+    const a = await this.assignmentRepo.findOne({
+      where: { id: s.assignmentId },
+    });
     if (!a) throw new NotFoundException('Không tìm thấy giao việc');
     this.assertOrgScope(user, a);
     if (!['DRAFT', 'REJECTED'].includes(s.status)) {
@@ -235,7 +240,9 @@ export class SubmissionService {
   async submit(id: string, dto: SubmitSubmissionDto, user: User) {
     const s = await this.submissionRepo.findOne({ where: { id } });
     if (!s) throw new NotFoundException('Không tìm thấy bản nộp');
-    const a = await this.assignmentRepo.findOne({ where: { id: s.assignmentId } });
+    const a = await this.assignmentRepo.findOne({
+      where: { id: s.assignmentId },
+    });
     if (!a) throw new NotFoundException('Không tìm thấy giao việc');
     this.assertOrgScope(user, a);
     if (!['DRAFT', 'REJECTED'].includes(s.status)) {
@@ -273,7 +280,10 @@ export class SubmissionService {
       await this.notificationRepo.save(rows);
     }
 
-    return { status: s.status as 'PENDING', submittedAt: s.submittedAt.toISOString() };
+    return {
+      status: s.status as 'PENDING',
+      submittedAt: s.submittedAt.toISOString(),
+    };
   }
 
   private async findApproverUserIds(orgId: string): Promise<string[]> {

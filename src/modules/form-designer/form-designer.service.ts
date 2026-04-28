@@ -25,6 +25,11 @@ import { PatchFormIndicatorDto } from './dto/patch-form-indicator.dto';
 import { CreateIndicatorCatalogDto } from './dto/create-indicator-catalog.dto';
 import { UpdateIndicatorCatalogDto } from './dto/update-indicator-catalog.dto';
 import { IndicatorCatalogQueryDto } from './dto/indicator-catalog-query.dto';
+import {
+  ReorderAttributesDto,
+  ReorderItemDto,
+} from './dto/reorder-attributes.dto';
+import { ReorderIndicatorsDto } from './dto/reorder-indicators.dto';
 import { CreateFieldCategoryDto } from './dto/create-field-category.dto';
 import { PatchFieldCategoryDto } from './dto/patch-field-category.dto';
 import { FieldCategoryQueryDto } from './dto/field-category-query.dto';
@@ -93,7 +98,9 @@ export class FormDesignerService {
     return trimmed;
   }
 
-  private async generateUniqueFormCode(repo?: Repository<Form>): Promise<string> {
+  private async generateUniqueFormCode(
+    repo?: Repository<Form>,
+  ): Promise<string> {
     const targetRepo = repo ?? this.formRepo;
     for (let i = 0; i < 20; i++) {
       const suffix = randomBytes(3).toString('hex').toUpperCase();
@@ -153,6 +160,7 @@ export class FormDesignerService {
     return {
       id: i.id,
       parentId: i.parentId,
+      displayIndex: i.displayIndex,
       code: i.code,
       name: i.name,
       unit: i.unit,
@@ -178,16 +186,15 @@ export class FormDesignerService {
       .leftJoinAndSelect('f.fieldCategoryRef', 'fc');
     if (query.q?.trim()) {
       const q = `%${query.q.trim().toLowerCase()}%`;
-      qb.andWhere(
-        '(LOWER(f.name) LIKE :q OR LOWER(f.code) LIKE :q)',
-        { q },
-      );
+      qb.andWhere('(LOWER(f.name) LIKE :q OR LOWER(f.code) LIKE :q)', { q });
     }
     if (query.fieldCategory !== undefined) {
       qb.andWhere('fc.code = :fcc', { fcc: query.fieldCategory });
     }
     if (query.fieldCategoryId !== undefined) {
-      qb.andWhere('f.fieldCategoryRef = :fcid', { fcid: query.fieldCategoryId });
+      qb.andWhere('f.fieldCategoryRef = :fcid', {
+        fcid: query.fieldCategoryId,
+      });
     }
     if (query.isActive !== undefined) {
       qb.andWhere('f.isActive = :ia', { ia: query.isActive });
@@ -320,7 +327,11 @@ export class FormDesignerService {
     };
   }
 
-  async copyForm(sourceId: string, dto: CopyFormDto, userId: string | undefined) {
+  async copyForm(
+    sourceId: string,
+    dto: CopyFormDto,
+    userId: string | undefined,
+  ) {
     const src = await this.formRepo.findOne({
       where: { id: sourceId },
       relations: { fieldCategoryRef: true },
@@ -344,7 +355,7 @@ export class FormDesignerService {
       const attrRepo = manager.getRepository(FormAttribute);
       const indRepo = manager.getRepository(FormIndicator);
 
-    const f = formRepo.create({
+      const f = formRepo.create({
         code,
         name: dto.name.trim(),
         fieldCategoryRef,
@@ -355,8 +366,12 @@ export class FormDesignerService {
         createdBy: userId ?? null,
       });
       const saved = await formRepo.save(f);
+
+      // Copy Attributes
+      const attrMap = new Map<string, string>();
+      // First pass: Create and save all attributes without parentId to get new IDs
       for (const a of attrs) {
-        await attrRepo.save(
+        const newAttr = await attrRepo.save(
           attrRepo.create({
             formId: saved.id,
             name: a.name,
@@ -368,11 +383,25 @@ export class FormDesignerService {
             options: a.options,
           }),
         );
+        attrMap.set(a.id, newAttr.id);
       }
+      // Second pass: Update parentId based on mapping
+      for (const a of attrs) {
+        if (a.parentId && attrMap.has(a.parentId)) {
+          await attrRepo.update(attrMap.get(a.id)!, {
+            parentId: attrMap.get(a.parentId),
+          });
+        }
+      }
+
+      // Copy Indicators
+      const indMap = new Map<string, string>();
+      // First pass: Create and save all indicators without parentId
       for (const i of inds) {
-        await indRepo.save(
+        const newInd = await indRepo.save(
           indRepo.create({
             formId: saved.id,
+            displayIndex: i.displayIndex,
             code: i.code,
             name: i.name,
             unit: i.unit,
@@ -388,6 +417,15 @@ export class FormDesignerService {
             catalogIndicatorId: i.catalogIndicatorId,
           }),
         );
+        indMap.set(i.id, newInd.id);
+      }
+      // Second pass: Update parentId
+      for (const i of inds) {
+        if (i.parentId && indMap.has(i.parentId)) {
+          await indRepo.update(indMap.get(i.id)!, {
+            parentId: indMap.get(i.parentId),
+          });
+        }
       }
       return saved.id;
     });
@@ -410,7 +448,11 @@ export class FormDesignerService {
 
   async createAttribute(formId: string, dto: CreateFormAttributeDto) {
     await this.ensureForm(formId);
-    const nextSort = await this.nextSortOrder(this.attrRepo, formId, dto.sortOrder);
+    const nextSort = await this.nextSortOrder(
+      this.attrRepo,
+      formId,
+      dto.sortOrder,
+    );
     const a = this.attrRepo.create({
       formId,
       parentId: dto.parentId ?? null,
@@ -483,10 +525,15 @@ export class FormDesignerService {
       });
       if (!c) throw new BadRequestException('catalogIndicatorId không tồn tại');
     }
-    const nextSort = await this.nextSortOrder(this.indRepo, formId, dto.sortOrder);
+    const nextSort = await this.nextSortOrder(
+      this.indRepo,
+      formId,
+      dto.sortOrder,
+    );
     const i = this.indRepo.create({
       formId,
       parentId: dto.parentId ?? null,
+      displayIndex: dto.displayIndex?.trim() ?? null,
       code: dto.code.trim(),
       name: dto.name.trim(),
       unit: dto.unit ?? null,
@@ -515,6 +562,8 @@ export class FormDesignerService {
     });
     if (!i) throw new NotFoundException('Không tìm thấy chỉ tiêu');
     if (dto.parentId !== undefined) i.parentId = dto.parentId;
+    if (dto.displayIndex !== undefined)
+      i.displayIndex = dto.displayIndex?.trim() ?? null;
     if (dto.code !== undefined && dto.code.trim() !== i.code) {
       const dup = await this.indRepo
         .createQueryBuilder('ind')
@@ -541,7 +590,8 @@ export class FormDesignerService {
         const c = await this.catalogRepo.findOne({
           where: { id: dto.catalogIndicatorId },
         });
-        if (!c) throw new BadRequestException('catalogIndicatorId không tồn tại');
+        if (!c)
+          throw new BadRequestException('catalogIndicatorId không tồn tại');
       }
       i.catalogIndicatorId = dto.catalogIndicatorId;
     }
@@ -566,18 +616,122 @@ export class FormDesignerService {
     return { ok: true };
   }
 
-  async reorderIndicators(formId: string, orderedIds: string[]) {
+  async reorderIndicators(formId: string, items: ReorderItemDto[]) {
     await this.ensureForm(formId);
     const existing = await this.indRepo.find({ where: { formId } });
     const idSet = new Set(existing.map((x) => x.id));
-    for (const oid of orderedIds) {
-      if (!idSet.has(oid)) {
-        throw new BadRequestException(`indicatorId không thuộc form: ${oid}`);
+    for (const item of items) {
+      if (!idSet.has(item.id)) {
+        throw new BadRequestException(
+          `indicatorId không thuộc form: ${item.id}`,
+        );
       }
     }
-    for (let idx = 0; idx < orderedIds.length; idx++) {
-      await this.indRepo.update({ id: orderedIds[idx] }, { sortOrder: idx });
-    }
+    await this.dataSource.transaction(async (manager) => {
+      const repo = manager.getRepository(FormIndicator);
+      const seen = new Set<string>();
+      for (const item of items) {
+        if (seen.has(item.id)) {
+          throw new BadRequestException(
+            `Trùng id trong danh sách reorder: ${item.id}`,
+          );
+        }
+        seen.add(item.id);
+      }
+
+      const existingMap = new Map<string, FormIndicator>();
+      for (const row of existing) existingMap.set(row.id, row);
+
+      const parentIdSet = new Set(existing.map((x) => x.id));
+      for (const item of items) {
+        if (item.parentId === null) continue;
+        if (item.parentId !== undefined && !parentIdSet.has(item.parentId)) {
+          throw new BadRequestException(
+            `parentId không thuộc form hoặc không tồn tại: ${item.parentId}`,
+          );
+        }
+        if (item.parentId !== undefined && item.parentId === item.id) {
+          throw new BadRequestException(
+            `parentId không hợp lệ (tự tham chiếu): ${item.id}`,
+          );
+        }
+      }
+
+      const payloadById = new Map<string, ReorderItemDto>();
+      for (const item of items) payloadById.set(item.id, item);
+
+      const effectiveParentId = (id: string): string | null => {
+        const item = payloadById.get(id);
+        if (item && item.parentId !== undefined) return item.parentId ?? null;
+        return existingMap.get(id)?.parentId ?? null;
+      };
+
+      const isCycle = (startId: string): boolean => {
+        const visited = new Set<string>();
+        let cur: string | null = effectiveParentId(startId);
+        while (cur) {
+          if (cur === startId) return true;
+          if (visited.has(cur)) return true;
+          visited.add(cur);
+          cur = effectiveParentId(cur);
+        }
+        return false;
+      };
+
+      for (const item of items) {
+        if (isCycle(item.id)) {
+          throw new BadRequestException(`parentId tạo vòng lặp: ${item.id}`);
+        }
+      }
+
+      const ROOT = '__root__';
+
+      const affectedParents = new Set<string>();
+      for (const item of items) {
+        const oldParent = existingMap.get(item.id)?.parentId ?? null;
+        const newParent = effectiveParentId(item.id);
+        affectedParents.add(oldParent ?? ROOT);
+        affectedParents.add(newParent ?? ROOT);
+      }
+
+      const payloadOrderByParent = new Map<string, string[]>();
+      for (const item of items) {
+        const parent = effectiveParentId(item.id);
+        const key = parent ?? ROOT;
+        const arr = payloadOrderByParent.get(key) ?? [];
+        arr.push(item.id);
+        payloadOrderByParent.set(key, arr);
+      }
+
+      for (const parentKey of affectedParents) {
+        const parentId = parentKey === ROOT ? null : parentKey;
+        const payloadIds = payloadOrderByParent.get(parentKey) ?? [];
+        const payloadIdSet = new Set(payloadIds);
+
+        const remaining = existing
+          .filter(
+            (row) =>
+              effectiveParentId(row.id) === parentId &&
+              !payloadIdSet.has(row.id),
+          )
+          .sort((a, b) => {
+            if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+            return a.id.localeCompare(b.id);
+          })
+          .map((x) => x.id);
+
+        const finalIds = [...payloadIds, ...remaining];
+        for (let idx = 0; idx < finalIds.length; idx++) {
+          const id = finalIds[idx];
+          const payloadItem = payloadById.get(id);
+          const updateData: any = { sortOrder: idx };
+          if (payloadItem && payloadItem.parentId !== undefined) {
+            updateData.parentId = effectiveParentId(id);
+          }
+          await repo.update({ id }, updateData);
+        }
+      }
+    });
     return { ok: true };
   }
 
@@ -592,18 +746,122 @@ export class FormDesignerService {
     return { jobId: saved.id };
   }
 
-  async reorderAttributes(formId: string, orderedIds: string[]) {
+  async reorderAttributes(formId: string, items: ReorderItemDto[]) {
     await this.ensureForm(formId);
     const existing = await this.attrRepo.find({ where: { formId } });
     const idSet = new Set(existing.map((x) => x.id));
-    for (const oid of orderedIds) {
-      if (!idSet.has(oid)) {
-        throw new BadRequestException(`attributeId không thuộc form: ${oid}`);
+    for (const item of items) {
+      if (!idSet.has(item.id)) {
+        throw new BadRequestException(
+          `attributeId không thuộc form: ${item.id}`,
+        );
       }
     }
-    for (let idx = 0; idx < orderedIds.length; idx++) {
-      await this.attrRepo.update({ id: orderedIds[idx] }, { sortOrder: idx });
-    }
+    await this.dataSource.transaction(async (manager) => {
+      const repo = manager.getRepository(FormAttribute);
+      const seen = new Set<string>();
+      for (const item of items) {
+        if (seen.has(item.id)) {
+          throw new BadRequestException(
+            `Trùng id trong danh sách reorder: ${item.id}`,
+          );
+        }
+        seen.add(item.id);
+      }
+
+      const existingMap = new Map<string, FormAttribute>();
+      for (const row of existing) existingMap.set(row.id, row);
+
+      const parentIdSet = new Set(existing.map((x) => x.id));
+      for (const item of items) {
+        if (item.parentId === null) continue;
+        if (item.parentId !== undefined && !parentIdSet.has(item.parentId)) {
+          throw new BadRequestException(
+            `parentId không thuộc form hoặc không tồn tại: ${item.parentId}`,
+          );
+        }
+        if (item.parentId !== undefined && item.parentId === item.id) {
+          throw new BadRequestException(
+            `parentId không hợp lệ (tự tham chiếu): ${item.id}`,
+          );
+        }
+      }
+
+      const payloadById = new Map<string, ReorderItemDto>();
+      for (const item of items) payloadById.set(item.id, item);
+
+      const effectiveParentId = (id: string): string | null => {
+        const item = payloadById.get(id);
+        if (item && item.parentId !== undefined) return item.parentId ?? null;
+        return existingMap.get(id)?.parentId ?? null;
+      };
+
+      const isCycle = (startId: string): boolean => {
+        const visited = new Set<string>();
+        let cur: string | null = effectiveParentId(startId);
+        while (cur) {
+          if (cur === startId) return true;
+          if (visited.has(cur)) return true;
+          visited.add(cur);
+          cur = effectiveParentId(cur);
+        }
+        return false;
+      };
+
+      for (const item of items) {
+        if (isCycle(item.id)) {
+          throw new BadRequestException(`parentId tạo vòng lặp: ${item.id}`);
+        }
+      }
+
+      const ROOT = '__root__';
+
+      const affectedParents = new Set<string>();
+      for (const item of items) {
+        const oldParent = existingMap.get(item.id)?.parentId ?? null;
+        const newParent = effectiveParentId(item.id);
+        affectedParents.add(oldParent ?? ROOT);
+        affectedParents.add(newParent ?? ROOT);
+      }
+
+      const payloadOrderByParent = new Map<string, string[]>();
+      for (const item of items) {
+        const parent = effectiveParentId(item.id);
+        const key = parent ?? ROOT;
+        const arr = payloadOrderByParent.get(key) ?? [];
+        arr.push(item.id);
+        payloadOrderByParent.set(key, arr);
+      }
+
+      for (const parentKey of affectedParents) {
+        const parentId = parentKey === ROOT ? null : parentKey;
+        const payloadIds = payloadOrderByParent.get(parentKey) ?? [];
+        const payloadIdSet = new Set(payloadIds);
+
+        const remaining = existing
+          .filter(
+            (row) =>
+              effectiveParentId(row.id) === parentId &&
+              !payloadIdSet.has(row.id),
+          )
+          .sort((a, b) => {
+            if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+            return a.id.localeCompare(b.id);
+          })
+          .map((x) => x.id);
+
+        const finalIds = [...payloadIds, ...remaining];
+        for (let idx = 0; idx < finalIds.length; idx++) {
+          const id = finalIds[idx];
+          const payloadItem = payloadById.get(id);
+          const updateData: any = { sortOrder: idx };
+          if (payloadItem && payloadItem.parentId !== undefined) {
+            updateData.parentId = effectiveParentId(id);
+          }
+          await repo.update({ id }, updateData);
+        }
+      }
+    });
     return { ok: true };
   }
 
@@ -627,7 +885,9 @@ export class FormDesignerService {
 
     if (query.q?.trim()) {
       const q = `%${query.q.trim().toLowerCase()}%`;
-      qb.andWhere('(LOWER(cat.name) LIKE :q OR LOWER(cat.code) LIKE :q)', { q });
+      qb.andWhere('(LOWER(cat.name) LIKE :q OR LOWER(cat.code) LIKE :q)', {
+        q,
+      });
     }
 
     qb.orderBy('cat.name', 'ASC').skip(skip).take(limit);
@@ -639,7 +899,10 @@ export class FormDesignerService {
     };
   }
 
-  async createCatalogEntry(dto: CreateIndicatorCatalogDto, userId: string | undefined) {
+  async createCatalogEntry(
+    dto: CreateIndicatorCatalogDto,
+    userId: string | undefined,
+  ) {
     const dup = await this.catalogRepo.exist({
       where: { code: dto.code.trim() },
     });
@@ -657,7 +920,8 @@ export class FormDesignerService {
 
   async patchCatalogEntry(id: string, dto: UpdateIndicatorCatalogDto) {
     const row = await this.catalogRepo.findOne({ where: { id } });
-    if (!row) throw new NotFoundException('Không tìm thấy chỉ tiêu trong danh mục');
+    if (!row)
+      throw new NotFoundException('Không tìm thấy chỉ tiêu trong danh mục');
 
     if (dto.code !== undefined) {
       const code = dto.code.trim();
@@ -678,10 +942,13 @@ export class FormDesignerService {
 
   async removeCatalogEntry(id: string) {
     const row = await this.catalogRepo.findOne({ where: { id } });
-    if (!row) throw new NotFoundException('Không tìm thấy chỉ tiêu trong danh mục');
+    if (!row)
+      throw new NotFoundException('Không tìm thấy chỉ tiêu trong danh mục');
 
     // Check if being used in any form indicators
-    const used = await this.indRepo.exist({ where: { catalogIndicatorId: id } });
+    const used = await this.indRepo.exist({
+      where: { catalogIndicatorId: id },
+    });
     if (used) {
       throw new ConflictException('CATALOG_ENTRY_IN_USE');
     }
@@ -700,12 +967,12 @@ export class FormDesignerService {
     }
     if (query.q?.trim()) {
       const q = `%${query.q.trim().toLowerCase()}%`;
-      qb.andWhere(
-        '(LOWER(c.name) LIKE :q OR LOWER(c.code) LIKE :q)',
-        { q },
-      );
+      qb.andWhere('(LOWER(c.name) LIKE :q OR LOWER(c.code) LIKE :q)', { q });
     }
-    qb.orderBy('c.sort_order', 'ASC').addOrderBy('c.name', 'ASC').skip(skip).take(limit);
+    qb.orderBy('c.sort_order', 'ASC')
+      .addOrderBy('c.name', 'ASC')
+      .skip(skip)
+      .take(limit);
     const [rows, total] = await qb.getManyAndCount();
     return {
       items: rows.map((c) => ({

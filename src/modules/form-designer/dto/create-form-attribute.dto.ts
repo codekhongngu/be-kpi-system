@@ -1,8 +1,22 @@
-import { IsBoolean, IsInt, IsNotEmpty, IsObject, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsNotEmpty,
+  IsObject,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  Min,
+} from 'class-validator';
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export class CreateFormAttributeDto {
   @IsOptional()
-  @IsUUID()
+  @IsString()
+  @Matches(UUID_REGEX, { message: 'parentId phải là định dạng UUID' })
   parentId?: string | null;
 
   @IsString()

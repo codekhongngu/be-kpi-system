@@ -31,7 +31,12 @@ export class Form {
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
 
-  @Column({ name: 'template_file', type: 'varchar', length: 500, nullable: true })
+  @Column({
+    name: 'template_file',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
   templateFile: string | null;
 
   @Column({ name: 'parent_form_id', type: 'uuid', nullable: true })

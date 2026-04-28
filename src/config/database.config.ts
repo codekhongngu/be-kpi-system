@@ -13,7 +13,8 @@ try {
 }
 
 function envBool(value: unknown, defaultValue: boolean) {
-  if (value === undefined || value === null || value === '') return defaultValue;
+  if (value === undefined || value === null || value === '')
+    return defaultValue;
   return String(value).toLowerCase() === 'true';
 }
 
@@ -57,4 +58,3 @@ export default new DataSource(
         database: process.env.DB_DATABASE ?? 'starter_db',
       },
 );
-

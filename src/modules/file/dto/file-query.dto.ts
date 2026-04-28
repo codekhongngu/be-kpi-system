@@ -1,4 +1,11 @@
-import { IsOptional, IsString, IsInt, Min, IsBoolean, IsDateString } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsInt,
+  Min,
+  IsBoolean,
+  IsDateString,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { FileCategory } from '../entities/file-record.entity';
 
