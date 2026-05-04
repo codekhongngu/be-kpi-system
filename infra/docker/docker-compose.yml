@@ -6,12 +6,12 @@ services:
   # Note: If DB is already running from prod, this will use the same volume
   postgres:
     image: postgres:16-alpine
-    container_name: starter-be-postgres
+    container_name: db-csdl-tuyphuoc
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_DATABASE:-starter_db}
+      POSTGRES_DB: ${DB_DATABASE:-db_commune_tuyphuoc}
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
@@ -29,7 +29,7 @@ services:
     build:
       context: ../..
       dockerfile: infra/docker/Dockerfile.dev
-    container_name: starter-be-app-dev
+    container_name: be-csdl-tuyphuoc-dev
     restart: unless-stopped
     ports:
       - "${PORT:-5000}:5000"
@@ -40,7 +40,7 @@ services:
       DB_PORT: 5432
       DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      DB_DATABASE: ${DB_DATABASE:-starter_db}
+      DB_DATABASE: ${DB_DATABASE:-db_commune_tuyphuoc}
       DB_SYNCHRONIZE: ${DB_SYNCHRONIZE:-true}
       DB_LOGGING: ${DB_LOGGING:-true}
     volumes:

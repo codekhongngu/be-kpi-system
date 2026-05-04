@@ -27,16 +27,16 @@ mkdir -p "$BACKUP_DIR"
 echo "💾 Creating database backup: $BACKUP_NAME"
 
 # Check if running in Docker
-if docker ps | grep -q "starter-be-postgres"; then
+if docker ps | grep -q "db-csdl-tuyphuoc"; then
     echo "🐳 Backing up from Docker container..."
-    docker exec starter-be-postgres pg_dump -U "${DB_USERNAME:-postgres}" "${DB_DATABASE:-starter_db}" > "$BACKUP_FILE"
+    docker exec db-csdl-tuyphuoc pg_dump -U "${DB_USERNAME:-postgres}" "${DB_DATABASE:-db_commune_tuyphuoc}" > "$BACKUP_FILE"
 elif [ -n "${DB_HOST:-}" ]; then
     echo "📡 Backing up from remote database..."
     PGPASSWORD="${DB_PASSWORD:-postgres}" pg_dump \
         -h "${DB_HOST}" \
         -p "${DB_PORT:-5432}" \
         -U "${DB_USERNAME:-postgres}" \
-        -d "${DB_DATABASE:-starter_db}" \
+        -d "${DB_DATABASE:-db_commune_tuyphuoc}" \
         > "$BACKUP_FILE"
 else
     echo "❌ Error: Cannot determine database connection method"

@@ -11,7 +11,7 @@
 
 -- Example: Create initial roles/permissions
 -- CREATE ROLE readonly;
--- GRANT CONNECT ON DATABASE starter_db TO readonly;
+-- GRANT CONNECT ON DATABASE db_commune_tuyphuoc TO readonly;
 -- GRANT USAGE ON SCHEMA public TO readonly;
 -- GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly;
 

@@ -26,7 +26,7 @@ DB_HOST=postgres
 DB_PORT=5432
 DB_USERNAME=postgres
 DB_PASSWORD=postgres
-DB_DATABASE=starter_db
+DB_DATABASE=db_commune_tuyphuoc
 DB_SYNCHRONIZE=false
 DB_LOGGING=true
 ```
@@ -115,7 +115,7 @@ docker compose -f infra/docker/docker-compose.prod.yml ps
 docker compose -f infra/docker/docker-compose.prod.yml exec app sh
 
 # Chạy lệnh trong container postgres
-docker compose -f infra/docker/docker-compose.prod.yml exec postgres psql -U postgres -d starter_db
+docker compose -f infra/docker/docker-compose.prod.yml exec postgres psql -U postgres -d db_commune_tuyphuoc
 ```
 
 ## Môi trường Development với Docker
@@ -284,11 +284,11 @@ npm run seed
 ./scripts/backup-db.sh
 
 # Hoặc manual
-docker compose -f infra/docker/docker-compose.prod.yml exec postgres pg_dump -U postgres starter_db > backup.sql
+docker compose -f infra/docker/docker-compose.prod.yml exec postgres pg_dump -U postgres db_commune_tuyphuoc > backup.sql
 ```
 
 ### Restore
 
 ```bash
-docker compose -f infra/docker/docker-compose.prod.yml exec -T postgres psql -U postgres starter_db < backup.sql
+docker compose -f infra/docker/docker-compose.prod.yml exec -T postgres psql -U postgres db_commune_tuyphuoc < backup.sql
 ```
