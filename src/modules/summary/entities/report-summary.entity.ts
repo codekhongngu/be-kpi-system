@@ -4,6 +4,7 @@ import {
   Entity,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { PeriodType } from '../../../common';
 
 @Entity('report_summaries')
 export class ReportSummary {
@@ -13,8 +14,25 @@ export class ReportSummary {
   @Column({ name: 'form_id', type: 'uuid' })
   formId: string;
 
-  @Column({ name: 'period_id', type: 'uuid' })
-  periodId: string;
+  @Column({ name: 'period_type', type: 'varchar', length: 10 })
+  periodType: PeriodType;
+
+  @Column({ name: 'period_from', type: 'date' })
+  periodFrom: string;
+
+  @Column({ name: 'period_to', type: 'date' })
+  periodTo: string;
+
+  @Column({ name: 'period_code', type: 'varchar', length: 30, nullable: true })
+  periodCode: string | null;
+
+  @Column({
+    name: 'period_name',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
+  periodName: string | null;
 
   @Column({ name: 'org_id', type: 'uuid' })
   orgId: string;

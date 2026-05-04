@@ -9,10 +9,15 @@ import { Repository } from 'typeorm';
 import { FormAssignment } from './entities/form-assignment.entity';
 import { Form } from '../form-designer/entities/form.entity';
 import { Organization } from '../organization/entities/organization.entity';
-import { ReportPeriod } from '../report-period/entities/report-period.entity';
 import { AssignmentQueryDto } from './dto/assignment-query.dto';
 import { CreateAssignmentsDto } from './dto/create-assignments.dto';
 import { NextPeriodAssignmentsDto } from './dto/next-period-assignments.dto';
+
+function parseDateOnly(value: string): Date {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) throw new BadRequestException('Ngày không hợp lệ');
+  return d;
+}
 
 @Injectable()
 export class AssignmentService {
@@ -23,8 +28,6 @@ export class AssignmentService {
     private readonly formRepo: Repository<Form>,
     @InjectRepository(Organization)
     private readonly orgRepo: Repository<Organization>,
-    @InjectRepository(ReportPeriod)
-    private readonly periodRepo: Repository<ReportPeriod>,
   ) {}
 
   async findAll(query: AssignmentQueryDto) {
@@ -34,8 +37,14 @@ export class AssignmentService {
     const qb = this.assignmentRepo.createQueryBuilder('a');
     if (query.formId)
       qb.andWhere('a.formId = :formId', { formId: query.formId });
-    if (query.periodId)
-      qb.andWhere('a.periodId = :periodId', { periodId: query.periodId });
+    if (query.periodType)
+      qb.andWhere('a.periodType = :periodType', { periodType: query.periodType });
+    if (query.from) {
+      qb.andWhere('a.periodTo >= :from', { from: query.from.slice(0, 10) });
+    }
+    if (query.to) {
+      qb.andWhere('a.periodFrom <= :to', { to: query.to.slice(0, 10) });
+    }
     if (query.orgId) qb.andWhere('a.orgId = :orgId', { orgId: query.orgId });
     if (query.isCancelled !== undefined) {
       qb.andWhere('a.isCancelled = :ic', { ic: query.isCancelled });
@@ -49,16 +58,21 @@ export class AssignmentService {
     const form = await this.formRepo.findOne({ where: { id: dto.formId } });
     if (!form) throw new NotFoundException('Không tìm thấy biểu mẫu');
     if (!form.isActive) throw new ConflictException('ASSIGNMENT_FORM_INACTIVE');
-    const period = await this.periodRepo.findOne({
-      where: { id: dto.periodId },
-    });
-    if (!period) throw new NotFoundException('Không tìm thấy kỳ báo cáo');
-    if (!period.isActive)
-      throw new BadRequestException('Kỳ báo cáo không hoạt động');
+
+    const pFrom = parseDateOnly(dto.periodFrom);
+    const pTo = parseDateOnly(dto.periodTo);
+    if (pTo.getTime() < pFrom.getTime()) {
+      throw new BadRequestException('PERIOD_INVALID_RANGE');
+    }
 
     let created = 0;
     let skipped = 0;
     const duplicates: Array<{ orgId: string; reason: string }> = [];
+
+    const periodFrom = dto.periodFrom.slice(0, 10);
+    const periodTo = dto.periodTo.slice(0, 10);
+    const periodCode = dto.periodCode?.trim() || null;
+    const periodName = dto.periodName?.trim() || null;
 
     for (const orgId of dto.orgIds) {
       const org = await this.orgRepo.findOne({ where: { id: orgId } });
@@ -76,7 +90,9 @@ export class AssignmentService {
         where: {
           formId: dto.formId,
           orgId,
-          periodId: dto.periodId,
+          periodType: dto.periodType,
+          periodFrom,
+          periodTo,
           isCancelled: false,
         },
       });
@@ -88,7 +104,11 @@ export class AssignmentService {
       const row = this.assignmentRepo.create({
         formId: dto.formId,
         orgId,
-        periodId: dto.periodId,
+        periodType: dto.periodType,
+        periodFrom,
+        periodTo,
+        periodCode,
+        periodName,
         deadlineFrom: dto.deadlineFrom.slice(0, 10),
         deadlineTo: dto.deadlineTo.slice(0, 10),
         isCancelled: false,
@@ -117,7 +137,9 @@ export class AssignmentService {
     const fromRows = await this.assignmentRepo.find({
       where: {
         formId: dto.formId,
-        periodId: dto.fromPeriodId,
+        periodType: dto.fromPeriodType,
+        periodFrom: dto.fromPeriodFrom.slice(0, 10),
+        periodTo: dto.fromPeriodTo.slice(0, 10),
         isCancelled: false,
       },
     });
@@ -125,18 +147,30 @@ export class AssignmentService {
       return {
         preview: true,
         wouldCreate: fromRows.length,
-        fromPeriodId: dto.fromPeriodId,
-        toPeriodId: dto.toPeriodId,
+        fromPeriod: {
+          periodType: dto.fromPeriodType,
+          periodFrom: dto.fromPeriodFrom.slice(0, 10),
+          periodTo: dto.fromPeriodTo.slice(0, 10),
+        },
+        toPeriod: {
+          periodType: dto.toPeriodType,
+          periodFrom: dto.toPeriodFrom.slice(0, 10),
+          periodTo: dto.toPeriodTo.slice(0, 10),
+        },
         formId: dto.formId,
       };
     }
     let created = 0;
+    const toPeriodFrom = dto.toPeriodFrom.slice(0, 10);
+    const toPeriodTo = dto.toPeriodTo.slice(0, 10);
     for (const r of fromRows) {
       const exists = await this.assignmentRepo.exist({
         where: {
           formId: dto.formId,
           orgId: r.orgId,
-          periodId: dto.toPeriodId,
+          periodType: dto.toPeriodType,
+          periodFrom: toPeriodFrom,
+          periodTo: toPeriodTo,
           isCancelled: false,
         },
       });
@@ -145,7 +179,11 @@ export class AssignmentService {
         this.assignmentRepo.create({
           formId: r.formId,
           orgId: r.orgId,
-          periodId: dto.toPeriodId,
+          periodType: dto.toPeriodType,
+          periodFrom: toPeriodFrom,
+          periodTo: toPeriodTo,
+          periodCode: r.periodCode,
+          periodName: r.periodName,
           deadlineFrom: r.deadlineFrom,
           deadlineTo: r.deadlineTo,
           isCancelled: false,

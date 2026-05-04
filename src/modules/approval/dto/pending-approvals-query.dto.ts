@@ -1,5 +1,14 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
+import { PeriodType } from '../../../common';
 
 export class PendingApprovalsQueryDto {
   @IsOptional()
@@ -11,8 +20,16 @@ export class PendingApprovalsQueryDto {
   formId?: string;
 
   @IsOptional()
-  @IsUUID()
-  periodId?: string;
+  @IsEnum(PeriodType)
+  periodType?: PeriodType;
+
+  @IsOptional()
+  @IsDateString()
+  from?: string;
+
+  @IsOptional()
+  @IsDateString()
+  to?: string;
 
   @IsOptional()
   @Type(() => Number)

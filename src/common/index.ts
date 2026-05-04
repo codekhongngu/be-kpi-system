@@ -30,3 +30,5 @@ export * from './decorators/request-id.decorator';
 export * from './decorators/api-version.decorator';
 export * from './decorators/ip-address.decorator';
 export * from './decorators/user-agent.decorator';
+
+export * from './period-type';

@@ -29,7 +29,6 @@ export class MonitoringService {
       .leftJoin(ReportSubmission, 's', 's.assignmentId = a.id')
       .innerJoin('organizations', 'o', 'o.id = a.orgId')
       .innerJoin('forms', 'f', 'f.id = a.formId')
-      .innerJoin('report_periods', 'p', 'p.id = a.periodId')
       .where('a.isCancelled = false');
 
     if (user.orgId) {
@@ -38,8 +37,14 @@ export class MonitoringService {
     if (query.orgId) qb.andWhere('a.orgId = :orgId', { orgId: query.orgId });
     if (query.formId)
       qb.andWhere('a.formId = :formId', { formId: query.formId });
-    if (query.periodId)
-      qb.andWhere('a.periodId = :periodId', { periodId: query.periodId });
+    if (query.periodType)
+      qb.andWhere('a.periodType = :periodType', { periodType: query.periodType });
+    if (query.from) {
+      qb.andWhere('a.periodTo >= :pFrom', { pFrom: query.from.slice(0, 10) });
+    }
+    if (query.to) {
+      qb.andWhere('a.periodFrom <= :pTo', { pTo: query.to.slice(0, 10) });
+    }
     if (query.status) {
       qb.andWhere('COALESCE(s.status, :draft) = :st', {
         st: query.status,
@@ -54,9 +59,11 @@ export class MonitoringService {
       'f.id AS "formId"',
       'f.code AS "formCode"',
       'f.name AS "formName"',
-      'p.id AS "periodId"',
-      'p.code AS "periodCode"',
-      'p.name AS "periodName"',
+      'a.periodType AS "periodType"',
+      'a.periodFrom AS "periodFrom"',
+      'a.periodTo AS "periodTo"',
+      'a.periodCode AS "periodCode"',
+      'a.periodName AS "periodName"',
       'a.id AS "assignmentId"',
       's.id AS "submissionId"',
       'COALESCE(s.status, :draft2) AS "status"',
@@ -80,8 +87,14 @@ export class MonitoringService {
       countQb.andWhere('a.orgId = :orgId', { orgId: query.orgId });
     if (query.formId)
       countQb.andWhere('a.formId = :formId', { formId: query.formId });
-    if (query.periodId)
-      countQb.andWhere('a.periodId = :periodId', { periodId: query.periodId });
+    if (query.periodType)
+      countQb.andWhere('a.periodType = :periodType', { periodType: query.periodType });
+    if (query.from) {
+      countQb.andWhere('a.periodTo >= :pFrom', { pFrom: query.from.slice(0, 10) });
+    }
+    if (query.to) {
+      countQb.andWhere('a.periodFrom <= :pTo', { pTo: query.to.slice(0, 10) });
+    }
     if (query.status) {
       countQb.andWhere('COALESCE(s.status, :draft) = :st', {
         st: query.status,
@@ -93,7 +106,13 @@ export class MonitoringService {
     const items = rows.map((r) => ({
       org: { id: r.orgId, code: r.orgCode, name: r.orgName },
       form: { id: r.formId, code: r.formCode, name: r.formName },
-      period: { id: r.periodId, code: r.periodCode, name: r.periodName },
+      period: {
+        type: r.periodType,
+        code: r.periodCode,
+        name: r.periodName,
+        dateFrom: r.periodFrom,
+        dateTo: r.periodTo,
+      },
       assignmentId: r.assignmentId,
       submissionId: r.submissionId,
       status: r.status,

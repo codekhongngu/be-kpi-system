@@ -1,11 +1,37 @@
-import { ArrayNotEmpty, IsArray, IsDateString, IsUUID } from 'class-validator';
+import {
+  ArrayNotEmpty,
+  IsArray,
+  IsDateString,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
+import { PeriodType } from '../../../common';
 
 export class CreateAssignmentsDto {
   @IsUUID()
   formId: string;
 
-  @IsUUID()
-  periodId: string;
+  @IsEnum(PeriodType)
+  periodType: PeriodType;
+
+  @IsDateString()
+  periodFrom: string;
+
+  @IsDateString()
+  periodTo: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  periodCode?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  periodName?: string;
 
   @IsArray()
   @ArrayNotEmpty()

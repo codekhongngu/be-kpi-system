@@ -1,5 +1,14 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
+import { PeriodType } from '../../../common';
 
 export class SummaryQueryDto {
   @IsOptional()
@@ -7,8 +16,16 @@ export class SummaryQueryDto {
   formId?: string;
 
   @IsOptional()
-  @IsUUID()
-  periodId?: string;
+  @IsEnum(PeriodType)
+  periodType?: PeriodType;
+
+  @IsOptional()
+  @IsDateString()
+  from?: string;
+
+  @IsOptional()
+  @IsDateString()
+  to?: string;
 
   @IsOptional()
   @IsUUID()

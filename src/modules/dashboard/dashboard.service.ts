@@ -5,7 +5,6 @@ import { FormAssignment } from '../assignment/entities/form-assignment.entity';
 import { ReportSubmission } from '../submission/entities/report-submission.entity';
 import { ReportSummary } from '../summary/entities/report-summary.entity';
 import { Organization } from '../organization/entities/organization.entity';
-import { ReportPeriod } from '../report-period/entities/report-period.entity';
 import { User } from '../user/entities/user.entity';
 import { DashboardQueryDto } from './dto/dashboard-query.dto';
 
@@ -20,103 +19,107 @@ export class DashboardService {
     private readonly summaryRepo: Repository<ReportSummary>,
     @InjectRepository(Organization)
     private readonly orgRepo: Repository<Organization>,
-    @InjectRepository(ReportPeriod)
-    private readonly periodRepo: Repository<ReportPeriod>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
   ) {}
 
   async getOverview(query: DashboardQueryDto) {
-    const { organizationId, periodId, from, to } = query;
+    const { organizationId, periodType, from, to } = query;
 
-    const assignmentQb = this.assignmentRepo.createQueryBuilder('a');
-    const submissionQb = this.submissionRepo.createQueryBuilder('s');
+    const assignmentQb = this.assignmentRepo
+      .createQueryBuilder('a')
+      .where('a.isCancelled = false');
+    if (organizationId)
+      assignmentQb.andWhere('a.orgId = :orgId', { orgId: organizationId });
+    if (periodType)
+      assignmentQb.andWhere('a.periodType = :periodType', { periodType });
+    if (from) assignmentQb.andWhere('a.deadlineTo >= :from', { from: from.slice(0, 10) });
+    if (to) assignmentQb.andWhere('a.deadlineTo <= :to', { to: to.slice(0, 10) });
+
+    const totalAssignments = await assignmentQb.getCount();
+    const overdueAssignments = await assignmentQb
+      .clone()
+      .andWhere('a.deadlineTo < CURRENT_DATE')
+      .getCount();
+
+    const submissionQb = this.submissionRepo
+      .createQueryBuilder('s')
+      .innerJoin(FormAssignment, 'a', 'a.id = s.assignment_id')
+      .where('a.is_cancelled = false');
+    if (organizationId)
+      submissionQb.andWhere('a.org_id = :orgId', { orgId: organizationId });
+    if (periodType)
+      submissionQb.andWhere('a.period_type = :periodType', { periodType });
+    if (from)
+      submissionQb.andWhere('a.deadline_to >= :from', { from: from.slice(0, 10) });
+    if (to)
+      submissionQb.andWhere('a.deadline_to <= :to', { to: to.slice(0, 10) });
+
+    const totalSubmissions = await submissionQb.getCount();
+    const submittedCount = await submissionQb
+      .clone()
+      .andWhere("s.status IN (:...st)", {
+        st: ['PENDING', 'APPROVED', 'REJECTED'],
+      })
+      .getCount();
+
     const summaryQb = this.summaryRepo.createQueryBuilder('r');
+    if (organizationId) summaryQb.andWhere('r.orgId = :orgId', { orgId: organizationId });
+    if (periodType) summaryQb.andWhere('r.periodType = :periodType', { periodType });
+    if (from) summaryQb.andWhere('r.periodTo >= :from', { from: from.slice(0, 10) });
+    if (to) summaryQb.andWhere('r.periodFrom <= :to', { to: to.slice(0, 10) });
 
-    if (organizationId) {
-      assignmentQb.andWhere('a.organizationId = :organizationId', {
-        organizationId,
-      });
-      submissionQb.andWhere('s.organizationId = :organizationId', {
-        organizationId,
-      });
-      summaryQb.andWhere('r.organizationId = :organizationId', {
-        organizationId,
-      });
-    }
-    if (periodId) {
-      assignmentQb.andWhere('a.periodId = :periodId', { periodId });
-      submissionQb.andWhere('s.periodId = :periodId', { periodId });
-      summaryQb.andWhere('r.periodId = :periodId', { periodId });
-    }
-    if (from) {
-      assignmentQb.andWhere('a.deadline >= :from', { from });
-      submissionQb.andWhere('s.submittedAt >= :from', { from });
-    }
-    if (to) {
-      assignmentQb.andWhere('a.deadline <= :to', { to });
-      submissionQb.andWhere('s.submittedAt <= :to', { to });
-    }
-
-    const [totalAssignments, assignedCount] = await assignmentQb
-      .select('COUNT(*)', 'total')
-      .addSelect("COUNT(*) FILTER (WHERE a.status = 'ASSIGNED')", 'assigned')
-      .getRawOne();
-
-    const [totalSubmissions, submittedCount] = await submissionQb
-      .select('COUNT(*)', 'total')
-      .addSelect("COUNT(*) FILTER (WHERE s.status = 'SUBMITTED')", 'submitted')
-      .getRawOne();
-
-    const [totalSummaries, approvedSummaries] = await summaryQb
-      .select('COUNT(*)', 'total')
-      .addSelect("COUNT(*) FILTER (WHERE r.status = 'APPROVED')", 'approved')
-      .getRawOne();
+    const totalSummaries = await summaryQb.getCount();
+    const approvedSummaries = await summaryQb
+      .clone()
+      .andWhere("r.status = 'APPROVED'")
+      .getCount();
 
     const totalOrgs = await this.orgRepo.count();
-    const totalPeriods = await this.periodRepo.count();
     const totalUsers = await this.userRepo.count();
-
-    const overdueAssignments = await assignmentQb
-      .andWhere('a.deadline < NOW()')
-      .andWhere("a.status = 'ASSIGNED'")
-      .getCount();
+    const totalPeriodsRows = await this.assignmentRepo.query(`
+      SELECT COUNT(*)::int AS "total"
+      FROM (
+        SELECT DISTINCT a.period_type, a.period_from, a.period_to
+        FROM form_assignments a
+        WHERE a.is_cancelled = false
+      ) x
+    `);
+    const totalPeriods = Number(totalPeriodsRows?.[0]?.total ?? 0);
 
     return {
       organizations: totalOrgs,
       periods: totalPeriods,
       users: totalUsers,
       assignments: {
-        total: Number(totalAssignments) || 0,
-        assigned: Number(assignedCount) || 0,
+        total: totalAssignments,
+        assigned: totalAssignments,
         overdue: overdueAssignments,
       },
       submissions: {
-        total: Number(totalSubmissions) || 0,
-        submitted: Number(submittedCount) || 0,
+        total: totalSubmissions,
+        submitted: submittedCount,
       },
       summaries: {
-        total: Number(totalSummaries) || 0,
-        approved: Number(approvedSummaries) || 0,
+        total: totalSummaries,
+        approved: approvedSummaries,
       },
     };
   }
 
   async getSubmissionTrends(query: DashboardQueryDto) {
-    const { organizationId, periodId } = query;
+    const { organizationId, periodType } = query;
 
     const qb = this.submissionRepo
       .createQueryBuilder('s')
+      .innerJoin(FormAssignment, 'a', 'a.id = s.assignment_id')
       .select("DATE_TRUNC('day', s.submittedAt)", 'date')
       .addSelect('COUNT(*)', 'count')
-      .where('s.submittedAt IS NOT NULL');
+      .where('s.submittedAt IS NOT NULL')
+      .andWhere('a.is_cancelled = false');
 
-    if (organizationId) {
-      qb.andWhere('s.organizationId = :organizationId', { organizationId });
-    }
-    if (periodId) {
-      qb.andWhere('s.periodId = :periodId', { periodId });
-    }
+    if (organizationId) qb.andWhere('a.org_id = :orgId', { orgId: organizationId });
+    if (periodType) qb.andWhere('a.period_type = :periodType', { periodType });
 
     return await qb
       .groupBy("DATE_TRUNC('day', s.submittedAt)")

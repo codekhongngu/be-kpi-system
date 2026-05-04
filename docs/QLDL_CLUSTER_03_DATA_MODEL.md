@@ -32,7 +32,7 @@ form_indicators: chỉ tiêu cần nhập/tính (có thể có công thức)
 indicator_catalog (đề xuất): “từ điển chỉ tiêu” dùng chung để tái sử dụng giữa nhiều form
 Kỳ báo cáo & giao việc
 
-report_periods: kỳ tuần/tháng/quý/năm
+Kỳ báo cáo: lưu dạng snapshot trực tiếp trên `form_assignments` và `report_summaries` (không còn bảng `report_periods`)
 form_assignments: giao form cho org theo kỳ + deadline + ai giao
 Nhập liệu, nộp, duyệt
 
@@ -102,18 +102,6 @@ RBAC sử dụng mô hình chuẩn hoá:
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
 - `updated_at TIMESTAMPTZ NULL`
 - `deleted_at TIMESTAMPTZ NULL`
-
-#### `report_periods` *(migration thực tế: UUID PK/FK + ON DELETE SET NULL cho created_by)*
-
-- `id UUID PK DEFAULT gen_random_uuid()`
-- `code VARCHAR(30) NOT NULL UNIQUE`
-- `name VARCHAR(255) NOT NULL`
-- `period_type VARCHAR(10) NOT NULL` — `TUAN|THANG|QUY|NAM`
-- `date_from DATE NOT NULL`
-- `date_to DATE NOT NULL`
-- `is_active BOOLEAN NOT NULL DEFAULT TRUE`
-- `created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL`
-- `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
 
 #### `field_categories` *(migration 0004: UUID PK + seed mặc định)*
 
@@ -194,7 +182,11 @@ RBAC sử dụng mô hình chuẩn hoá:
 - `id UUID PK DEFAULT gen_random_uuid()`
 - `form_id UUID NOT NULL REFERENCES forms(id) ON DELETE RESTRICT`
 - `org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT`
-- `period_id UUID NOT NULL REFERENCES report_periods(id) ON DELETE RESTRICT`
+- `period_type VARCHAR(10) NOT NULL` — `TUAN|THANG|QUY|NAM`
+- `period_from DATE NOT NULL`
+- `period_to DATE NOT NULL`
+- `period_code VARCHAR(30) NULL`
+- `period_name VARCHAR(255) NULL`
 - `deadline_from DATE NOT NULL`
 - `deadline_to DATE NOT NULL`
 - `is_cancelled BOOLEAN NOT NULL DEFAULT FALSE`
@@ -202,7 +194,7 @@ RBAC sử dụng mô hình chuẩn hoá:
 - `auto_assign BOOLEAN NOT NULL DEFAULT FALSE`
 - `assigned_by UUID NULL REFERENCES users(id) ON DELETE SET NULL`
 - `assigned_at TIMESTAMPTZ NOT NULL DEFAULT now()`
-- **Unique**: `UNIQUE(form_id, org_id, period_id)`
+- **Unique**: `UNIQUE(form_id, org_id, period_type, period_from, period_to)`
 
 #### `report_submissions` *(migration thực tế: UUID PK/FK; assignment_id RESTRICT)*
 
@@ -237,8 +229,12 @@ RBAC sử dụng mô hình chuẩn hoá:
 
 - `id UUID PK DEFAULT gen_random_uuid()`
 - `form_id UUID NOT NULL REFERENCES forms(id) ON DELETE RESTRICT`
-- `period_id UUID NOT NULL REFERENCES report_periods(id) ON DELETE RESTRICT`
 - `org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT`
+- `period_type VARCHAR(10) NOT NULL` — `TUAN|THANG|QUY|NAM`
+- `period_from DATE NOT NULL`
+- `period_to DATE NOT NULL`
+- `period_code VARCHAR(30) NULL`
+- `period_name VARCHAR(255) NULL`
 - `status VARCHAR(20) NOT NULL DEFAULT 'DRAFT'`
 - `total_units INT NULL`
 - `submitted_units INT NULL`
@@ -249,7 +245,7 @@ RBAC sử dụng mô hình chuẩn hoá:
 - `approved_by UUID NULL REFERENCES users(id) ON DELETE SET NULL`
 - `approved_at TIMESTAMPTZ NULL`
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
-- **Unique**: `UNIQUE(form_id, period_id, org_id)`
+- **Unique**: `UNIQUE(form_id, org_id, period_type, period_from, period_to)`
 
 #### `notifications` *(migration thực tế: UUID PK; user_id CASCADE)*
 
@@ -362,7 +358,6 @@ RBAC sử dụng mô hình chuẩn hoá:
 - (RBAC) `user_roles.role_id` → `roles.id` *(ON DELETE CASCADE)*
 - (RBAC) `role_permissions.role_id` → `roles.id` *(ON DELETE CASCADE)*
 - (RBAC) `role_permissions.permission_id` → `permissions.id` *(ON DELETE CASCADE)*
-- `report_periods.created_by` → `users.id` *(ON DELETE SET NULL)*
 - `forms.parent_form_id` → `forms.id` *(ON DELETE SET NULL)*
 - `forms.created_by` → `users.id` *(ON DELETE SET NULL)*
 - `forms.field_category_id` → `field_categories.id` *(ON DELETE SET NULL)*
@@ -374,7 +369,6 @@ RBAC sử dụng mô hình chuẩn hoá:
 - `form_attributes.parent_id` → `form_attributes.id` *(ON DELETE SET NULL)*
 - `form_assignments.form_id` → `forms.id` *(ON DELETE RESTRICT)*
 - `form_assignments.org_id` → `organizations.id` *(ON DELETE RESTRICT)*
-- `form_assignments.period_id` → `report_periods.id` *(ON DELETE RESTRICT)*
 - `form_assignments.assigned_by` → `users.id` *(ON DELETE SET NULL)*
 - `report_submissions.assignment_id` → `form_assignments.id` *(ON DELETE RESTRICT)*
 - `report_submissions.submitted_by/approved_by` → `users.id` *(ON DELETE SET NULL)*
@@ -386,7 +380,7 @@ RBAC sử dụng mô hình chuẩn hoá:
 - `report_data_history.indicator_id` → `form_indicators.id` *(ON DELETE RESTRICT)*
 - `report_data_history.attribute_id` → `form_attributes.id` *(ON DELETE RESTRICT)*
 - `report_data_history.changed_by` → `users.id` *(ON DELETE SET NULL)*
-- `report_summaries.form_id/period_id/org_id` → `forms.id`/`report_periods.id`/`organizations.id` *(ON DELETE RESTRICT)*
+- `report_summaries.form_id/org_id` → `forms.id`/`organizations.id` *(ON DELETE RESTRICT)*
 - `report_summaries.summarized_by/approved_by` → `users.id` *(ON DELETE SET NULL)*
 - `notifications.user_id` → `users.id` *(ON DELETE CASCADE)*
 - `audit_logs.user_id` → `users.id` *(ON DELETE SET NULL, nullable)*
@@ -470,11 +464,11 @@ RBAC sử dụng mô hình chuẩn hoá:
 
 ---
 
-### Report periods
+---
+### Kỳ báo cáo (period snapshot)
 
-#### `GET/POST/PATCH/DELETE /report-periods*`
-
-- **Tables**: `report_periods` (**R/C/U/D**), `form_assignments` (**R** để chặn delete), `audit_logs` (**C**)
+- **Không còn API `/report-periods`** và **không còn bảng `report_periods`**.
+- Kỳ báo cáo được nhập khi tạo assignment/summary và lưu snapshot trên `form_assignments`/`report_summaries`.
 
 ---
 
@@ -598,7 +592,7 @@ RBAC sử dụng mô hình chuẩn hoá:
 
 #### `GET /query/reports`
 
-- **Tables**: `report_submissions` (**R**), `form_assignments` (**R**), joins `forms`, `report_periods`, `organizations`
+- **Tables**: `report_submissions` (**R**), `form_assignments` (**R**), joins `forms`, `organizations` (period là snapshot trên `form_assignments`)
 
 #### `GET /query/reports/{submissionId}`
 
@@ -623,5 +617,5 @@ RBAC sử dụng mô hình chuẩn hoá:
 
 #### `GET /analytics/*`, `POST /analytics/pivot`, `GET /analytics/export`
 
-- **Tables**: read-only joins trên `form_assignments`, `report_submissions`, `report_data`, `report_summaries`, `organizations`, `report_periods`, `forms`
+- **Tables**: read-only joins trên `form_assignments`, `report_submissions`, `report_data`, `report_summaries`, `organizations`, `forms` (period là snapshot trên `form_assignments/report_summaries`)
 - **export**: `audit_logs` (**C** EXPORT)

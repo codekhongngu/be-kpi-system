@@ -8,7 +8,6 @@ import { UserModule } from './modules/user/user.module';
 import { RoleModule } from './modules/role/role.module';
 import { ExampleModule } from './modules/example/example.module';
 import { OrganizationModule } from './modules/organization/organization.module';
-import { ReportPeriodModule } from './modules/report-period/report-period.module';
 import { FormDesignerModule } from './modules/form-designer/form-designer.module';
 import { AssignmentModule } from './modules/assignment/assignment.module';
 import { SubmissionModule } from './modules/submission/submission.module';
@@ -87,7 +86,6 @@ import { URL } from 'url';
     NotificationModule,
     AnalyticsModule,
     OrganizationModule,
-    ReportPeriodModule,
     ExampleModule,
     AuditLogModule,
     FileModule,

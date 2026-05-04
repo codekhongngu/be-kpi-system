@@ -1,4 +1,5 @@
-import { IsOptional, IsUUID, IsDateString } from 'class-validator';
+import { IsOptional, IsUUID, IsDateString, IsEnum } from 'class-validator';
+import { PeriodType } from '../../../common';
 
 export class DashboardQueryDto {
   @IsOptional()
@@ -6,8 +7,8 @@ export class DashboardQueryDto {
   organizationId?: string;
 
   @IsOptional()
-  @IsUUID('4')
-  periodId?: string;
+  @IsEnum(PeriodType)
+  periodType?: PeriodType;
 
   @IsOptional()
   @IsDateString()

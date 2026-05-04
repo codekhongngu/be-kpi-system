@@ -89,16 +89,14 @@ Tài liệu này liệt kê **các table** và **ý nghĩa các trường** theo
 
 ---
 
-## report_periods (kỳ báo cáo)
+## kỳ báo cáo (period snapshot)
 
-- **id**: khóa chính (UUID).
-- **code**: mã kỳ (duy nhất).
-- **name**: tên kỳ.
+Không còn bảng `report_periods`. Kỳ báo cáo được lưu **snapshot** trên các bảng nghiệp vụ (ví dụ `form_assignments`, `report_summaries`) bằng các trường:
+
 - **period_type**: loại kỳ (TUAN|THANG|QUY|NAM).
-- **date_from, date_to**: khoảng thời gian kỳ.
-- **is_active**: trạng thái.
-- **created_by**: FK users (ON DELETE SET NULL), user tạo kỳ.
-- **created_at**: thời gian tạo.
+- **period_from, period_to**: khoảng thời gian kỳ (DATE).
+- **period_code**: mã kỳ (nullable, phục vụ hiển thị).
+- **period_name**: tên kỳ (nullable, phục vụ hiển thị).
 
 ---
 
@@ -185,14 +183,17 @@ Tài liệu này liệt kê **các table** và **ý nghĩa các trường** theo
 - **id**: khóa chính (UUID).
 - **form_id**: FK forms (ON DELETE RESTRICT).
 - **org_id**: FK organizations (ON DELETE RESTRICT).
-- **period_id**: FK report_periods (ON DELETE RESTRICT).
+- **period_type**: loại kỳ (TUAN|THANG|QUY|NAM).
+- **period_from, period_to**: khoảng thời gian kỳ (DATE).
+- **period_code**: mã kỳ (nullable).
+- **period_name**: tên kỳ (nullable).
 - **deadline_from, deadline_to**: thời hạn thực hiện.
 - **is_cancelled**: trạng thái hủy giao.
 - **cancel_reason**: lý do hủy.
 - **auto_assign**: giao tự động hay thủ công.
 - **assigned_by**: FK users (ON DELETE SET NULL).
 - **assigned_at**: thời điểm giao.
-- **Ràng buộc**: UNIQUE(form_id, org_id, period_id).
+- **Ràng buộc**: UNIQUE(form_id, org_id, period_type, period_from, period_to).
 
 ---
 
@@ -241,7 +242,11 @@ Tài liệu này liệt kê **các table** và **ý nghĩa các trường** theo
 ## report_summaries (tổng hợp phục vụ dashboard/tiến độ)
 
 - **id**: khóa chính (UUID).
-- **form_id, period_id, org_id**: FK forms/report_periods/organizations (ON DELETE RESTRICT), khóa nghiệp vụ form–kỳ–đơn vị.
+- **form_id, org_id**: FK forms/organizations (ON DELETE RESTRICT).
+- **period_type**: loại kỳ (TUAN|THANG|QUY|NAM).
+- **period_from, period_to**: khoảng thời gian kỳ (DATE).
+- **period_code**: mã kỳ (nullable).
+- **period_name**: tên kỳ (nullable).
 - **status**: trạng thái tổng hợp (DRAFT).
 - **total_units**: tổng số đơn vị mục tiêu (tùy cách tính).
 - **submitted_units**: số đơn vị đã nộp.
@@ -250,7 +255,7 @@ Tài liệu này liệt kê **các table** và **ý nghĩa các trường** theo
 - **summarized_by, summarized_at**: FK users (ON DELETE SET NULL) / thời điểm.
 - **approved_by, approved_at**: FK users (ON DELETE SET NULL) / thời điểm.
 - **created_at**: thời gian tạo.
-- **Ràng buộc**: UNIQUE(form_id, period_id, org_id).
+- **Ràng buộc**: UNIQUE(form_id, org_id, period_type, period_from, period_to).
 
 ---
 

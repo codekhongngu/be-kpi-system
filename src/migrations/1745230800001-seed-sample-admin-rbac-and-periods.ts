@@ -5,8 +5,6 @@ const IDS = {
   org: 'f0e0d0c0-b0a0-4a90-8c00-000000000001',
   nestRole: 'f0e0d0c0-b0a0-4a90-8c00-000000000003',
   adminUser: 'f0e0d0c0-b0a0-4a90-8c00-000000000099',
-  periodMonth: 'f0e0d0c0-b0a0-4a90-8c00-000000000010',
-  periodQuarter: 'f0e0d0c0-b0a0-4a90-8c00-000000000011',
 } as const;
 
 const SEED_DEMO_PASSWORD = 'Admin@123';
@@ -31,6 +29,51 @@ const PERMISSION_IDS = {
   reportsExport: 'f0e0d0c0-b0a0-4a90-8c00-000000000031',
   usersExport: 'f0e0d0c0-b0a0-4a90-8c00-000000000032',
 } as const;
+
+function pad2(v: number) {
+  return String(v).padStart(2, '0');
+}
+
+function makeUtcDate(year: number, month1: number, day: number) {
+  return new Date(Date.UTC(year, month1 - 1, day));
+}
+
+function addUtcDays(d: Date, days: number) {
+  const next = new Date(d.getTime());
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
+}
+
+function ymd(d: Date) {
+  const y = d.getUTCFullYear();
+  const m = pad2(d.getUTCMonth() + 1);
+  const day = pad2(d.getUTCDate());
+  return `${y}-${m}-${day}`;
+}
+
+function startOfIsoWeek(d: Date) {
+  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const day = (date.getUTCDay() + 6) % 7;
+  date.setUTCDate(date.getUTCDate() - day);
+  return date;
+}
+
+function isoWeekNumber(d: Date) {
+  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const day = (date.getUTCDay() + 6) % 7;
+  date.setUTCDate(date.getUTCDate() - day + 3);
+  const weekYear = date.getUTCFullYear();
+  const firstThursday = new Date(Date.UTC(weekYear, 0, 4));
+  const firstThursdayDay = (firstThursday.getUTCDay() + 6) % 7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstThursdayDay + 3);
+  const diff = date.getTime() - firstThursday.getTime();
+  const week = 1 + Math.round(diff / (7 * 24 * 60 * 60 * 1000));
+  return { year: weekYear, week };
+}
+
+function quarterOfMonth(month1: number) {
+  return Math.floor((month1 - 1) / 3) + 1;
+}
 
 /**
  * Dữ liệu mẫu:
@@ -366,27 +409,78 @@ export class SeedSampleAdminRbacAndPeriods1745230800001 implements MigrationInte
     }
 
     if (hasReportPeriods[0]?.exists === true) {
-      await queryRunner.query(
-        `
-        INSERT INTO "report_periods" (
-          "id", "code", "name", "period_type", "date_from", "date_to", "is_active", "created_by", "created_at"
-        )
-        VALUES
-          ($1::uuid, 'K202601', 'Kỳ báo cáo tháng 01/2026', 'THANG', '2026-01-01', '2026-01-31', true,
-           (SELECT "id" FROM "users" WHERE "username" = 'admin' LIMIT 1), now()),
-          ($2::uuid, 'K2026Q1', 'Kỳ báo cáo Quý 1/2026', 'QUY', '2026-01-01', '2026-03-31', true,
-           (SELECT "id" FROM "users" WHERE "username" = 'admin' LIMIT 1), now())
-        ON CONFLICT ("code") DO NOTHING
-      `,
-        [IDS.periodMonth, IDS.periodQuarter],
-      );
+      const seedYear = new Date().getFullYear();
+
+      const createdByExpr = `(SELECT "id" FROM "users" WHERE "username" = 'admin' LIMIT 1)`;
+
+      // 1) 12 kỳ báo cáo tháng: KBCT01..KBCT12 (theo năm hiện tại)
+      for (let m = 1; m <= 12; m += 1) {
+        const dateFrom = makeUtcDate(seedYear, m, 1);
+        const dateTo = new Date(Date.UTC(seedYear, m, 0));
+        const code = `KBCT${pad2(m)}`;
+        const name = `Kỳ báo cáo tháng ${pad2(m)}`;
+        await queryRunner.query(
+          `
+          INSERT INTO "report_periods" (
+            "code", "name", "period_type", "date_from", "date_to", "is_active", "created_by", "created_at"
+          )
+          VALUES ($1, $2, 'THANG', $3, $4, true, ${createdByExpr}, now())
+          ON CONFLICT ("code") DO NOTHING
+        `,
+          [code, name, ymd(dateFrom), ymd(dateTo)],
+        );
+      }
+
+      // 2) 12 kỳ báo cáo quý: KBCQ01..KBCQ12 (liên tiếp 12 quý từ Q1 năm hiện tại)
+      for (let i = 1; i <= 12; i += 1) {
+        const year = seedYear + Math.floor((i - 1) / 4);
+        const q = ((i - 1) % 4) + 1;
+        const startMonth = (q - 1) * 3 + 1;
+        const dateFrom = makeUtcDate(year, startMonth, 1);
+        const dateTo = new Date(Date.UTC(year, startMonth + 3, 0));
+        const code = `KBCQ${pad2(i)}`;
+        const name = `Kỳ báo cáo quý ${pad2(i)}`;
+        await queryRunner.query(
+          `
+          INSERT INTO "report_periods" (
+            "code", "name", "period_type", "date_from", "date_to", "is_active", "created_by", "created_at"
+          )
+          VALUES ($1, $2, 'QUY', $3, $4, true, ${createdByExpr}, now())
+          ON CONFLICT ("code") DO NOTHING
+        `,
+          [code, name, ymd(dateFrom), ymd(dateTo)],
+        );
+      }
+
+      // 3) Kỳ báo cáo tuần theo ISO week trong năm hiện tại: KBCW01..KBCW52/53
+      const isoWeek1Start = startOfIsoWeek(makeUtcDate(seedYear, 1, 4));
+      const lastIsoWeek = isoWeekNumber(makeUtcDate(seedYear, 12, 28)).week;
+      for (let w = 1; w <= lastIsoWeek; w += 1) {
+        const wkStart = addUtcDays(isoWeek1Start, (w - 1) * 7);
+        const wkEnd = addUtcDays(wkStart, 6);
+        const code = `KBCW${pad2(w)}`;
+        const name = `Kỳ báo cáo tuần ${pad2(w)}`;
+        await queryRunner.query(
+          `
+          INSERT INTO "report_periods" (
+            "code", "name", "period_type", "date_from", "date_to", "is_active", "created_by", "created_at"
+          )
+          VALUES ($1, $2, 'TUAN', $3, $4, true, ${createdByExpr}, now())
+          ON CONFLICT ("code") DO NOTHING
+        `,
+          [code, name, ymd(wkStart), ymd(wkEnd)],
+        );
+      }
     }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `DELETE FROM "report_periods" WHERE "code" IN ('K202601', 'K2026Q1')`,
-    );
+    await queryRunner.query(`
+      DELETE FROM "report_periods"
+      WHERE ("period_type" = 'THANG' AND "code" LIKE 'KBCT%')
+         OR ("period_type" = 'QUY' AND "code" LIKE 'KBCQ%')
+         OR ("period_type" = 'TUAN' AND "code" LIKE 'KBCW%')
+    `);
 
     await queryRunner.query(`
       UPDATE "organizations" SET "head_user_id" = NULL, "updated_at" = now()

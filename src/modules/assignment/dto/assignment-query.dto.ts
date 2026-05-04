@@ -1,12 +1,15 @@
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsDateString,
+  IsEnum,
   IsInt,
   IsOptional,
   IsUUID,
   Max,
   Min,
 } from 'class-validator';
+import { PeriodType } from '../../../common';
 
 export class AssignmentQueryDto {
   @IsOptional()
@@ -14,8 +17,16 @@ export class AssignmentQueryDto {
   formId?: string;
 
   @IsOptional()
-  @IsUUID()
-  periodId?: string;
+  @IsEnum(PeriodType)
+  periodType?: PeriodType;
+
+  @IsOptional()
+  @IsDateString()
+  from?: string;
+
+  @IsOptional()
+  @IsDateString()
+  to?: string;
 
   @IsOptional()
   @IsUUID()

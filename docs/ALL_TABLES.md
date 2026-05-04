@@ -6,6 +6,7 @@ Tài liệu này tổng hợp **tất cả các bảng** có thể xuất hiện
 > - `src/migrations/1745230799999-init-users-table.ts`
 > - `src/migrations/1745230800000-qldd-schema-from-documentation.ts`
 > - `src/migrations/1745230800001-seed-sample-admin-rbac-and-periods.ts`
+> - `src/migrations/1745230800004-drop-report-periods.ts` *(drop `report_periods`)*
 > - `src/migrations/1745230800004-field-categories-and-forms-fk.ts`
 >
 > Lưu ý: các file seed khác (`0002`, `0003`, `0005`, `0006`) chủ yếu **insert/alter/drop** nên không tạo thêm bảng mới (ngoại trừ các bảng đã liệt kê bên dưới).
@@ -59,8 +60,7 @@ Các bảng này phục vụ “RBAC kiểu Nest” (roles/permissions) và là 
 
 ### Nhóm kỳ báo cáo
 
-### `report_periods`
-- **Tạo bởi**: `1745230800000-qldd-schema-from-documentation.ts`
+Không còn bảng `report_periods`. Kỳ báo cáo được lưu snapshot trên `form_assignments`/`report_summaries`.
 
 ### Nhóm thiết kế biểu mẫu
 

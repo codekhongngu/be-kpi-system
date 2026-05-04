@@ -63,7 +63,6 @@ export class SubmissionService {
       .createQueryBuilder('a')
       .leftJoin(ReportSubmission, 's', 's.assignmentId = a.id')
       .innerJoin('forms', 'f', 'f.id = a.formId')
-      .innerJoin('report_periods', 'p', 'p.id = a.periodId')
       .where('a.orgId = :orgId', { orgId: user.orgId })
       .andWhere('a.isCancelled = false')
       .select([
@@ -72,11 +71,11 @@ export class SubmissionService {
         'f.id AS "formId"',
         'f.code AS "formCode"',
         'f.name AS "formName"',
-        'p.id AS "periodId"',
-        'p.code AS "periodCode"',
-        'p.name AS "periodName"',
-        'p.date_from AS "periodDateFrom"',
-        'p.date_to AS "periodDateTo"',
+        'a.periodType AS "periodType"',
+        'a.periodFrom AS "periodFrom"',
+        'a.periodTo AS "periodTo"',
+        'a.periodCode AS "periodCode"',
+        'a.periodName AS "periodName"',
         's.id AS "submissionId"',
         's.status AS "submissionStatus"',
         's.completion_pct AS "completionPct"',
@@ -100,11 +99,11 @@ export class SubmissionService {
       deadlineTo: r.deadlineTo,
       form: { id: r.formId, code: r.formCode, name: r.formName },
       period: {
-        id: r.periodId,
+        type: r.periodType,
         code: r.periodCode,
         name: r.periodName,
-        dateFrom: r.periodDateFrom,
-        dateTo: r.periodDateTo,
+        dateFrom: r.periodFrom,
+        dateTo: r.periodTo,
       },
       submission: r.submissionId
         ? {

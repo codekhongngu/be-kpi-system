@@ -19,8 +19,14 @@ export class SummaryService {
     const qb = this.summaryRepo.createQueryBuilder('s');
     if (query.formId)
       qb.andWhere('s.form_id = :formId', { formId: query.formId });
-    if (query.periodId)
-      qb.andWhere('s.period_id = :periodId', { periodId: query.periodId });
+    if (query.periodType)
+      qb.andWhere('s.period_type = :periodType', { periodType: query.periodType });
+    if (query.from) {
+      qb.andWhere('s.period_to >= :pFrom', { pFrom: query.from.slice(0, 10) });
+    }
+    if (query.to) {
+      qb.andWhere('s.period_from <= :pTo', { pTo: query.to.slice(0, 10) });
+    }
     if (query.orgId) qb.andWhere('s.org_id = :orgId', { orgId: query.orgId });
     qb.orderBy('s.created_at', 'DESC').skip(skip).take(limit);
     const [items, total] = await qb.getManyAndCount();
@@ -28,7 +34,13 @@ export class SummaryService {
       items: items.map((x) => ({
         id: x.id,
         formId: x.formId,
-        periodId: x.periodId,
+        period: {
+          type: x.periodType,
+          code: x.periodCode,
+          name: x.periodName,
+          dateFrom: x.periodFrom,
+          dateTo: x.periodTo,
+        },
         orgId: x.orgId,
         status: x.status,
         summarizedAt: x.summarizedAt,
@@ -40,7 +52,11 @@ export class SummaryService {
   async create(dto: CreateSummaryDto, userId: string | undefined) {
     const row = this.summaryRepo.create({
       formId: dto.formId,
-      periodId: dto.periodId,
+      periodType: dto.periodType,
+      periodFrom: dto.periodFrom.slice(0, 10),
+      periodTo: dto.periodTo.slice(0, 10),
+      periodCode: dto.periodCode?.trim() || null,
+      periodName: dto.periodName?.trim() || null,
       orgId: dto.orgId,
       status: 'DRAFT',
       summaryData: {
@@ -60,7 +76,13 @@ export class SummaryService {
     return {
       id: s.id,
       formId: s.formId,
-      periodId: s.periodId,
+      period: {
+        type: s.periodType,
+        code: s.periodCode,
+        name: s.periodName,
+        dateFrom: s.periodFrom,
+        dateTo: s.periodTo,
+      },
       orgId: s.orgId,
       status: s.status,
       totalUnits: s.totalUnits,

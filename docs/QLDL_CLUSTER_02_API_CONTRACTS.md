@@ -178,26 +178,18 @@
 
 ---
 
-### Report periods
+### Kỳ báo cáo (period snapshot)
 
-#### `GET /report-periods`
+Trong mô hình mới, **không còn bảng `report_periods` và không còn API `/report-periods`**.
 
-- **Query**: `type?, from?, to?, page?, limit?`
-- **200**: `{ items: ReportPeriod[], meta }`
+Kỳ báo cáo được lưu dạng **snapshot** trực tiếp trên:
+- `form_assignments`: kỳ dùng để giao/nộp báo cáo
+- `report_summaries`: kỳ dùng để tổng hợp
 
-#### `POST /report-periods`
-
-- **Body**: `CreateReportPeriodRequest`
-- **201**: `{ id }`
-
-#### `PATCH /report-periods/{id}`
-
-- **Body**: `PatchReportPeriodRequest`
-- **200**: `{ ok: true }`
-
-#### `DELETE /report-periods/{id}`
-
-- **200**: `{ ok: true }`
+Các trường kỳ chuẩn:
+- `periodType`: `TUAN|THANG|QUY|NAM`
+- `periodFrom`, `periodTo`: `YYYY-MM-DD`
+- `periodCode?`, `periodName?`: phục vụ hiển thị (tuỳ chọn)
 
 ---
 
@@ -291,7 +283,7 @@ Danh mục **lĩnh vực** dùng khi thiết kế biểu mẫu: `forms` tham chi
 
 #### `GET /assignments`
 
-- **Query**: `formId?, periodId?, orgId?, isCancelled?, page?, limit?`
+- **Query**: `formId?, orgId?, periodType?, from?, to?, isCancelled?, page?, limit?`
 - **200**: `{ items: Assignment[], meta }`
 
 #### `POST /assignments`
@@ -307,8 +299,8 @@ Danh mục **lĩnh vực** dùng khi thiết kế biểu mẫu: `forms` tham chi
 #### `POST /assignments/next-period`
 
 - **Body**:
-  - preview: `{ fromPeriodId, toPeriodId, formId, confirm?: false }`
-  - confirm: `{ fromPeriodId, toPeriodId, formId, confirm: true }`
+  - preview: `{ formId, fromPeriodType, fromPeriodFrom, fromPeriodTo, toPeriodType, toPeriodFrom, toPeriodTo, confirm?: false }`
+  - confirm: `{ formId, fromPeriodType, fromPeriodFrom, fromPeriodTo, toPeriodType, toPeriodFrom, toPeriodTo, confirm: true }`
 - **200**:
   - preview: `NextPeriodPreviewResponse`
   - confirm: `NextPeriodConfirmResponse`
@@ -370,7 +362,7 @@ Danh mục **lĩnh vực** dùng khi thiết kế biểu mẫu: `forms` tham chi
 
 #### `GET /approvals/pending`
 
-- **Query**: `orgId?, formId?, periodId?, priority?, page?, limit?`
+- **Query**: `orgId?, formId?, periodType?, from?, to?, priority?, page?, limit?`
 - **200**: `{ items: PendingApprovalRow[], meta }`
 
 #### `POST /approvals/{submissionId}/approve`
@@ -394,12 +386,12 @@ Danh mục **lĩnh vực** dùng khi thiết kế biểu mẫu: `forms` tham chi
 
 #### `GET /summaries`
 
-- **Query**: `formId?, periodId?, orgId?, page?, limit?`
+- **Query**: `formId?, orgId?, periodType?, from?, to?, page?, limit?`
 - **200**: `{ items: SummaryListItem[], meta }`
 
 #### `POST /summaries`
 
-- **Body**: `{ formId, periodId, orgId }`
+- **Body**: `{ formId, orgId, periodType, periodFrom, periodTo, periodCode?, periodName? }`
 - **201**: `SummaryDetailResponse`
 
 #### `GET /summaries/{id}`
@@ -416,7 +408,7 @@ Danh mục **lĩnh vực** dùng khi thiết kế biểu mẫu: `forms` tham chi
 
 #### `GET /monitoring/reports`
 
-- **Query**: `orgId?, formId?, periodId?, status?, page?, limit?`
+- **Query**: `orgId?, formId?, periodType?, from?, to?, status?, page?, limit?`
 - **200**: `{ items: MonitoringRow[], meta }`
 
 #### `POST /monitoring/reminders`
@@ -432,7 +424,7 @@ Danh mục **lĩnh vực** dùng khi thiết kế biểu mẫu: `forms` tham chi
 
 #### `GET /query/reports`
 
-- **Query**: `q?, formId?, periodId?, orgId?, status?, deadlineFrom?, deadlineTo?, page?, limit?, sort?`
+- **Query**: `q?, formId?, orgId?, periodType?, periodFrom?, periodTo?, status?, deadlineFrom?, deadlineTo?, page?, limit?, sort?`
 - **200**: `{ items: QueryReportRow[], meta }`
 
 #### `GET /query/reports/{submissionId}`
@@ -727,33 +719,13 @@ export type PatchOrgRequest = Partial<{
 
 export type PeriodType = "TUAN" | "THANG" | "QUY" | "NAM";
 
-export type ReportPeriod = {
-  id: string;
-  code: string;
-  name: string;
-  periodType: PeriodType;
+export type PeriodSnapshot = {
+  type: PeriodType;
   dateFrom: string;
   dateTo: string;
-  isActive: boolean;
+  code?: string | null;
+  name?: string | null;
 };
-
-export type ListReportPeriodsResponse = { items: ReportPeriod[]; meta: PageMeta };
-
-export type CreateReportPeriodRequest = {
-  name: string;
-  periodType: PeriodType;
-  dateFrom: string;
-  dateTo: string;
-  isActive?: boolean;
-};
-
-export type PatchReportPeriodRequest = Partial<{
-  name: string;
-  periodType: PeriodType;
-  dateFrom: string;
-  dateTo: string;
-  isActive: boolean;
-}>;
 
 export type FieldCategoryListItem = {
   id: string;
@@ -865,7 +837,11 @@ export type Assignment = {
   id: string;
   formId: string;
   orgId: string;
-  periodId: string;
+  periodType: PeriodType;
+  periodFrom: string;
+  periodTo: string;
+  periodCode?: string | null;
+  periodName?: string | null;
   deadlineFrom: string;
   deadlineTo: string;
   isCancelled: boolean;
@@ -878,7 +854,11 @@ export type ListAssignmentsResponse = { items: Assignment[]; meta: PageMeta };
 
 export type CreateAssignmentsRequest = {
   formId: string;
-  periodId: string;
+  periodType: PeriodType;
+  periodFrom: string;
+  periodTo: string;
+  periodCode?: string;
+  periodName?: string;
   orgIds: string[];
   deadlineFrom: string;
   deadlineTo: string;
@@ -893,7 +873,7 @@ export type CreateAssignmentsResponse = {
 export type MyAssignmentRow = {
   assignmentId: string;
   form: Pick<FormListItem, "id" | "code" | "name">;
-  period: Pick<ReportPeriod, "id" | "code" | "name" | "dateFrom" | "dateTo">;
+  period: PeriodSnapshot;
   deadlineTo: string;
   submission?: { id: string; status: string; completionPct?: number | null } | null;
 };
@@ -955,7 +935,7 @@ export type PendingApprovalRow = {
   submissionId: string;
   org: Pick<Org, "id" | "code" | "name">;
   form: Pick<FormListItem, "id" | "code" | "name">;
-  period: Pick<ReportPeriod, "id" | "code" | "name">;
+  period: PeriodSnapshot;
   submittedAt: string;
   submittedBy?: UserBrief | null;
 };
@@ -971,8 +951,8 @@ export type RejectResponse = { status: "REJECTED" };
 export type SummaryListItem = {
   id: string;
   formId: string;
-  periodId: string;
   orgId: string;
+  period: PeriodSnapshot;
   status: string;
   summarizedAt?: string | null;
 };
@@ -987,7 +967,7 @@ export type SummaryDetailResponse = SummaryListItem & {
 export type MonitoringRow = {
   org: Pick<Org, "id" | "code" | "name">;
   form: Pick<FormListItem, "id" | "code" | "name">;
-  period: Pick<ReportPeriod, "id" | "code" | "name">;
+  period: PeriodSnapshot;
   assignmentId: string;
   submissionId?: string | null;
   status: string;
@@ -1021,7 +1001,7 @@ export type QueryReportRow = {
   assignmentId: string;
   org: Pick<Org, "id" | "code" | "name">;
   form: Pick<FormListItem, "id" | "code" | "name">;
-  period: Pick<ReportPeriod, "id" | "code" | "name">;
+  period: PeriodSnapshot;
   status: "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" | "OVERDUE" | string;
   completionPct?: number | null;
   submittedAt?: string | null;
@@ -1340,7 +1320,7 @@ Format theo yêu cầu triển khai:
 
 ---
 
-### Users / RBAC / Orgs / Periods (Admin)
+### Users / RBAC / Orgs (Admin)
 
 `API: POST /api/v1/users`
 
@@ -1356,11 +1336,6 @@ Format theo yêu cầu triển khai:
 
 - Validate org exists + authorization.
 - Update `is_active` (optional cascade users) + audit.
-
-`API: DELETE /api/v1/report-periods/{id}`
-
-- Check assignments tồn tại → chặn hoặc soft-disable.
-- Delete/soft-delete + audit.
 
 ---
 
@@ -1392,7 +1367,7 @@ Format theo yêu cầu triển khai:
 
 `API: POST /api/v1/assignments`
 
-- Validate form active + org active + period valid + deadline + anti-duplicate unique key.
+- Validate form active + org active + kỳ hợp lệ (type/from/to) + deadline + anti-duplicate unique key.
 - Transaction: bulk insert assignments + enqueue notifications theo user nhận + audit.
 
 `API: POST /api/v1/assignments/{id}/cancel`
@@ -1500,7 +1475,7 @@ Mục tiêu: bù endpoint “Tra cứu báo cáo” trong use case, tách khỏi
 **Query params (khuyến nghị)**
 
 - `q?`: từ khóa (tên biểu mẫu / mã biểu mẫu / mã submission)
-- `formId?`, `periodId?`, `orgId?`
+- `formId?`, `orgId?`, `periodType?`, `periodFrom?`, `periodTo?`
 - `status?`: `DRAFT|PENDING|APPROVED|REJECTED|OVERDUE` (OVERDUE có thể là derived)
 - `deadlineFrom?`, `deadlineTo?`
 - `page?, limit?, sort?`
@@ -1517,7 +1492,7 @@ Mục tiêu: bù endpoint “Tra cứu báo cáo” trong use case, tách khỏi
 
 - `report_submissions`
 - `form_assignments` (deadline + org + form + period)
-- joins: `forms`, `report_periods`, `organizations`
+- joins: `forms`, `organizations` (period là snapshot trên `form_assignments`)
 
 #### `GET /query/reports/{submissionId}`
 

@@ -1,5 +1,15 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
+import { PeriodType } from '../../../common';
 
 export class MonitoringQueryDto {
   @IsOptional()
@@ -11,8 +21,16 @@ export class MonitoringQueryDto {
   formId?: string;
 
   @IsOptional()
-  @IsUUID()
-  periodId?: string;
+  @IsEnum(PeriodType)
+  periodType?: PeriodType;
+
+  @IsOptional()
+  @IsDateString()
+  from?: string;
+
+  @IsOptional()
+  @IsDateString()
+  to?: string;
 
   @IsOptional()
   @IsString()

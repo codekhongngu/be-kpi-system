@@ -39,7 +39,6 @@ export class ApprovalService {
       .innerJoin(FormAssignment, 'a', 'a.id = s.assignment_id')
       .innerJoin('organizations', 'o', 'o.id = a.org_id')
       .innerJoin('forms', 'f', 'f.id = a.form_id')
-      .innerJoin('report_periods', 'p', 'p.id = a.period_id')
       .where('s.status = :st', { st: 'PENDING' });
 
     if (user.orgId) {
@@ -48,8 +47,14 @@ export class ApprovalService {
     if (query.orgId) qb.andWhere('a.org_id = :qOrg', { qOrg: query.orgId });
     if (query.formId)
       qb.andWhere('a.form_id = :formId', { formId: query.formId });
-    if (query.periodId)
-      qb.andWhere('a.period_id = :periodId', { periodId: query.periodId });
+    if (query.periodType)
+      qb.andWhere('a.period_type = :periodType', { periodType: query.periodType });
+    if (query.from) {
+      qb.andWhere('a.period_to >= :pFrom', { pFrom: query.from.slice(0, 10) });
+    }
+    if (query.to) {
+      qb.andWhere('a.period_from <= :pTo', { pTo: query.to.slice(0, 10) });
+    }
 
     qb.select([
       's.id AS "submissionId"',
@@ -60,9 +65,11 @@ export class ApprovalService {
       'f.id AS "formId"',
       'f.code AS "formCode"',
       'f.name AS "formName"',
-      'p.id AS "periodId"',
-      'p.code AS "periodCode"',
-      'p.name AS "periodName"',
+      'a.period_type AS "periodType"',
+      'a.period_from AS "periodFrom"',
+      'a.period_to AS "periodTo"',
+      'a.period_code AS "periodCode"',
+      'a.period_name AS "periodName"',
     ])
       .orderBy('s.submitted_at', 'DESC')
       .skip(skip)
@@ -79,8 +86,14 @@ export class ApprovalService {
       countQb.andWhere('a.org_id = :qOrg', { qOrg: query.orgId });
     if (query.formId)
       countQb.andWhere('a.form_id = :formId', { formId: query.formId });
-    if (query.periodId)
-      countQb.andWhere('a.period_id = :periodId', { periodId: query.periodId });
+    if (query.periodType)
+      countQb.andWhere('a.period_type = :periodType', { periodType: query.periodType });
+    if (query.from) {
+      countQb.andWhere('a.period_to >= :pFrom', { pFrom: query.from.slice(0, 10) });
+    }
+    if (query.to) {
+      countQb.andWhere('a.period_from <= :pTo', { pTo: query.to.slice(0, 10) });
+    }
     const total = await countQb.getCount();
 
     const items = rows.map((r) => ({
@@ -88,7 +101,13 @@ export class ApprovalService {
       submittedAt: r.submittedAt,
       org: { id: r.orgId, code: r.orgCode, name: r.orgName },
       form: { id: r.formId, code: r.formCode, name: r.formName },
-      period: { id: r.periodId, code: r.periodCode, name: r.periodName },
+      period: {
+        type: r.periodType,
+        code: r.periodCode,
+        name: r.periodName,
+        dateFrom: r.periodFrom,
+        dateTo: r.periodTo,
+      },
     }));
     return { items, meta: { page, limit, total } };
   }

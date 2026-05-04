@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsDateString,
+  IsEnum,
   IsInt,
   IsOptional,
   IsString,
@@ -8,6 +9,7 @@ import {
   Max,
   Min,
 } from 'class-validator';
+import { PeriodType } from '../../../common';
 
 export class QueryReportsDto {
   @IsOptional()
@@ -19,8 +21,16 @@ export class QueryReportsDto {
   formId?: string;
 
   @IsOptional()
-  @IsUUID()
-  periodId?: string;
+  @IsEnum(PeriodType)
+  periodType?: PeriodType;
+
+  @IsOptional()
+  @IsDateString()
+  periodFrom?: string;
+
+  @IsOptional()
+  @IsDateString()
+  periodTo?: string;
 
   @IsOptional()
   @IsUUID()
