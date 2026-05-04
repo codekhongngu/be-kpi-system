@@ -1149,7 +1149,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Kỳ báo cáo tháng 04/2026 (updated)\",\n  \"isActive\": true\n}",
+							"raw": "{\n  \"name\": \"Kỳ báo cáo tháng 04/2026 (updated)\",\n  \"periodType\": \"THANG\",\n  \"dateFrom\": \"2026-04-01\",\n  \"dateTo\": \"2026-04-30\",\n  \"isActive\": true\n}",
 							"options": {
 								"raw": {
 									"language": "json"

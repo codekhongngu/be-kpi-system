@@ -21,10 +21,10 @@ export class Permission {
   name: string;
 
   @Column({ type: 'text', nullable: true })
-  description: string;
+  description: string | null;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
-  category: string;
+  category: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
@@ -33,7 +33,7 @@ export class Permission {
   updatedAt: Date;
 
   @DeleteDateColumn({ name: 'deleted_at', nullable: true })
-  deletedAt: Date;
+  deletedAt: Date | null;
 
   // Many-to-Many relationship with Roles
   @ManyToMany(() => Role, (role) => role.permissions)

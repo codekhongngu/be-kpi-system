@@ -95,7 +95,13 @@ export class ReportPeriodService {
 
     await this.assertNoDuplicate(dto.periodType, ymd(dFrom), ymd(dTo));
 
-    const code = await this.generateCode(dto.periodType, dFrom, dTo);
+    const requestedCode = dto.code?.trim();
+    if (dto.code !== undefined && (!requestedCode || requestedCode.length === 0)) {
+      throw new BadRequestException('PERIOD_CODE_INVALID');
+    }
+
+    const code =
+      requestedCode ?? (await this.generateCode(dto.periodType, dFrom, dTo));
     const existsCode = await this.repo.exist({ where: { code } });
     if (existsCode) {
       throw new ConflictException('PERIOD_CODE_DUPLICATE');
