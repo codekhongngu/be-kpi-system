@@ -32,14 +32,47 @@ export class User {
   @Exclude()
   passwordHash: string;
 
-  @Column({ name: 'full_name', length: 255, nullable: true })
-  fullName: string;
+  @Column({ name: 'code', type: 'varchar', length: 20, nullable: true })
+  code: string | null;
 
-  @Column({ length: 20, nullable: true })
-  phone: string;
+  @Column({ name: 'full_name', type: 'varchar', length: 255, nullable: true })
+  fullName: string | null;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  phone: string | null;
 
   @Column({ name: 'department_id', type: 'uuid', nullable: true })
-  departmentId: string;
+  departmentId: string | null;
+
+  @Column({ name: 'org_id', type: 'uuid', nullable: true })
+  orgId: string | null;
+
+  @Column({ name: 'avatar_url', type: 'text', nullable: true })
+  avatarUrl: string | null;
+
+  @Column({ name: 'failed_login_attempts', type: 'int', default: 0 })
+  @Exclude()
+  failedLoginAttempts: number;
+
+  @Column({ name: 'locked_until', type: 'timestamptz', nullable: true })
+  @Exclude()
+  lockedUntil: Date | null;
+
+  @Column({ name: 'totp_secret', type: 'varchar', length: 100, nullable: true })
+  @Exclude()
+  totpSecret: string | null;
+
+  @Column({ name: 'totp_enabled', default: false })
+  totpEnabled: boolean;
+
+  @Column({ name: 'notify_channel', length: 20, default: 'both' })
+  notifyChannel: string;
+
+  @Column({ length: 10, default: 'vi' })
+  language: string;
+
+  @Column({ length: 50, default: 'Asia/Ho_Chi_Minh' })
+  timezone: string;
 
   @Column({
     type: 'enum',
@@ -49,7 +82,7 @@ export class User {
   status: UserStatus;
 
   @Column({ name: 'last_login', type: 'timestamp', nullable: true })
-  lastLogin: Date;
+  lastLogin: Date | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
@@ -59,7 +92,7 @@ export class User {
 
   @DeleteDateColumn({ name: 'deleted_at', nullable: true })
   @Exclude()
-  deletedAt: Date;
+  deletedAt: Date | null;
 
   // Many-to-Many relationship with roles
   @ManyToMany(() => Role, (role) => role.users)

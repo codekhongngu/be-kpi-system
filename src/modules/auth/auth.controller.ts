@@ -12,6 +12,7 @@ import { UserService } from '../user/user.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { User } from '../user/entities/user.entity';
+import type { MeResponse } from '../user/types/user-contract.types';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -48,10 +49,8 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  getMe(@CurrentUser() user: User): Omit<User, 'passwordHash' | 'deletedAt'> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { passwordHash, deletedAt, ...sanitized } = user;
-    return sanitized;
+  async getMe(@CurrentUser() user: User): Promise<MeResponse> {
+    return await this.userService.getMeResponse(user.id);
   }
 
   @Post('change-password')
@@ -88,7 +87,11 @@ export class AuthController {
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  logout(): { message: string } {
+  async logout(
+    @CurrentUser() user: User,
+    @Body('refreshToken') refreshToken?: string,
+  ): Promise<{ message: string }> {
+    await this.authService.logout(user.id, refreshToken);
     return { message: 'Đăng xuất thành công' };
   }
 }

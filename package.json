@@ -34,9 +34,9 @@
     "build:dev": "./scripts/build.sh development",
     "deploy:prod": "./scripts/deploy.sh production",
     "deploy:dev": "./scripts/deploy.sh development",
-    "migrate": "./scripts/migrate.sh run",
-    "migrate:revert": "./scripts/migrate.sh revert",
-    "migrate:generate": "./scripts/migrate.sh generate",
+    "migrate": "npx ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d src/config/database.config.ts",
+    "migrate:revert": "npx ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d src/config/database.config.ts",
+    "migrate:generate": "npx ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d src/config/database.config.ts",
     "backup:db": "./scripts/backup-db.sh",
     "seed": "./scripts/seed.sh"
   },
@@ -52,13 +52,15 @@
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
+    "node-xlsx": "^0.24.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.17.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.28",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

@@ -24,11 +24,11 @@ export class TrimPipe implements PipeTransform {
 
   transform(values: any, metadata: ArgumentMetadata) {
     const { type } = metadata;
-    
+
     if (this.isObj(values) && (type === 'body' || type === 'query')) {
       return this.trim(values);
     }
-    
+
     return values;
   }
 }

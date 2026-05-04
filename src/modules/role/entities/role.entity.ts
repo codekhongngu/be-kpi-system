@@ -23,7 +23,7 @@ export class Role {
   name: string;
 
   @Column({ type: 'text', nullable: true })
-  description: string;
+  description: string | null;
 
   @Column({ name: 'is_system', default: false })
   isSystem: boolean;
@@ -35,7 +35,7 @@ export class Role {
   updatedAt: Date;
 
   @DeleteDateColumn({ name: 'deleted_at', nullable: true })
-  deletedAt: Date;
+  deletedAt: Date | null;
 
   // Many-to-Many relationship with Users
   @ManyToMany(() => User, (user) => user.roles)

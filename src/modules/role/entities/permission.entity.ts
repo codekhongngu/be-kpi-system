@@ -14,17 +14,17 @@ export class Permission {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true, length: 100 })
+  @Column({ type: 'varchar', unique: true, length: 100 })
   code: string;
 
-  @Column({ length: 100 })
+  @Column({ type: 'varchar', length: 100 })
   name: string;
 
   @Column({ type: 'text', nullable: true })
-  description: string;
+  description: string | null;
 
-  @Column({ length: 50, nullable: true })
-  category: string;
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  category: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
@@ -33,7 +33,7 @@ export class Permission {
   updatedAt: Date;
 
   @DeleteDateColumn({ name: 'deleted_at', nullable: true })
-  deletedAt: Date;
+  deletedAt: Date | null;
 
   // Many-to-Many relationship with Roles
   @ManyToMany(() => Role, (role) => role.permissions)

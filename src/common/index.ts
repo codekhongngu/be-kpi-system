@@ -15,6 +15,7 @@ export * from './interceptors/logging.interceptor';
 export * from './interceptors/transform.interceptor';
 export * from './interceptors/timeout.interceptor';
 export * from './interceptors/cache.interceptor';
+export * from './interceptors/api-envelope.interceptor';
 
 // Guards
 export * from './guards/roles.guard';

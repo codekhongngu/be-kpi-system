@@ -36,9 +36,8 @@ export class PermissionService {
     const { page = 1, limit = 10, search, category } = query;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.permissionRepository.createQueryBuilder(
-      'permission',
-    );
+    const queryBuilder =
+      this.permissionRepository.createQueryBuilder('permission');
 
     if (search) {
       queryBuilder.andWhere(
@@ -94,7 +93,10 @@ export class PermissionService {
     const permission = await this.findOne(id);
 
     // Check if code is being updated and already exists
-    if (updatePermissionDto.code && updatePermissionDto.code !== permission.code) {
+    if (
+      updatePermissionDto.code &&
+      updatePermissionDto.code !== permission.code
+    ) {
       const existing = await this.permissionRepository.findOne({
         where: { code: updatePermissionDto.code },
       });

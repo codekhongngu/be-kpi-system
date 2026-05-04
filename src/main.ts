@@ -1,8 +1,9 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { HttpExceptionFilter } from './common';
+import { HttpExceptionFilter, ApiEnvelopeInterceptor } from './common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { Reflector } from '@nestjs/core';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -27,6 +28,12 @@ async function bootstrap() {
   // Enable global exception filter
   app.useGlobalFilters(new HttpExceptionFilter());
 
+  // Enable class-transformer serialization (@Exclude, @Expose)
+  app.useGlobalInterceptors(
+    new ClassSerializerInterceptor(app.get(Reflector)),
+    new ApiEnvelopeInterceptor(),
+  );
+
   // Enable global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
@@ -39,8 +46,8 @@ async function bootstrap() {
     }),
   );
 
-  // Set global prefix
-  app.setGlobalPrefix('api');
+  // Set global prefix (QLDL contract: /api/v1)
+  app.setGlobalPrefix('api/v1');
 
   const port = process.env.PORT ?? 5000;
   // Listen on 0.0.0.0 to accept connections from outside the container

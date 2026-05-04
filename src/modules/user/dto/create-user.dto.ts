@@ -5,7 +5,11 @@ import {
   MinLength,
   IsOptional,
   IsEnum,
+  IsUUID,
+  IsArray,
+  IsBoolean,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { UserStatus } from '../entities/user.entity';
 
 export class CreateUserDto {
@@ -17,10 +21,12 @@ export class CreateUserDto {
   @IsEmail({}, { message: 'Email không hợp lệ' })
   email: string;
 
-  @IsNotEmpty({ message: 'Mật khẩu là bắt buộc' })
+  /** Bỏ trống = hệ thống sinh mật khẩu mạnh (luồng admin QLDL). */
+  @IsOptional()
   @IsString()
   @MinLength(6, { message: 'Mật khẩu phải có ít nhất 6 ký tự' })
-  password: string;
+  @Transform(({ value }) => (value === '' ? undefined : value))
+  password?: string;
 
   @IsOptional()
   @IsString()
@@ -32,9 +38,32 @@ export class CreateUserDto {
 
   @IsOptional()
   @IsString()
+  code?: string;
+
+  @IsOptional()
+  @IsUUID()
+  orgId?: string | null;
+
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  roleIds?: string[];
+
+  @IsOptional()
+  @IsString()
   departmentId?: string;
 
   @IsOptional()
   @IsEnum(UserStatus)
   status?: UserStatus;
+
+  /** Theo QLDL contract (ưu tiên hơn `status` khi cả hai được gửi). */
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return undefined;
+  })
+  isActive?: boolean;
 }

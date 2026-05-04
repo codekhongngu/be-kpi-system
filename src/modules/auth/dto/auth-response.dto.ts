@@ -1,8 +1,8 @@
-import { User } from '../../user/entities/user.entity';
+import { PublicUser } from './public-user.type';
 
 export class AuthResponseDto {
   accessToken: string;
   refreshToken?: string;
-  user: Omit<User, 'passwordHash' | 'deletedAt'>;
+  user: PublicUser;
   expiresIn: number;
 }
