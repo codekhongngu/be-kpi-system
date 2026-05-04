@@ -1129,11 +1129,11 @@
 								"method": "GET",
 								"header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/field-categories?isActive=true&page=1&limit=100",
+									"raw": "{{baseUrl}}/api/v1/field-categories?isActive=all&page=1&limit=100",
 									"host": ["{{baseUrl}}"],
 									"path": ["api","v1","field-categories"],
 									"query": [
-										{ "key": "isActive", "value": "true" },
+										{ "key": "isActive", "value": "all", "description": "all | true | false" },
 										{ "key": "page", "value": "1" },
 										{ "key": "limit", "value": "100" }
 									]

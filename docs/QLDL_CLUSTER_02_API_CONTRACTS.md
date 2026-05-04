@@ -201,7 +201,7 @@ Danh mục **lĩnh vực** dùng khi thiết kế biểu mẫu: `forms` tham chi
 
 #### `GET /field-categories`
 
-- **Query**: `q?, isActive?, page?, limit?`
+- **Query**: `q?, isActive=all|true|false?, page?, limit?`
 - **200**: `{ items: FieldCategoryListItem[], meta }`
 
 #### `POST /field-categories`
