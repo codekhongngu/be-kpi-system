@@ -29,8 +29,14 @@ const baseOptions = {
   type: 'postgres' as const,
   synchronize: envBool(process.env.DB_SYNCHRONIZE, false),
   logging: envBool(process.env.DB_LOGGING, true),
-  entities: [join(__dirname, '..', '**', '*.entity{.ts,.js}')],
-  migrations: [join(__dirname, '..', 'migrations', '*{.ts,.js}')],
+  entities: [
+    join(__dirname, '..', '**', '*.entity.ts'),
+    join(__dirname, '..', '**', '*.entity.js'),
+  ],
+  migrations: [
+    join(__dirname, '..', 'migrations', '*.ts'),
+    join(__dirname, '..', 'migrations', '*.js'),
+  ],
   ssl: sslEnabled ? { rejectUnauthorized } : undefined,
 };
 

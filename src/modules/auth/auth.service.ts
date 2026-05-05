@@ -248,10 +248,12 @@ export class AuthService {
     }
 
     if (user.orgId) {
-      const org = await this.organizationRepository.findOne({
-        where: { id: user.orgId },
-      });
-      if (!org || !org.isActive) {
+      const org = await this.organizationRepository
+        .createQueryBuilder('o')
+        .select(['o.id', 'o.isActive'])
+        .where('o.id = :id', { id: user.orgId })
+        .getOne();
+      if (!org?.isActive) {
         throw new UnauthorizedException('Đơn vị đã bị khóa hoặc không tồn tại');
       }
     }

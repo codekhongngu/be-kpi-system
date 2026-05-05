@@ -816,7 +816,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/orgs?q=&isActive=true",
+							"raw": "{{baseUrl}}/api/v1/orgs?q=&isActive=true&canAssignReports=true",
 							"host": ["{{baseUrl}}"],
 							"path": ["api","v1","orgs"],
 							"query": [
@@ -829,6 +829,11 @@
 									"key": "isActive",
 									"value": "true",
 									"description": "Lọc theo trạng thái hoạt động (true/false)"
+								},
+								{
+									"key": "canAssignReports",
+									"value": "true",
+									"description": "Lọc theo đơn vị được phép giao báo cáo (true/false)"
 								}
 							]
 						},
@@ -847,7 +852,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/orgs?tree=true",
+							"raw": "{{baseUrl}}/api/v1/orgs?tree=true&canAssignReports=true",
 							"host": ["{{baseUrl}}"],
 							"path": ["api","v1","orgs"],
 							"query": [
@@ -855,6 +860,11 @@
 									"key": "tree",
 									"value": "true",
 									"description": "Trả về cấu trúc cây (children[])"
+								},
+								{
+									"key": "canAssignReports",
+									"value": "true",
+									"description": "Lọc theo đơn vị được phép giao báo cáo (true/false)"
 								}
 							]
 						},
@@ -878,7 +888,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"code\": \"ORG-TEST\",\n  \"name\": \"Đơn vị test\",\n  \"parentId\": null,\n  \"headUserId\": null,\n  \"level\": 1,\n  \"description\": \"Tạo từ Postman\"\n}",
+							"raw": "{\n  \"code\": \"ORG-TEST\",\n  \"name\": \"Đơn vị test\",\n  \"canAssignReports\": true,\n  \"parentId\": null,\n  \"headUserId\": null,\n  \"level\": 1,\n  \"description\": \"Tạo từ Postman\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -944,7 +954,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Đơn vị test (updated)\",\n  \"description\": \"Cập nhật từ Postman\",\n  \"parentId\": null,\n  \"headUserId\": null,\n  \"level\": 1\n}",
+							"raw": "{\n  \"name\": \"Đơn vị test (updated)\",\n  \"canAssignReports\": true,\n  \"description\": \"Cập nhật từ Postman\",\n  \"parentId\": null,\n  \"headUserId\": null,\n  \"level\": 1\n}",
 							"options": {
 								"raw": {
 									"language": "json"
