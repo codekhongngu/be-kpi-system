@@ -23,5 +23,10 @@ export class OrganizationQueryDto {
   @IsOptional()
   @Transform(({ value }) => toBool(value))
   @IsBoolean()
+  canAssignReports?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => toBool(value))
+  @IsBoolean()
   tree?: boolean;
 }

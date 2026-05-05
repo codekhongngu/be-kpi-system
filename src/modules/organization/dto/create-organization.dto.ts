@@ -2,6 +2,7 @@ import {
   IsInt,
   IsNotEmpty,
   IsOptional,
+  IsBoolean,
   IsString,
   IsUUID,
   MaxLength,
@@ -24,6 +25,18 @@ export class CreateOrganizationDto {
   @IsNotEmpty()
   @MaxLength(255)
   name: string;
+
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (value === true || value === false) return value;
+    const s = String(value).toLowerCase();
+    if (s === 'true' || s === '1') return true;
+    if (s === 'false' || s === '0') return false;
+    return undefined;
+  })
+  @IsBoolean()
+  canAssignReports?: boolean;
 
   @IsOptional()
   @IsUUID()

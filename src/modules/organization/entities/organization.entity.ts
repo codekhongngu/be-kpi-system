@@ -45,6 +45,9 @@ export class Organization {
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
+  @Column({ name: 'can_assign_reports', type: 'boolean', default: true })
+  canAssignReports: boolean;
+
   @Column({ type: 'text', nullable: true })
   description: string | null;
 

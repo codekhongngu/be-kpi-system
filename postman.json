@@ -816,7 +816,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/orgs?q=&isActive=true",
+							"raw": "{{baseUrl}}/api/v1/orgs?q=&isActive=true&canAssignReports=true",
 							"host": ["{{baseUrl}}"],
 							"path": ["api","v1","orgs"],
 							"query": [
@@ -829,6 +829,11 @@
 									"key": "isActive",
 									"value": "true",
 									"description": "Lọc theo trạng thái hoạt động (true/false)"
+								},
+								{
+									"key": "canAssignReports",
+									"value": "true",
+									"description": "Lọc theo đơn vị được phép giao báo cáo (true/false)"
 								}
 							]
 						},
@@ -847,7 +852,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/orgs?tree=true",
+							"raw": "{{baseUrl}}/api/v1/orgs?tree=true&canAssignReports=true",
 							"host": ["{{baseUrl}}"],
 							"path": ["api","v1","orgs"],
 							"query": [
@@ -855,6 +860,11 @@
 									"key": "tree",
 									"value": "true",
 									"description": "Trả về cấu trúc cây (children[])"
+								},
+								{
+									"key": "canAssignReports",
+									"value": "true",
+									"description": "Lọc theo đơn vị được phép giao báo cáo (true/false)"
 								}
 							]
 						},

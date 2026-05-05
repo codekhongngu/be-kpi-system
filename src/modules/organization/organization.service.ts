@@ -45,6 +45,7 @@ export class OrganizationService {
       headUserId: dto.headUserId ?? null,
       level: dto.level ?? 1,
       isActive: true,
+      canAssignReports: dto.canAssignReports ?? true,
       description: dto.description ?? null,
     });
     return await this.orgRepo.save(org);
@@ -55,6 +56,10 @@ export class OrganizationService {
 
     if (query.isActive !== undefined) {
       qb.andWhere('o.isActive = :isActive', { isActive: query.isActive });
+    }
+
+    if (query.canAssignReports !== undefined) {
+      qb.andWhere('o.canAssignReports = :car', { car: query.canAssignReports });
     }
 
     if (query.q) {
