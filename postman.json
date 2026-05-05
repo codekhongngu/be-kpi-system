@@ -888,7 +888,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"code\": \"ORG-TEST\",\n  \"name\": \"Đơn vị test\",\n  \"parentId\": null,\n  \"headUserId\": null,\n  \"level\": 1,\n  \"description\": \"Tạo từ Postman\"\n}",
+							"raw": "{\n  \"code\": \"ORG-TEST\",\n  \"name\": \"Đơn vị test\",\n  \"canAssignReports\": true,\n  \"parentId\": null,\n  \"headUserId\": null,\n  \"level\": 1,\n  \"description\": \"Tạo từ Postman\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -954,7 +954,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Đơn vị test (updated)\",\n  \"description\": \"Cập nhật từ Postman\",\n  \"parentId\": null,\n  \"headUserId\": null,\n  \"level\": 1\n}",
+							"raw": "{\n  \"name\": \"Đơn vị test (updated)\",\n  \"canAssignReports\": true,\n  \"description\": \"Cập nhật từ Postman\",\n  \"parentId\": null,\n  \"headUserId\": null,\n  \"level\": 1\n}",
 							"options": {
 								"raw": {
 									"language": "json"
