@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -43,5 +44,11 @@ export class FieldCategoriesController {
     @Body() dto: PatchFieldCategoryDto,
   ) {
     return await this.formDesigner.patchFieldCategory(id, dto);
+  }
+
+  @Delete(':id')
+  @Permissions('forms.manage')
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.formDesigner.removeFieldCategory(id);
   }
 }

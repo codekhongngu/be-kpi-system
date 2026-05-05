@@ -1031,6 +1031,21 @@ export class FormDesignerService {
     return { ok: true };
   }
 
+  async removeFieldCategory(id: string) {
+    const row = await this.fieldCategoryRepo.findOne({ where: { id } });
+    if (!row) throw new NotFoundException('Không tìm thấy lĩnh vực');
+
+    const used = await this.formRepo
+      .createQueryBuilder('f')
+      .where('f.deleted_at IS NULL')
+      .andWhere('f.field_category_id = :id', { id })
+      .getExists();
+    if (used) throw new ConflictException('FIELD_CATEGORY_IN_USE');
+
+    await this.fieldCategoryRepo.remove(row);
+    return { ok: true };
+  }
+
   private async requireActiveFieldCategory(id: string): Promise<FieldCategory> {
     const row = await this.fieldCategoryRepo.findOne({
       where: { id, isActive: true },
