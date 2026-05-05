@@ -1,0 +1,1125 @@
+{
+  "info": {
+    "name": "Form Designer (QLDL) API Collection",
+    "description": "Module collection: Form Designer (QLDL)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "starter-be"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "departmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orgId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "periodId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "importJobId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "roleIdFilter",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "roleGroupId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "formId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "fieldCategoryId",
+      "value": "a1b2c3d4-e5f6-4789-a012-000000000001",
+      "type": "string"
+    },
+    {
+      "key": "assignmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "submissionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "summaryId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "notificationId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Form Designer (QLDL)",
+      "item": [
+        {
+          "name": "Field Categories",
+          "item": [
+            {
+              "name": "List Field Categories",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/field-categories?isActive=all&page=1&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "field-categories"
+                  ],
+                  "query": [
+                    {
+                      "key": "isActive",
+                      "value": "all",
+                      "description": "all | true | false"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "GET /field-categories — JWT + DESIGN_FORMS:READ"
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "  const envelope = pm.response.json();",
+                      "  const data = envelope && envelope.data !== undefined ? envelope.data : envelope;",
+                      "  const items = data && data.items ? data.items : [];",
+                      "  if (items.length && items[0].id) {",
+                      "    pm.collectionVariables.set('fieldCategoryId', items[0].id);",
+                      "  }",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create Field Category",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"linh_vuc_tuy_chinh\",\n  \"name\": \"Lĩnh vực tùy chỉnh (Postman)\",\n  \"description\": \"Tạo thử qua Postman\",\n  \"sortOrder\": 99,\n  \"isActive\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/field-categories",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "field-categories"
+                  ]
+                },
+                "description": "POST /field-categories — JWT + DESIGN_FORMS:WRITE"
+              },
+              "response": []
+            },
+            {
+              "name": "Patch Field Category",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Đổi tên từ Postman\",\n  \"sortOrder\": 100\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/field-categories/{{fieldCategoryId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "field-categories",
+                    "{{fieldCategoryId}}"
+                  ]
+                },
+                "description": "PATCH /field-categories/:id — JWT + DESIGN_FORMS:WRITE"
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Field Category",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/field-categories/{{fieldCategoryId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "field-categories",
+                    "{{fieldCategoryId}}"
+                  ]
+                },
+                "description": "DELETE /field-categories/:id — JWT + DESIGN_FORMS:WRITE"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Forms",
+          "item": [
+            {
+              "name": "List Forms",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/forms?page=1&limit=20&search=&status=&period=&category=",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "forms"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "description": "Tìm theo mã hoặc tên biểu mẫu"
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "description": "active|inactive|true|false|1|0"
+                    },
+                    {
+                      "key": "period",
+                      "value": "",
+                      "description": "Lọc theo createdAt: YYYY hoặc YYYY-MM hoặc YYYY-MM-DD"
+                    },
+                    {
+                      "key": "category",
+                      "value": "",
+                      "description": "Mã category (fc.code) hoặc UUID fieldCategoryId"
+                    }
+                  ]
+                },
+                "description": "GET /forms — JWT + DESIGN_FORMS:READ"
+              },
+              "response": []
+            },
+            {
+              "name": "Create Form",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"FM-TEST-01\",\n  \"name\": \"Bieu mau test\",\n  \"fieldCategoryId\": \"{{fieldCategoryId}}\",\n  \"description\": \"Tao tu Postman\",\n  \"isActive\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/forms",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "forms"
+                  ]
+                },
+                "description": "POST /forms — JWT + DESIGN_FORMS:WRITE (create fields: code, name, fieldCategoryId/fieldCategoryRef, description, isActive)"
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "  const envelope = pm.response.json();",
+                      "  const data = envelope && envelope.data !== undefined ? envelope.data : envelope;",
+                      "  if (data && data.id) pm.collectionVariables.set('formId', data.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Form Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/forms/{{formId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "forms",
+                    "{{formId}}"
+                  ]
+                },
+                "description": "GET /forms/:id — JWT + DESIGN_FORMS:READ"
+              },
+              "response": []
+            },
+            {
+              "name": "Patch Form",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Bieu mau da cap nhat\",\n  \"fieldCategoryId\": \"{{fieldCategoryId}}\",\n  \"description\": \"Cap nhat tu Postman\",\n  \"isActive\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/forms/{{formId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "forms",
+                    "{{formId}}"
+                  ]
+                },
+                "description": "PATCH /forms/:id — JWT + DESIGN_FORMS:WRITE (update fields: name, fieldCategoryId/fieldCategoryRef, description, isActive)"
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Form",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/forms/{{formId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "forms",
+                    "{{formId}}"
+                  ]
+                },
+                "description": "DELETE /forms/:id — JWT + DESIGN_FORMS:WRITE"
+              },
+              "response": []
+            },
+            {
+              "name": "Copy Form",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Biểu mẫu bản sao\",\n  \"code\": \"FM-COPY-01\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/copy",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "forms",
+                    "{{formId}}",
+                    "copy"
+                  ]
+                },
+                "description": "POST /forms/:id/copy — JWT + DESIGN_FORMS:WRITE"
+              },
+              "response": []
+            },
+            {
+              "name": "Set Active",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/active",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "forms",
+                    "{{formId}}",
+                    "active"
+                  ]
+                },
+                "description": "PATCH /forms/:id/active — JWT + DESIGN_FORMS:WRITE"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Attributes",
+          "item": [
+            {
+              "name": "List Attributes",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/attributes?parentId=",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "forms",
+                    "{{formId}}",
+                    "attributes"
+                  ],
+                  "query": [
+                    {
+                      "key": "parentId",
+                      "value": "",
+                      "description": "Lọc theo ID cha (để trống để lấy tất cả hoặc root)"
+                    }
+                  ]
+                },
+                "description": "GET /forms/:id/attributes — JWT + DESIGN_FORMS:READ"
+              },
+              "response": []
+            },
+            {
+              "name": "Reorder Attributes",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"items\": [\n    { \"id\": \"{{attrId1}}\", \"parentId\": null },\n    { \"id\": \"{{attrId2}}\", \"parentId\": \"{{attrId1}}\" }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/attributes/reorder",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "forms",
+                    "{{formId}}",
+                    "attributes",
+                    "reorder"
+                  ]
+                },
+                "description": "POST /forms/:id/attributes/reorder — Sắp xếp lại thứ tự cột"
+              },
+              "response": []
+            },
+            {
+              "name": "Create Attribute",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"parentId\": null,\n  \"name\": \"Thuộc tính mới\",\n  \"dataType\": \"text\",\n  \"isRequired\": false,\n  \"isVisible\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/attributes",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "forms",
+                    "{{formId}}",
+                    "attributes"
+                  ]
+                },
+                "description": "POST /forms/:id/attributes — JWT + DESIGN_FORMS:WRITE"
+              },
+              "response": []
+            },
+            {
+              "name": "Patch Attribute",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"parentId\": null,\n  \"name\": \"Đổi tên thuộc tính\",\n  \"isRequired\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/attributes/{{attrId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "forms",
+                    "{{formId}}",
+                    "attributes",
+                    "{{attrId}}"
+                  ]
+                },
+                "description": "PATCH /forms/:id/attributes/:attrId — JWT + DESIGN_FORMS:WRITE"
+              },
+              "response": []
+            },
+            {
+              "name": "Remove Attribute",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/attributes/{{attrId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "forms",
+                    "{{formId}}",
+                    "attributes",
+                    "{{attrId}}"
+                  ]
+                },
+                "description": "DELETE /forms/:id/attributes/:attrId — JWT + DESIGN_FORMS:WRITE"
+              },
+              "response": []
+            },
+            {
+              "name": "Import Attributes",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/attributes/import",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "forms",
+                    "{{formId}}",
+                    "attributes",
+                    "import"
+                  ]
+                },
+                "description": "POST /forms/:id/attributes/import — Khởi tạo job import"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Indicators",
+          "item": [
+            {
+              "name": "List Indicators",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/indicators?parentId=",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "forms",
+                    "{{formId}}",
+                    "indicators"
+                  ],
+                  "query": [
+                    {
+                      "key": "parentId",
+                      "value": "",
+                      "description": "Lọc theo ID cha (để trống để lấy tất cả hoặc root)"
+                    }
+                  ]
+                },
+                "description": "GET /forms/:id/indicators — JWT + DESIGN_FORMS:READ"
+              },
+              "response": []
+            },
+            {
+              "name": "Create Indicator",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"parentId\": null,\n  \"displayIndex\": \"1\",\n  \"code\": \"I001\",\n  \"name\": \"Chỉ tiêu 01\",\n  \"unit\": \"%\",\n  \"dataType\": \"number\",\n  \"isRequired\": true,\n  \"isCalculated\": false,\n  \"sortOrder\": 0,\n  \"isActive\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/indicators",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "forms",
+                    "{{formId}}",
+                    "indicators"
+                  ]
+                },
+                "description": "POST /forms/:id/indicators — JWT + DESIGN_FORMS:WRITE"
+              },
+              "response": []
+            },
+            {
+              "name": "Patch Indicator",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"parentId\": null,\n  \"displayIndex\": \"1.1\",\n  \"name\": \"Đổi tên chỉ tiêu\",\n  \"unit\": \"Cái\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/indicators/{{indicatorId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "forms",
+                    "{{formId}}",
+                    "indicators",
+                    "{{indicatorId}}"
+                  ]
+                },
+                "description": "PATCH /forms/:id/indicators/:indicatorId — JWT + DESIGN_FORMS:WRITE"
+              },
+              "response": []
+            },
+            {
+              "name": "Remove Indicator",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/indicators/{{indicatorId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "forms",
+                    "{{formId}}",
+                    "indicators",
+                    "{{indicatorId}}"
+                  ]
+                },
+                "description": "DELETE /forms/:id/indicators/:indicatorId — JWT + DESIGN_FORMS:WRITE"
+              },
+              "response": []
+            },
+            {
+              "name": "Reorder Indicators",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"items\": [\n    { \"id\": \"id-1\", \"parentId\": null },\n    { \"id\": \"id-2\", \"parentId\": \"id-1\" }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/indicators/reorder",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "forms",
+                    "{{formId}}",
+                    "indicators",
+                    "reorder"
+                  ]
+                },
+                "description": "POST /forms/:id/indicators/reorder — Sắp xếp lại chỉ tiêu"
+              },
+              "response": []
+            },
+            {
+              "name": "Import Indicators",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/indicators/import",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "forms",
+                    "{{formId}}",
+                    "indicators",
+                    "import"
+                  ]
+                },
+                "description": "POST /forms/:id/indicators/import — Khởi tạo job import"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Indicator Catalog",
+          "item": [
+            {
+              "name": "List Catalog",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/indicator-catalog?page=1&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "indicator-catalog"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "GET /indicator-catalog — JWT + DESIGN_FORMS:READ"
+              },
+              "response": []
+            },
+            {
+              "name": "Create Catalog Entry",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"CAT-001\",\n  \"name\": \"Chỉ tiêu dùng chung 01\",\n  \"unit\": \"Cái\",\n  \"dataType\": \"number\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/indicator-catalog",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "indicator-catalog"
+                  ]
+                },
+                "description": "POST /indicator-catalog — JWT + DESIGN_FORMS:WRITE"
+              },
+              "response": []
+            },
+            {
+              "name": "Patch Catalog Entry",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Cập nhật tên dùng chung\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/indicator-catalog/{{catalogId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "indicator-catalog",
+                    "{{catalogId}}"
+                  ]
+                },
+                "description": "PATCH /indicator-catalog/:id — JWT + DESIGN_FORMS:WRITE"
+              },
+              "response": []
+            },
+            {
+              "name": "Remove Catalog Entry",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/indicator-catalog/{{catalogId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "indicator-catalog",
+                    "{{catalogId}}"
+                  ]
+                },
+                "description": "DELETE /indicator-catalog/:id — JWT + DESIGN_FORMS:WRITE"
+              },
+              "response": []
+            }
+          ]
+        }
+      ],
+      "description": "Thiết kế biểu mẫu: lĩnh vực (`field-categories`) + forms/attributes/indicators"
+    }
+  ]
+}

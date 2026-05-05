@@ -33,6 +33,7 @@ import { ReorderIndicatorsDto } from './dto/reorder-indicators.dto';
 import { CreateFieldCategoryDto } from './dto/create-field-category.dto';
 import { PatchFieldCategoryDto } from './dto/patch-field-category.dto';
 import { FieldCategoryQueryDto } from './dto/field-category-query.dto';
+import { PeriodType } from '../../common/period-type';
 
 const DEFAULT_FORM_SYSTEM_ATTRIBUTES = [
   { name: 'Thứ tự', dataType: 'integer', sortOrder: 0 },
@@ -133,9 +134,10 @@ export class FormDesignerService {
       id: f.id,
       code: f.code,
       name: f.name,
+      periodType: f.periodType,
       fieldCategoryId: f.fieldCategoryRef?.id ?? null,
-      /** Mã `code` từ bảng `field_categories` (join), không còn cột `forms.field_category`. */
-      fieldCategory: f.fieldCategoryRef?.code ?? null,
+      fieldCategoryName: f.fieldCategoryRef?.name ?? null,
+      fieldCategory: f.fieldCategoryRef?.name ?? null,
       isActive: f.isActive,
       templateFileUrl: f.templateFile,
       parentFormId: f.parentFormId,
@@ -184,21 +186,77 @@ export class FormDesignerService {
     const qb = this.formRepo
       .createQueryBuilder('f')
       .leftJoinAndSelect('f.fieldCategoryRef', 'fc');
-    if (query.q?.trim()) {
-      const q = `%${query.q.trim().toLowerCase()}%`;
+
+    const keyword = query.search?.trim() || query.q?.trim();
+    if (keyword) {
+      const q = `%${keyword.toLowerCase()}%`;
       qb.andWhere('(LOWER(f.name) LIKE :q OR LOWER(f.code) LIKE :q)', { q });
     }
-    if (query.fieldCategory !== undefined) {
-      qb.andWhere('fc.code = :fcc', { fcc: query.fieldCategory });
-    }
-    if (query.fieldCategoryId !== undefined) {
+
+    const category = query.category?.trim() || query.fieldCategory?.trim();
+    if (category) {
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(category)) {
+        qb.andWhere('f.fieldCategoryRef = :fcid', { fcid: category });
+      } else {
+        qb.andWhere('LOWER(fc.code) = :fcc', { fcc: category.toLowerCase() });
+      }
+    } else if (query.fieldCategoryId !== undefined) {
       qb.andWhere('f.fieldCategoryRef = :fcid', {
         fcid: query.fieldCategoryId,
       });
     }
-    if (query.isActive !== undefined) {
+
+    const statusRaw = query.status?.trim();
+    if (statusRaw) {
+      const normalized = statusRaw.toLowerCase();
+      if (['active', '1', 'true'].includes(normalized)) {
+        qb.andWhere('f.isActive = true');
+      } else if (['inactive', '0', 'false'].includes(normalized)) {
+        qb.andWhere('f.isActive = false');
+      } else {
+        throw new BadRequestException(
+          'status không hợp lệ, chỉ nhận active/inactive/true/false/1/0',
+        );
+      }
+    } else if (query.isActive !== undefined) {
       qb.andWhere('f.isActive = :ia', { ia: query.isActive });
     }
+
+    if (query.periodType) {
+      qb.andWhere('f.periodType = :periodType', { periodType: query.periodType });
+    }
+
+    if (query.period?.trim()) {
+      const period = query.period.trim();
+      const periodNormalized = period.toUpperCase();
+      if (Object.values(PeriodType).includes(periodNormalized as PeriodType)) {
+        qb.andWhere('f.periodType = :periodType', { periodType: periodNormalized });
+      } else
+      if (/^\d{4}$/.test(period)) {
+        const year = Number(period);
+        qb.andWhere('EXTRACT(YEAR FROM f.createdAt) = :year', { year });
+      } else if (/^\d{4}-\d{2}$/.test(period)) {
+        const [y, m] = period.split('-').map(Number);
+        if (m < 1 || m > 12) {
+          throw new BadRequestException('period không hợp lệ (YYYY-MM)');
+        }
+        const from = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0));
+        const to = new Date(Date.UTC(y, m, 1, 0, 0, 0));
+        qb.andWhere('f.createdAt >= :from AND f.createdAt < :to', { from, to });
+      } else if (/^\d{4}-\d{2}-\d{2}$/.test(period)) {
+        const [y, m, d] = period.split('-').map(Number);
+        const from = new Date(Date.UTC(y, m - 1, d, 0, 0, 0));
+        const to = new Date(Date.UTC(y, m - 1, d + 1, 0, 0, 0));
+        qb.andWhere('f.createdAt >= :from AND f.createdAt < :to', { from, to });
+      } else {
+        throw new BadRequestException(
+          'period không hợp lệ, dùng YYYY hoặc YYYY-MM hoặc YYYY-MM-DD',
+        );
+      }
+    }
+
     qb.orderBy('f.createdAt', 'DESC').skip(skip).take(limit);
     const [rows, total] = await qb.getManyAndCount();
     return {
@@ -208,18 +266,22 @@ export class FormDesignerService {
   }
 
   async createForm(dto: CreateFormDto, userId: string | undefined) {
-    const fc = await this.requireActiveFieldCategory(dto.fieldCategoryId);
+    const fieldCategoryId = dto.fieldCategoryId ?? dto.fieldCategoryRef;
+    if (!fieldCategoryId) {
+      throw new BadRequestException('fieldCategoryRef/fieldCategoryId là bắt buộc');
+    }
+    const fc = await this.requireActiveFieldCategory(fieldCategoryId);
     const id = await this.dataSource.transaction(async (manager) => {
       const formRepo = manager.getRepository(Form);
       const code = await this.resolveFormCode(dto.code, formRepo);
       const created = formRepo.create({
         code,
         name: dto.name.trim(),
+        periodType: dto.periodType ?? PeriodType.THANG,
         fieldCategoryRef: { id: fc.id } as FieldCategory,
         description: dto.description?.trim() ?? null,
-        parentFormId: dto.parentFormId ?? null,
         createdBy: userId ?? null,
-        isActive: true,
+        isActive: dto.isActive ?? true,
       });
       const saved = await formRepo.save(created);
       await this.seedDefaultFormAttributes(manager, saved.id);
@@ -259,24 +321,20 @@ export class FormDesignerService {
     });
     if (!f) throw new NotFoundException('Không tìm thấy biểu mẫu');
 
-    if (dto.code !== undefined) {
-      const code = dto.code.trim();
-      if (code !== f.code) {
-        const exists = await this.formRepo.exist({
-          where: { code: ILike(code) },
-          withDeleted: true,
-        });
-        if (exists) throw new ConflictException('FORM_CODE_DUPLICATE');
-        f.code = code;
-      }
-    }
-
     if (dto.name !== undefined) f.name = dto.name.trim();
-    if (dto.fieldCategoryId !== undefined) {
-      if (dto.fieldCategoryId === null) {
+    const fieldCategoryPatch = dto.fieldCategoryRef ?? dto.fieldCategoryId;
+    const shouldPatchFieldCategory =
+      dto.fieldCategoryRef !== undefined || dto.fieldCategoryId !== undefined;
+    if (shouldPatchFieldCategory) {
+      if (fieldCategoryPatch === undefined) {
+        throw new BadRequestException(
+          'fieldCategoryRef/fieldCategoryId không hợp lệ',
+        );
+      }
+      if (fieldCategoryPatch === null) {
         f.fieldCategoryRef = null;
       } else {
-        const fc = await this.requireActiveFieldCategory(dto.fieldCategoryId);
+        const fc = await this.requireActiveFieldCategory(fieldCategoryPatch);
         f.fieldCategoryRef = { id: fc.id } as FieldCategory;
       }
     }
@@ -286,8 +344,8 @@ export class FormDesignerService {
           ? null
           : dto.description.trim();
     }
+    if (dto.periodType !== undefined) f.periodType = dto.periodType;
     if (dto.isActive !== undefined) f.isActive = dto.isActive;
-    if (dto.parentFormId !== undefined) f.parentFormId = dto.parentFormId;
     await this.formRepo.save(f);
     return { ok: true };
   }
@@ -358,6 +416,7 @@ export class FormDesignerService {
       const f = formRepo.create({
         code,
         name: dto.name.trim(),
+        periodType: src.periodType,
         fieldCategoryRef,
         description: src.description,
         isActive: false,
@@ -965,19 +1024,25 @@ export class FormDesignerService {
   async findAllFieldCategories(query: FieldCategoryQueryDto) {
     const page = query.page ?? 1;
     const limit = Math.min(query.limit ?? 100, 200);
+    const isGetAll = query.isGetAll === true;
     const skip = (page - 1) * limit;
     const qb = this.fieldCategoryRepo.createQueryBuilder('c');
-    if (query.isActive !== undefined) {
-      qb.andWhere('c.isActive = :ia', { ia: query.isActive });
+
+    const status = query.status ?? query.isActive;
+    if (status !== undefined) {
+      qb.andWhere('c.isActive = :ia', { ia: status });
     }
+
     if (query.q?.trim()) {
       const q = `%${query.q.trim().toLowerCase()}%`;
       qb.andWhere('(LOWER(c.name) LIKE :q OR LOWER(c.code) LIKE :q)', { q });
     }
-    qb.orderBy('c.sort_order', 'ASC')
-      .addOrderBy('c.name', 'ASC')
-      .skip(skip)
-      .take(limit);
+
+    qb.orderBy('c.sort_order', 'ASC').addOrderBy('c.name', 'ASC');
+    if (!isGetAll) {
+      qb.skip(skip).take(limit);
+    }
+
     const [rows, total] = await qb.getManyAndCount();
     return {
       items: rows.map((c) => ({
@@ -988,7 +1053,7 @@ export class FormDesignerService {
         sortOrder: c.sortOrder,
         isActive: c.isActive,
       })),
-      meta: { page, limit, total },
+      meta: isGetAll ? { total } : { page, limit, total },
     };
   }
 
@@ -1052,7 +1117,7 @@ export class FormDesignerService {
     });
     if (!row) {
       throw new BadRequestException(
-        'fieldCategoryId không tồn tại, không hợp lệ hoặc đã ngưng sử dụng',
+        'fieldCategoryRef không tồn tại, không hợp lệ hoặc đã ngưng sử dụng',
       );
     }
     return row;

@@ -1,31 +1,16 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
-  IsNotEmpty,
+  IsEnum,
   IsOptional,
   IsString,
   IsUUID,
-  Matches,
   MaxLength,
   ValidateIf,
 } from 'class-validator';
+import { PeriodType } from '../../../common/period-type';
 
 export class PatchFormDto {
-  @ApiPropertyOptional({
-    description: 'Mã biểu mẫu (duy nhất)',
-    example: 'FM-NEW-CODE',
-    maxLength: 20,
-  })
-  @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(20)
-  @Matches(/^[A-Za-z0-9][A-Za-z0-9_-]*$/, {
-    message:
-      'code: chỉ chữ/số, dấu gạch ngang hoặc gạch dưới; tối đa 20 ký tự; ký tự đầu phải là chữ hoặc số',
-  })
-  code?: string;
-
   @ApiPropertyOptional({
     description: 'Tên biểu mẫu',
     example: 'Tên mới của biểu mẫu',
@@ -42,8 +27,17 @@ export class PatchFormDto {
   })
   @IsOptional()
   @ValidateIf(
-    (o) => o.fieldCategoryId !== null && o.fieldCategoryId !== undefined,
+    (o) => o.fieldCategoryRef !== null && o.fieldCategoryRef !== undefined,
   )
+  @IsUUID()
+  fieldCategoryRef?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Tương thích ngược: ID của lĩnh vực (field_categories)',
+    example: 'a1b2c3d4-e5f6-4789-a012-000000000001',
+  })
+  @IsOptional()
+  @ValidateIf((o) => o.fieldCategoryId !== null && o.fieldCategoryId !== undefined)
   @IsUUID()
   fieldCategoryId?: string | null;
 
@@ -56,18 +50,19 @@ export class PatchFormDto {
   description?: string | null;
 
   @ApiPropertyOptional({
+    description: 'Kỳ báo cáo',
+    enum: PeriodType,
+    example: PeriodType.THANG,
+  })
+  @IsOptional()
+  @IsEnum(PeriodType)
+  periodType?: PeriodType;
+
+  @ApiPropertyOptional({
     description: 'Trạng thái hoạt động',
     example: true,
   })
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'ID biểu mẫu cha',
-    example: null,
-  })
-  @IsOptional()
-  @IsUUID()
-  parentFormId?: string | null;
 }

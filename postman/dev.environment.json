@@ -1,0 +1,105 @@
+{
+  "id": "starter-be-dev",
+  "name": "Starter BE Dev",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5005",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "departmentId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "orgId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "periodId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "importJobId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "roleIdFilter",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "roleGroupId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "formId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "fieldCategoryId",
+      "value": "a1b2c3d4-e5f6-4789-a012-000000000001",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "assignmentId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "submissionId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "summaryId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "notificationId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2026-05-05T02:55:40.747Z",
+  "_postman_exported_using": "codex-gpt-5"
+}

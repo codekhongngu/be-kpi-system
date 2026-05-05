@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsEnum,
   IsInt,
   IsOptional,
   IsString,
@@ -8,6 +9,7 @@ import {
   Max,
   Min,
 } from 'class-validator';
+import { PeriodType } from '../../../common/period-type';
 
 export class FormQueryDto {
   @IsOptional()
@@ -16,16 +18,36 @@ export class FormQueryDto {
 
   @IsOptional()
   @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsString()
   fieldCategory?: string;
+
+  @IsOptional()
+  @IsString()
+  category?: string;
 
   @IsOptional()
   @IsUUID()
   fieldCategoryId?: string;
 
   @IsOptional()
+  @IsString()
+  period?: string;
+
+  @IsOptional()
+  @IsEnum(PeriodType)
+  periodType?: PeriodType;
+
+  @IsOptional()
   @Type(() => Boolean)
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
 
   @IsOptional()
   @Type(() => Number)

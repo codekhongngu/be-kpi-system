@@ -29,6 +29,16 @@ export class FieldCategoryQueryDto {
   isActive?: boolean;
 
   @IsOptional()
+  @Transform(({ value }) => toBoolOrUndefined(value))
+  @IsBoolean()
+  status?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => toBoolOrUndefined(value))
+  @IsBoolean()
+  isGetAll?: boolean;
+
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)

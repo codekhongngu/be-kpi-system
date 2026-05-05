@@ -9,6 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { FieldCategory } from './field-category.entity';
+import { PeriodType } from '../../../common/period-type';
 
 @Entity('forms')
 export class Form {
@@ -27,6 +28,9 @@ export class Form {
 
   @Column({ type: 'text', nullable: true })
   description: string | null;
+
+  @Column({ name: 'period_type', type: 'varchar', length: 10, default: PeriodType.THANG })
+  periodType: PeriodType;
 
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;

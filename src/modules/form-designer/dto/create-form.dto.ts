@@ -1,6 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
+  IsBoolean,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -8,6 +10,7 @@ import {
   Matches,
   MaxLength,
 } from 'class-validator';
+import { PeriodType } from '../../../common/period-type';
 
 export class CreateFormDto {
   /**
@@ -54,6 +57,14 @@ export class CreateFormDto {
   fieldCategoryId: string;
 
   @ApiPropertyOptional({
+    description: 'Alias tương thích: fieldCategoryId',
+    example: 'a1b2c3d4-e5f6-4789-a012-000000000001',
+  })
+  @IsOptional()
+  @IsUUID()
+  fieldCategoryRef?: string;
+
+  @ApiPropertyOptional({
     description: 'Mô tả chi tiết biểu mẫu',
     example: 'Biểu mẫu dùng để thu thập dữ liệu...',
   })
@@ -62,10 +73,19 @@ export class CreateFormDto {
   description?: string;
 
   @ApiPropertyOptional({
-    description: 'ID biểu mẫu cha (nếu là biểu mẫu con)',
-    example: null,
+    description: 'Kỳ báo cáo',
+    enum: PeriodType,
+    example: PeriodType.THANG,
   })
   @IsOptional()
-  @IsUUID()
-  parentFormId?: string | null;
+  @IsEnum(PeriodType)
+  periodType?: PeriodType;
+
+  @ApiPropertyOptional({
+    description: 'Trạng thái hoạt động',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }

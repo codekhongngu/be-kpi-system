@@ -1239,11 +1239,11 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"code\": \"FM-TEST-01\",\n  \"name\": \"Biểu mẫu test\",\n  \"fieldCategoryId\": \"{{fieldCategoryId}}\",\n  \"description\": \"Tạo từ Postman\"\n}",
+									"raw": "{\n  \"code\": \"FM-TEST-01\",\n  \"name\": \"Bieu mau test\",\n  \"fieldCategoryId\": \"{{fieldCategoryId}}\",\n  \"description\": \"Tao tu Postman\",\n  \"isActive\": true\n}",
 									"options": { "raw": { "language": "json" } }
 								},
 								"url": { "raw": "{{baseUrl}}/api/v1/forms", "host": ["{{baseUrl}}"], "path": ["api","v1","forms"] },
-								"description": "POST /forms — JWT + DESIGN_FORMS:WRITE"
+								"description": "POST /forms — JWT + DESIGN_FORMS:WRITE (create fields: code, name, fieldCategoryId/fieldCategoryRef, description, isActive)"
 							},
 							"response": [],
 							"event": [
@@ -1282,11 +1282,11 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"name\": \"Biểu mẫu đã cập nhật\",\n  \"description\": \"Cập nhật từ Postman\"\n}",
+									"raw": "{\n  \"name\": \"Bieu mau da cap nhat\",\n  \"fieldCategoryId\": \"{{fieldCategoryId}}\",\n  \"description\": \"Cap nhat tu Postman\",\n  \"isActive\": true\n}",
 									"options": { "raw": { "language": "json" } }
 								},
 								"url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","forms","{{formId}}"] },
-								"description": "PATCH /forms/:id — JWT + DESIGN_FORMS:WRITE"
+								"description": "PATCH /forms/:id — JWT + DESIGN_FORMS:WRITE (update fields: name, fieldCategoryId/fieldCategoryRef, description, isActive)"
 							},
 							"response": []
 						},
