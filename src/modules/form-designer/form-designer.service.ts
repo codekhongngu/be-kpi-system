@@ -515,9 +515,12 @@ export class FormDesignerService {
 
   async createIndicator(formId: string, dto: CreateFormIndicatorDto) {
     await this.ensureForm(formId);
-    const dup = await this.indRepo.exist({
-      where: { formId, code: dto.code.trim() },
-    });
+    const code = dto.code.trim();
+    const dup = await this.indRepo
+      .createQueryBuilder('ind')
+      .where('ind.form_id = :formId', { formId })
+      .andWhere('ind.code ILIKE :code', { code })
+      .getExists();
     if (dup) throw new ConflictException('INDICATOR_CODE_DUPLICATE');
     if (dto.catalogIndicatorId) {
       const c = await this.catalogRepo.findOne({
@@ -534,7 +537,7 @@ export class FormDesignerService {
       formId,
       parentId: dto.parentId ?? null,
       displayIndex: dto.displayIndex?.trim() ?? null,
-      code: dto.code.trim(),
+      code,
       name: dto.name.trim(),
       unit: dto.unit ?? null,
       dataType: dto.dataType.trim(),
@@ -565,14 +568,15 @@ export class FormDesignerService {
     if (dto.displayIndex !== undefined)
       i.displayIndex = dto.displayIndex?.trim() ?? null;
     if (dto.code !== undefined && dto.code.trim() !== i.code) {
+      const code = dto.code.trim();
       const dup = await this.indRepo
         .createQueryBuilder('ind')
         .where('ind.form_id = :formId', { formId })
-        .andWhere('ind.code = :code', { code: dto.code.trim() })
+        .andWhere('ind.code ILIKE :code', { code })
         .andWhere('ind.id != :id', { id: indicatorId })
         .getExists();
       if (dup) throw new ConflictException('INDICATOR_CODE_DUPLICATE');
-      i.code = dto.code.trim();
+      i.code = code;
     }
     if (dto.name !== undefined) i.name = dto.name.trim();
     if (dto.unit !== undefined) i.unit = dto.unit;
@@ -903,12 +907,13 @@ export class FormDesignerService {
     dto: CreateIndicatorCatalogDto,
     userId: string | undefined,
   ) {
+    const code = dto.code.trim();
     const dup = await this.catalogRepo.exist({
-      where: { code: dto.code.trim() },
+      where: { code: ILike(code) },
     });
     if (dup) throw new ConflictException('CATALOG_CODE_DUPLICATE');
     const row = this.catalogRepo.create({
-      code: dto.code.trim(),
+      code,
       name: dto.name.trim(),
       unit: dto.unit ?? null,
       dataType: dto.dataType.trim(),
@@ -926,7 +931,7 @@ export class FormDesignerService {
     if (dto.code !== undefined) {
       const code = dto.code.trim();
       if (code !== row.code) {
-        const dup = await this.catalogRepo.exist({ where: { code } });
+        const dup = await this.catalogRepo.exist({ where: { code: ILike(code) } });
         if (dup) throw new ConflictException('CATALOG_CODE_DUPLICATE');
         row.code = code;
       }

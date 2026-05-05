@@ -30,6 +30,12 @@ export class UpdateUserDto {
 
   @IsOptional()
   @IsString()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null) return undefined;
+    if (typeof value !== 'string') return value;
+    const t = value.trim();
+    return t === '' ? undefined : t;
+  })
   code?: string;
 
   @IsOptional()

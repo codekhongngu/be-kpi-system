@@ -7,11 +7,17 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateOrganizationDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
+  @Transform(({ value }) => {
+    if (value === undefined || value === null) return value;
+    if (typeof value !== 'string') return value;
+    return value.trim();
+  })
   code: string;
 
   @IsString()

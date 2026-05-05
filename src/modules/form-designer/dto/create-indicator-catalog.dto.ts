@@ -1,9 +1,15 @@
+import { Transform } from 'class-transformer';
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateIndicatorCatalogDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
+  @Transform(({ value }) => {
+    if (value === undefined || value === null) return value;
+    if (typeof value !== 'string') return value;
+    return value.trim();
+  })
   code: string;
 
   @IsString()

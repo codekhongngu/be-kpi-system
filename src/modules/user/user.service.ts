@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { ILike, In, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { ConfigService } from '@nestjs/config';
@@ -71,8 +71,9 @@ export class UserService {
     this.assertPasswordPolicy(passwordPlain);
 
     if (createUserDto.code) {
+      const code = createUserDto.code.trim();
       const dupCode = await this.userRepository.findOne({
-        where: { code: createUserDto.code },
+        where: { code: ILike(code) },
         withDeleted: true,
       });
       if (dupCode) throw new ConflictException('Mã nhân sự (code) đã tồn tại');
@@ -289,8 +290,9 @@ export class UserService {
     }
 
     if (updateUserDto.code && updateUserDto.code !== (user.code ?? '')) {
+      const code = updateUserDto.code.trim();
       const existing = await this.userRepository.findOne({
-        where: { code: updateUserDto.code },
+        where: { code: ILike(code) },
         withDeleted: true,
       });
       if (existing && existing.id !== user.id) {

@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { Organization } from './entities/organization.entity';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
@@ -24,7 +24,11 @@ export class OrganizationService {
   ) {}
 
   async create(dto: CreateOrganizationDto): Promise<Organization> {
-    const exists = await this.orgRepo.findOne({ where: { code: dto.code } });
+    const code = dto.code.trim();
+    const exists = await this.orgRepo.exist({
+      where: { code: ILike(code) },
+      withDeleted: true,
+    });
     if (exists) throw new ConflictException('Mã đơn vị đã tồn tại');
 
     if (dto.parentId) {
@@ -35,7 +39,7 @@ export class OrganizationService {
     }
 
     const org = this.orgRepo.create({
-      code: dto.code,
+      code,
       name: dto.name,
       parentId: dto.parentId ?? null,
       headUserId: dto.headUserId ?? null,
@@ -77,8 +81,15 @@ export class OrganizationService {
     const org = await this.findOne(id);
 
     if (dto.code && dto.code !== org.code) {
-      const exists = await this.orgRepo.findOne({ where: { code: dto.code } });
-      if (exists) throw new ConflictException('Mã đơn vị đã tồn tại');
+      const code = dto.code.trim();
+      const dup = await this.orgRepo
+        .createQueryBuilder('o')
+        .where('o.deleted_at IS NULL')
+        .andWhere('o.id != :id', { id })
+        .andWhere('o.code ILIKE :code', { code })
+        .getExists();
+      if (dup) throw new ConflictException('Mã đơn vị đã tồn tại');
+      dto.code = code;
     }
 
     if (dto.parentId !== undefined) {

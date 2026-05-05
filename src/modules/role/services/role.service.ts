@@ -80,9 +80,11 @@ export class RoleService {
   }
 
   async create(createRoleDto: CreateRoleDto): Promise<Role> {
+    const code = createRoleDto.code.trim().toUpperCase();
+
     // Check if code already exists
     const existing = await this.roleRepository.findOne({
-      where: { code: createRoleDto.code },
+      where: { code },
       withDeleted: true,
     });
     if (existing) {
@@ -91,6 +93,7 @@ export class RoleService {
 
     const role = this.roleRepository.create({
       ...createRoleDto,
+      code,
       isSystem: false,
     });
 
@@ -200,8 +203,9 @@ export class RoleService {
   }
 
   async findByCode(code: string): Promise<Role | null> {
+    const normalized = code.trim().toUpperCase();
     return await this.roleRepository.findOne({
-      where: { code },
+      where: { code: normalized },
       relations: ['permissions'],
     });
   }
@@ -216,6 +220,7 @@ export class RoleService {
 
     // Check if code is being updated and already exists
     if (updateRoleDto.code && updateRoleDto.code !== role.code) {
+      updateRoleDto.code = updateRoleDto.code.trim().toUpperCase();
       const existing = await this.roleRepository.findOne({
         where: { code: updateRoleDto.code },
       });
