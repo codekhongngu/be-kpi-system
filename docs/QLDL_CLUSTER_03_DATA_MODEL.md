@@ -619,3 +619,39 @@ RBAC sử dụng mô hình chuẩn hoá:
 
 - **Tables**: read-only joins trên `form_assignments`, `report_submissions`, `report_data`, `report_summaries`, `organizations`, `forms` (period là snapshot trên `form_assignments/report_summaries`)
 - **export**: `audit_logs` (**C** EXPORT)
+
+---
+
+## Addendum 2026-05-05 - Data model alignment for template v2
+
+Phan nay dong bo voi `FORM_TEMPLATE_DESIGN.md` (v2):
+
+1. Versioning tables (de xuat)
+- `form_template_versions` (form_id, version_no, published_by, published_at, status)
+- `form_version_indicators`
+- `form_version_attributes`
+- `form_version_cell_configs` (optional by rollout)
+
+2. Assignment/submission snapshot
+- `form_assignments` bo sung cot `template_version` (NOT NULL sau migration).
+- `report_submissions` co the duplicate `template_version` de query nhanh (optional).
+
+3. Cell config data
+- `form_cell_configs` (template default)
+- `assignment_cell_configs` hoac `submission_cell_configs` (instance override)
+
+CellConfig shape:
+- `indicator_id UUID`
+- `attribute_id UUID`
+- `is_editable BOOLEAN`
+- `validation JSONB` (min/max/regex)
+- `default_value TEXT NULL`
+- optional: `formula TEXT NULL`, `data_type VARCHAR(20)`, `is_required BOOLEAN`
+
+4. Formula constraints
+- Chi cho phep expression `+ - * / ()`.
+- Cam cycle dependency.
+- Formula cell mac dinh non-editable.
+
+5. Audit trail
+- Tiep tuc su dung `report_data_history` la nguon su that cho lich su thay doi cell.

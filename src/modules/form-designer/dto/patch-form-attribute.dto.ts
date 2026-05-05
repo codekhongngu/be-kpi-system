@@ -1,12 +1,11 @@
 import {
   IsBoolean,
-  IsInt,
+  IsIn,
   IsObject,
   IsOptional,
   IsString,
   Matches,
   MaxLength,
-  Min,
 } from 'class-validator';
 
 const UUID_REGEX =
@@ -26,6 +25,7 @@ export class PatchFormAttributeDto {
   @IsOptional()
   @IsString()
   @MaxLength(20)
+  @IsIn(['number', 'text'])
   dataType?: string | null;
 
   @IsOptional()
@@ -39,11 +39,6 @@ export class PatchFormAttributeDto {
   @IsOptional()
   @IsBoolean()
   isReadonly?: boolean;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  sortOrder?: number;
 
   @IsOptional()
   @IsObject()

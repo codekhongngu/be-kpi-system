@@ -1514,3 +1514,37 @@ Mục tiêu: bù endpoint “Tra cứu báo cáo” trong use case, tách khỏi
 
 - `GET /monitoring/reports`: tập trung **vận hành** (đếm trễ, reminder, tiến độ)
 - `GET /query/reports`: tập trung **tra cứu/lookup** (search/pagination/sort theo nhu cầu người dùng)
+
+---
+
+## Addendum 2026-05-05 - Form template v2 alignment
+
+Phan nay dong bo voi `FORM_TEMPLATE_DESIGN.md` (v2):
+
+1. Data type scope
+- Chi ho tro `number | text` cho indicator/attribute/cell trong phase hien tai.
+
+2. Template versioning
+- Bo sung API/DTO de assignment bat buoc tham chieu `templateVersion`.
+- Submission detail phai tra ve `templateVersion` dang su dung.
+
+3. CellConfig + formula
+- Ho tro `CellConfig` cho o dac thu (`is_editable`, `validation`, `default_value`).
+- Ho tro endpoint validate formula truoc khi save.
+- Formula scope chi gom `+ - * /` va ngoac.
+
+4. Sort order behavior
+- Create indicator/attribute KHONG nhap `sortOrder` tren UI.
+- BE tu cap `sortOrder = max sibling + 1`.
+- Reorder tiep tuc qua endpoint reorder.
+
+5. FE behavior can ho tro
+- Parent selector co search (typeahead).
+- Formula input co preview validate va hien thi loi theo nhom.
+
+6. Error code bo sung
+- `TEMPLATE_VERSION_REQUIRED`
+- `FORMULA_INVALID_SYNTAX`
+- `FORMULA_REFERENCE_NOT_FOUND`
+- `FORMULA_CYCLE_DETECTED`
+- `FORMULA_DIV_BY_ZERO`

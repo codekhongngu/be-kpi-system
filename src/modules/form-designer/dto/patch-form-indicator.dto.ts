@@ -1,12 +1,11 @@
 import {
   IsBoolean,
-  IsInt,
+  IsIn,
   IsObject,
   IsOptional,
   IsString,
   Matches,
   MaxLength,
-  Min,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -48,6 +47,7 @@ export class PatchFormIndicatorDto {
   @IsOptional()
   @IsString()
   @MaxLength(20)
+  @IsIn(['number', 'text'])
   dataType?: string;
 
   @IsOptional()
@@ -70,11 +70,6 @@ export class PatchFormIndicatorDto {
   @IsString()
   @MaxLength(255)
   groupName?: string | null;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  sortOrder?: number;
 
   @IsOptional()
   @IsString()

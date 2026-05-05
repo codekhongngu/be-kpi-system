@@ -1,13 +1,12 @@
 import {
   IsBoolean,
-  IsInt,
+  IsIn,
   IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
   Matches,
   MaxLength,
-  Min,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -48,6 +47,7 @@ export class CreateFormIndicatorDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(20)
+  @IsIn(['number', 'text'])
   dataType: string;
 
   @IsOptional()
@@ -70,11 +70,6 @@ export class CreateFormIndicatorDto {
   @IsString()
   @MaxLength(255)
   groupName?: string | null;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  sortOrder?: number;
 
   @IsOptional()
   @IsString()

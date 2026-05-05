@@ -10,6 +10,7 @@ import { randomBytes } from 'crypto';
 import { Form } from './entities/form.entity';
 import { FormAttribute } from './entities/form-attribute.entity';
 import { FormIndicator } from './entities/form-indicator.entity';
+import { FormCellConfig } from './entities/form-cell-config.entity';
 import { FieldCategory } from './entities/field-category.entity';
 import { IndicatorCatalog } from './entities/indicator-catalog.entity';
 import { ImportJob } from '../import-job/entities/import-job.entity';
@@ -22,6 +23,7 @@ import { CreateFormAttributeDto } from './dto/create-form-attribute.dto';
 import { PatchFormAttributeDto } from './dto/patch-form-attribute.dto';
 import { CreateFormIndicatorDto } from './dto/create-form-indicator.dto';
 import { PatchFormIndicatorDto } from './dto/patch-form-indicator.dto';
+import { ValidateIndicatorFormulaDto } from './dto/validate-indicator-formula.dto';
 import { CreateIndicatorCatalogDto } from './dto/create-indicator-catalog.dto';
 import { UpdateIndicatorCatalogDto } from './dto/update-indicator-catalog.dto';
 import { IndicatorCatalogQueryDto } from './dto/indicator-catalog-query.dto';
@@ -34,6 +36,8 @@ import { CreateFieldCategoryDto } from './dto/create-field-category.dto';
 import { PatchFieldCategoryDto } from './dto/patch-field-category.dto';
 import { FieldCategoryQueryDto } from './dto/field-category-query.dto';
 import { PeriodType } from '../../common/period-type';
+import { UpsertFormCellConfigsDto } from './dto/upsert-form-cell-configs.dto';
+import { DeleteFormCellConfigsDto } from './dto/delete-form-cell-configs.dto';
 
 const DEFAULT_FORM_SYSTEM_ATTRIBUTES = [
   { name: 'Thứ tự', dataType: 'integer', sortOrder: 0 },
@@ -51,6 +55,8 @@ export class FormDesignerService {
     private readonly attrRepo: Repository<FormAttribute>,
     @InjectRepository(FormIndicator)
     private readonly indRepo: Repository<FormIndicator>,
+    @InjectRepository(FormCellConfig)
+    private readonly cellConfigRepo: Repository<FormCellConfig>,
     @InjectRepository(FieldCategory)
     private readonly fieldCategoryRepo: Repository<FieldCategory>,
     @InjectRepository(IndicatorCatalog)
@@ -118,15 +124,79 @@ export class FormDesignerService {
   private async nextSortOrder(
     repo: Repository<FormAttribute> | Repository<FormIndicator>,
     formId: string,
-    preferred?: number,
+    parentId: string | null,
   ): Promise<number> {
-    if (preferred !== undefined) return preferred;
-    const row = await repo
+    const qb = repo
       .createQueryBuilder('e')
       .select('COALESCE(MAX(e.sortOrder), -1)', 'm')
-      .where('e.formId = :formId', { formId })
-      .getRawOne<{ m: string }>();
+      .where('e.formId = :formId', { formId });
+    if (parentId === null) {
+      qb.andWhere('e.parentId IS NULL');
+    } else {
+      qb.andWhere('e.parentId = :parentId', { parentId });
+    }
+    const row = await qb.getRawOne<{ m: string }>();
     return Number(row?.m ?? -1) + 1;
+  }
+
+  private async ensureAttributeParent(
+    formId: string,
+    parentId: string | null,
+  ): Promise<void> {
+    if (!parentId) return;
+    const parent = await this.attrRepo.findOne({ where: { id: parentId, formId } });
+    if (!parent) {
+      throw new BadRequestException('parentId không thuộc form hoặc không tồn tại');
+    }
+  }
+
+  private async ensureIndicatorParent(
+    formId: string,
+    parentId: string | null,
+  ): Promise<void> {
+    if (!parentId) return;
+    const parent = await this.indRepo.findOne({ where: { id: parentId, formId } });
+    if (!parent) {
+      throw new BadRequestException('parentId không thuộc form hoặc không tồn tại');
+    }
+  }
+
+  private async ensureNoAttributeCycle(
+    formId: string,
+    attrId: string,
+    parentId: string | null,
+  ): Promise<void> {
+    if (!parentId) return;
+    if (parentId === attrId) {
+      throw new BadRequestException('parentId không hợp lệ (tự tham chiếu)');
+    }
+    let cursor: string | null = parentId;
+    while (cursor) {
+      if (cursor === attrId) {
+        throw new BadRequestException('parentId tạo vòng lặp');
+      }
+      const node = await this.attrRepo.findOne({ where: { id: cursor, formId } });
+      cursor = node?.parentId ?? null;
+    }
+  }
+
+  private async ensureNoIndicatorCycle(
+    formId: string,
+    indicatorId: string,
+    parentId: string | null,
+  ): Promise<void> {
+    if (!parentId) return;
+    if (parentId === indicatorId) {
+      throw new BadRequestException('parentId không hợp lệ (tự tham chiếu)');
+    }
+    let cursor: string | null = parentId;
+    while (cursor) {
+      if (cursor === indicatorId) {
+        throw new BadRequestException('parentId tạo vòng lặp');
+      }
+      const node = await this.indRepo.findOne({ where: { id: cursor, formId } });
+      cursor = node?.parentId ?? null;
+    }
   }
 
   private toListItem(f: Form) {
@@ -179,6 +249,20 @@ export class FormDesignerService {
       maxValue: i.maxValue,
       validationRule: i.validationRule,
       isActive: i.isActive,
+    };
+  }
+
+  private mapCellConfig(c: FormCellConfig) {
+    return {
+      id: c.id,
+      indicatorId: c.indicatorId,
+      attributeId: c.attributeId,
+      isEditable: c.isEditable,
+      validationRule: c.validationRule,
+      defaultValue: c.defaultValue,
+      dataType: c.dataType,
+      isRequired: c.isRequired,
+      formula: c.formula,
     };
   }
 
@@ -300,7 +384,7 @@ export class FormDesignerService {
       relations: { fieldCategoryRef: true },
     });
     if (!f) throw new NotFoundException('Không tìm thấy biểu mẫu');
-    const [attrs, inds] = await Promise.all([
+    const [attrs, inds, cellConfigs] = await Promise.all([
       this.attrRepo.find({
         where: { formId: id },
         order: { sortOrder: 'ASC', name: 'ASC' },
@@ -309,12 +393,17 @@ export class FormDesignerService {
         where: { formId: id },
         order: { sortOrder: 'ASC', code: 'ASC' },
       }),
+      this.cellConfigRepo.find({
+        where: { formId: id },
+        order: { createdAt: 'ASC' },
+      }),
     ]);
     return {
       ...this.toListItem(f),
       description: f.description,
       attributes: attrs.map((a) => this.mapAttribute(a)),
       indicators: inds.map((i) => this.mapIndicator(i)),
+      cellConfigs: cellConfigs.map((c) => this.mapCellConfig(c)),
     };
   }
 
@@ -511,10 +600,11 @@ export class FormDesignerService {
 
   async createAttribute(formId: string, dto: CreateFormAttributeDto) {
     await this.ensureForm(formId);
+    await this.ensureAttributeParent(formId, dto.parentId ?? null);
     const nextSort = await this.nextSortOrder(
       this.attrRepo,
       formId,
-      dto.sortOrder,
+      dto.parentId ?? null,
     );
     const a = this.attrRepo.create({
       formId,
@@ -542,13 +632,16 @@ export class FormDesignerService {
       where: { id: attrId, formId },
     });
     if (!a) throw new NotFoundException('Không tìm thấy thuộc tính');
-    if (dto.parentId !== undefined) a.parentId = dto.parentId;
+    if (dto.parentId !== undefined) {
+      await this.ensureAttributeParent(formId, dto.parentId ?? null);
+      await this.ensureNoAttributeCycle(formId, attrId, dto.parentId ?? null);
+      a.parentId = dto.parentId;
+    }
     if (dto.name !== undefined) a.name = dto.name.trim();
     if (dto.dataType !== undefined) a.dataType = dto.dataType;
     if (dto.isRequired !== undefined) a.isRequired = dto.isRequired;
     if (dto.isVisible !== undefined) a.isVisible = dto.isVisible;
     if (dto.isReadonly !== undefined) a.isReadonly = dto.isReadonly;
-    if (dto.sortOrder !== undefined) a.sortOrder = dto.sortOrder;
     if (dto.options !== undefined) a.options = dto.options;
     if (dto.validationRule !== undefined) a.validationRule = dto.validationRule;
     await this.attrRepo.save(a);
@@ -582,6 +675,7 @@ export class FormDesignerService {
 
   async createIndicator(formId: string, dto: CreateFormIndicatorDto) {
     await this.ensureForm(formId);
+    await this.ensureIndicatorParent(formId, dto.parentId ?? null);
     const code = dto.code.trim();
     const dup = await this.indRepo
       .createQueryBuilder('ind')
@@ -598,7 +692,7 @@ export class FormDesignerService {
     const nextSort = await this.nextSortOrder(
       this.indRepo,
       formId,
-      dto.sortOrder,
+      dto.parentId ?? null,
     );
     const i = this.indRepo.create({
       formId,
@@ -633,7 +727,11 @@ export class FormDesignerService {
       where: { id: indicatorId, formId },
     });
     if (!i) throw new NotFoundException('Không tìm thấy chỉ tiêu');
-    if (dto.parentId !== undefined) i.parentId = dto.parentId;
+    if (dto.parentId !== undefined) {
+      await this.ensureIndicatorParent(formId, dto.parentId ?? null);
+      await this.ensureNoIndicatorCycle(formId, indicatorId, dto.parentId ?? null);
+      i.parentId = dto.parentId;
+    }
     if (dto.displayIndex !== undefined)
       i.displayIndex = dto.displayIndex?.trim() ?? null;
     if (dto.code !== undefined && dto.code.trim() !== i.code) {
@@ -655,7 +753,6 @@ export class FormDesignerService {
     if (dto.isCalculated !== undefined) i.isCalculated = dto.isCalculated;
     if (dto.formula !== undefined) i.formula = dto.formula;
     if (dto.groupName !== undefined) i.groupName = dto.groupName;
-    if (dto.sortOrder !== undefined) i.sortOrder = dto.sortOrder;
     if (dto.minValue !== undefined) i.minValue = dto.minValue;
     if (dto.maxValue !== undefined) i.maxValue = dto.maxValue;
     if (dto.validationRule !== undefined) i.validationRule = dto.validationRule;
@@ -674,6 +771,70 @@ export class FormDesignerService {
     return { ok: true };
   }
 
+  async validateIndicatorFormula(
+    formId: string,
+    dto: ValidateIndicatorFormulaDto,
+  ) {
+    await this.ensureForm(formId);
+    const formula = dto.formula?.trim() ?? '';
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    const refs: string[] = [];
+
+    if (!formula) {
+      return { valid: false, errors: ['FORMULA_EMPTY'], warnings, refs };
+    }
+
+    if (!/^[A-Za-z0-9_+\-*/().\s]+$/.test(formula)) {
+      return { valid: false, errors: ['FORMULA_INVALID_SYNTAX'], warnings, refs };
+    }
+
+    let balance = 0;
+    for (const ch of formula) {
+      if (ch === '(') balance += 1;
+      if (ch === ')') balance -= 1;
+      if (balance < 0) {
+        return { valid: false, errors: ['FORMULA_INVALID_SYNTAX'], warnings, refs };
+      }
+    }
+    if (balance !== 0) {
+      return { valid: false, errors: ['FORMULA_INVALID_SYNTAX'], warnings, refs };
+    }
+
+    if (/\/\s*0+(\.0+)?(\D|$)/.test(formula)) {
+      warnings.push('FORMULA_DIV_BY_ZERO');
+    }
+
+    const allIndicators = await this.indRepo.find({ where: { formId } });
+    const codeSet = new Set(
+      allIndicators
+        .map((x) => x.code?.trim().toUpperCase())
+        .filter((x): x is string => Boolean(x)),
+    );
+
+    const refTokens = formula.match(/[A-Za-z_][A-Za-z0-9_]*/g) ?? [];
+    const uniqRefs = Array.from(new Set(refTokens.map((token) => token.toUpperCase())));
+    refs.push(...uniqRefs);
+
+    const missingRefs = uniqRefs.filter((ref) => !codeSet.has(ref));
+    if (missingRefs.length > 0) {
+      return {
+        valid: false,
+        errors: ['FORMULA_REFERENCE_NOT_FOUND'],
+        warnings,
+        refs,
+        missingRefs,
+      };
+    }
+
+    const currentCode = dto.code?.trim().toUpperCase();
+    if (currentCode && uniqRefs.includes(currentCode)) {
+      errors.push('FORMULA_CYCLE_DETECTED');
+    }
+
+    return { valid: errors.length === 0, errors, warnings, refs };
+  }
+
   async removeIndicator(formId: string, indicatorId: string) {
     const i = await this.indRepo.findOne({
       where: { id: indicatorId, formId },
@@ -689,6 +850,135 @@ export class FormDesignerService {
     }
     await this.indRepo.remove(i);
     return { ok: true };
+  }
+
+  async listCellConfigs(formId: string) {
+    await this.ensureForm(formId);
+    const rows = await this.cellConfigRepo.find({
+      where: { formId },
+      order: { createdAt: 'ASC' },
+    });
+    return { items: rows.map((row) => this.mapCellConfig(row)) };
+  }
+
+  async upsertCellConfigs(formId: string, dto: UpsertFormCellConfigsDto) {
+    await this.ensureForm(formId);
+    const indicators = await this.indRepo.find({ where: { formId } });
+    const attributes = await this.attrRepo.find({ where: { formId } });
+    const indicatorSet = new Set(indicators.map((x) => x.id));
+    const attributeSet = new Set(attributes.map((x) => x.id));
+
+    await this.dataSource.transaction(async (manager) => {
+      const repo = manager.getRepository(FormCellConfig);
+      for (const item of dto.items) {
+        if (!indicatorSet.has(item.indicatorId)) {
+          throw new BadRequestException(
+            `indicatorId không thuộc form hoặc không tồn tại: ${item.indicatorId}`,
+          );
+        }
+        if (!attributeSet.has(item.attributeId)) {
+          throw new BadRequestException(
+            `attributeId không thuộc form hoặc không tồn tại: ${item.attributeId}`,
+          );
+        }
+
+        const exists = await repo.findOne({
+          where: {
+            formId,
+            indicatorId: item.indicatorId,
+            attributeId: item.attributeId,
+          },
+        });
+
+        if (!exists) {
+          const created = repo.create({
+            formId,
+            indicatorId: item.indicatorId,
+            attributeId: item.attributeId,
+            isEditable: item.isEditable ?? true,
+            validationRule: item.validationRule ?? null,
+            defaultValue: item.defaultValue ?? null,
+            dataType: item.dataType ?? null,
+            isRequired: item.isRequired ?? null,
+            formula: item.formula ?? null,
+          });
+          await repo.save(created);
+          continue;
+        }
+
+        if (item.isEditable !== undefined) exists.isEditable = item.isEditable;
+        if (item.validationRule !== undefined) {
+          exists.validationRule = item.validationRule;
+        }
+        if (item.defaultValue !== undefined) exists.defaultValue = item.defaultValue;
+        if (item.dataType !== undefined) exists.dataType = item.dataType;
+        if (item.isRequired !== undefined) exists.isRequired = item.isRequired;
+        if (item.formula !== undefined) exists.formula = item.formula;
+        await repo.save(exists);
+      }
+    });
+
+    return { ok: true };
+  }
+
+  async deleteCellConfigs(formId: string, dto: DeleteFormCellConfigsDto) {
+    await this.ensureForm(formId);
+    await this.dataSource.transaction(async (manager) => {
+      const repo = manager.getRepository(FormCellConfig);
+      for (const item of dto.items) {
+        await repo.delete({
+          formId,
+          indicatorId: item.indicatorId,
+          attributeId: item.attributeId,
+        });
+      }
+    });
+    return { ok: true };
+  }
+
+  async listEffectiveCellConfigs(formId: string) {
+    await this.ensureForm(formId);
+    const [indicators, attributes, overrides] = await Promise.all([
+      this.indRepo.find({ where: { formId }, order: { sortOrder: 'ASC', code: 'ASC' } }),
+      this.attrRepo.find({ where: { formId }, order: { sortOrder: 'ASC', name: 'ASC' } }),
+      this.cellConfigRepo.find({ where: { formId } }),
+    ]);
+
+    const overrideMap = new Map<string, FormCellConfig>();
+    for (const row of overrides) {
+      overrideMap.set(`${row.indicatorId}:${row.attributeId}`, row);
+    }
+
+    const items = indicators.flatMap((indicator) =>
+      attributes.map((attribute) => {
+        const key = `${indicator.id}:${attribute.id}`;
+        const override = overrideMap.get(key);
+        const mergedValidation = {
+          ...(attribute.validationRule ?? {}),
+          ...(indicator.validationRule ?? {}),
+          ...(override?.validationRule ?? {}),
+        };
+
+        return {
+          indicatorId: indicator.id,
+          attributeId: attribute.id,
+          dataType: override?.dataType ?? indicator.dataType ?? attribute.dataType ?? 'text',
+          isEditable:
+            override?.isEditable ??
+            !(Boolean(indicator.isReadonly) || Boolean(attribute.isReadonly)),
+          isRequired:
+            override?.isRequired ??
+            (Boolean(indicator.isRequired) || Boolean(attribute.isRequired)),
+          defaultValue: override?.defaultValue ?? null,
+          validationRule:
+            Object.keys(mergedValidation).length > 0 ? mergedValidation : null,
+          formula: override?.formula ?? indicator.formula ?? null,
+          hasOverride: Boolean(override),
+        };
+      }),
+    );
+
+    return { items };
   }
 
   async reorderIndicators(formId: string, items: ReorderItemDto[]) {
