@@ -39,6 +39,10 @@ export class CreateFormAttributeDto {
 
   @IsOptional()
   @IsBoolean()
+  isReadonly?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
   isSystem?: boolean;
 
   @IsOptional()
@@ -49,4 +53,8 @@ export class CreateFormAttributeDto {
   @IsOptional()
   @IsObject()
   options?: Record<string, unknown> | null;
+
+  @IsOptional()
+  @IsObject()
+  validationRule?: Record<string, unknown> | null;
 }

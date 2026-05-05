@@ -152,9 +152,11 @@ export class FormDesignerService {
       dataType: a.dataType,
       isRequired: a.isRequired,
       isVisible: a.isVisible,
+      isReadonly: a.isReadonly,
       isSystem: a.isSystem,
       sortOrder: a.sortOrder,
       options: a.options,
+      validationRule: a.validationRule,
     };
   }
 
@@ -168,12 +170,14 @@ export class FormDesignerService {
       unit: i.unit,
       dataType: i.dataType,
       isRequired: i.isRequired,
+      isReadonly: i.isReadonly,
       isCalculated: i.isCalculated,
       formula: i.formula,
       groupName: i.groupName,
       sortOrder: i.sortOrder,
       minValue: i.minValue,
       maxValue: i.maxValue,
+      validationRule: i.validationRule,
       isActive: i.isActive,
     };
   }
@@ -519,9 +523,11 @@ export class FormDesignerService {
       dataType: dto.dataType ?? null,
       isRequired: dto.isRequired ?? false,
       isVisible: dto.isVisible ?? true,
+      isReadonly: dto.isReadonly ?? false,
       isSystem: dto.isSystem ?? false,
       sortOrder: nextSort,
       options: dto.options ?? null,
+      validationRule: dto.validationRule ?? null,
     });
     const saved = await this.attrRepo.save(a);
     return { id: saved.id };
@@ -541,8 +547,10 @@ export class FormDesignerService {
     if (dto.dataType !== undefined) a.dataType = dto.dataType;
     if (dto.isRequired !== undefined) a.isRequired = dto.isRequired;
     if (dto.isVisible !== undefined) a.isVisible = dto.isVisible;
+    if (dto.isReadonly !== undefined) a.isReadonly = dto.isReadonly;
     if (dto.sortOrder !== undefined) a.sortOrder = dto.sortOrder;
     if (dto.options !== undefined) a.options = dto.options;
+    if (dto.validationRule !== undefined) a.validationRule = dto.validationRule;
     await this.attrRepo.save(a);
     return { ok: true };
   }
@@ -601,12 +609,14 @@ export class FormDesignerService {
       unit: dto.unit ?? null,
       dataType: dto.dataType.trim(),
       isRequired: dto.isRequired ?? true,
+      isReadonly: dto.isReadonly ?? false,
       isCalculated: dto.isCalculated ?? false,
       formula: dto.formula ?? null,
       groupName: dto.groupName ?? null,
       sortOrder: nextSort,
       minValue: dto.minValue ?? null,
       maxValue: dto.maxValue ?? null,
+      validationRule: dto.validationRule ?? null,
       isActive: dto.isActive ?? true,
       catalogIndicatorId: dto.catalogIndicatorId ?? null,
     });
@@ -641,12 +651,14 @@ export class FormDesignerService {
     if (dto.unit !== undefined) i.unit = dto.unit;
     if (dto.dataType !== undefined) i.dataType = dto.dataType.trim();
     if (dto.isRequired !== undefined) i.isRequired = dto.isRequired;
+    if (dto.isReadonly !== undefined) i.isReadonly = dto.isReadonly;
     if (dto.isCalculated !== undefined) i.isCalculated = dto.isCalculated;
     if (dto.formula !== undefined) i.formula = dto.formula;
     if (dto.groupName !== undefined) i.groupName = dto.groupName;
     if (dto.sortOrder !== undefined) i.sortOrder = dto.sortOrder;
     if (dto.minValue !== undefined) i.minValue = dto.minValue;
     if (dto.maxValue !== undefined) i.maxValue = dto.maxValue;
+    if (dto.validationRule !== undefined) i.validationRule = dto.validationRule;
     if (dto.isActive !== undefined) i.isActive = dto.isActive;
     if (dto.catalogIndicatorId !== undefined) {
       if (dto.catalogIndicatorId) {

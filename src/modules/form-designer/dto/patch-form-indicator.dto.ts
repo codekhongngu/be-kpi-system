@@ -1,6 +1,7 @@
 import {
   IsBoolean,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   Matches,
@@ -55,6 +56,10 @@ export class PatchFormIndicatorDto {
 
   @IsOptional()
   @IsBoolean()
+  isReadonly?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
   isCalculated?: boolean;
 
   @IsOptional()
@@ -78,6 +83,10 @@ export class PatchFormIndicatorDto {
   @IsOptional()
   @IsString()
   maxValue?: string | null;
+
+  @IsOptional()
+  @IsObject()
+  validationRule?: Record<string, unknown> | null;
 
   @IsOptional()
   @IsBoolean()
