@@ -2,6 +2,7 @@ import {
   IsBoolean,
   IsInt,
   IsNotEmpty,
+  IsObject,
   IsOptional,
   IsString,
   Matches,
@@ -55,6 +56,10 @@ export class CreateFormIndicatorDto {
 
   @IsOptional()
   @IsBoolean()
+  isReadonly?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
   isCalculated?: boolean;
 
   @IsOptional()
@@ -78,6 +83,10 @@ export class CreateFormIndicatorDto {
   @IsOptional()
   @IsString()
   maxValue?: string | null;
+
+  @IsOptional()
+  @IsObject()
+  validationRule?: Record<string, unknown> | null;
 
   @IsOptional()
   @IsBoolean()

@@ -56,6 +56,9 @@ export class FormIndicator {
   @Column({ name: 'is_required', type: 'boolean', default: true })
   isRequired: boolean;
 
+  @Column({ name: 'is_readonly', type: 'boolean', default: false })
+  isReadonly: boolean;
+
   @Column({ name: 'is_calculated', type: 'boolean', default: false })
   isCalculated: boolean;
 
@@ -73,6 +76,9 @@ export class FormIndicator {
 
   @Column({ name: 'max_value', type: 'numeric', nullable: true })
   maxValue: string | null;
+
+  @Column({ name: 'validation_rule', type: 'jsonb', nullable: true })
+  validationRule: Record<string, unknown> | null;
 
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;

@@ -45,6 +45,9 @@ export class FormAttribute {
   @Column({ name: 'is_visible', type: 'boolean', default: true })
   isVisible: boolean;
 
+  @Column({ name: 'is_readonly', type: 'boolean', default: false })
+  isReadonly: boolean;
+
   @Column({ name: 'is_system', type: 'boolean', default: false })
   isSystem: boolean;
 
@@ -53,6 +56,9 @@ export class FormAttribute {
 
   @Column({ type: 'jsonb', nullable: true })
   options: Record<string, unknown> | null;
+
+  @Column({ name: 'validation_rule', type: 'jsonb', nullable: true })
+  validationRule: Record<string, unknown> | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

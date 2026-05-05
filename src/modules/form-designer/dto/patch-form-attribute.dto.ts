@@ -37,6 +37,10 @@ export class PatchFormAttributeDto {
   isVisible?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  isReadonly?: boolean;
+
+  @IsOptional()
   @IsInt()
   @Min(0)
   sortOrder?: number;
@@ -44,4 +48,8 @@ export class PatchFormAttributeDto {
   @IsOptional()
   @IsObject()
   options?: Record<string, unknown> | null;
+
+  @IsOptional()
+  @IsObject()
+  validationRule?: Record<string, unknown> | null;
 }
