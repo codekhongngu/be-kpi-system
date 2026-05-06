@@ -11,6 +11,9 @@ export class FormAssignment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ name: 'batch_id', type: 'uuid', nullable: true })
+  batchId: string | null;
+
   @Column({ name: 'form_id', type: 'uuid' })
   formId: string;
 

@@ -1,6 +1,4 @@
 import {
-  ArrayNotEmpty,
-  IsArray,
   IsDateString,
   IsEnum,
   IsOptional,
@@ -25,11 +23,6 @@ export class CreateAssignmentsDto {
   @IsString()
   @MaxLength(255)
   periodName?: string;
-
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsUUID('4', { each: true })
-  orgIds: string[];
 
   @IsDateString()
   deadlineFrom: string;

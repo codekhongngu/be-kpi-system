@@ -1566,16 +1566,45 @@
 			"name": "Assignments / Submissions / Approvals (QLDL)",
 			"item": [
 				{
-					"name": "Create Assignments (Bulk)",
+					"name": "Create Assignment Batch",
 					"request": {
 						"method": "POST",
 						"header": [
 							{ "key": "Content-Type", "value": "application/json" },
 							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
 						],
-						"body": { "mode": "raw", "raw": "{\n  \"formId\": \"{{formId}}\",\n  \"periodType\": \"THANG\",\n  \"periodCode\": \"KBCT04\",\n  \"periodName\": \"Kỳ báo cáo tháng 04\",\n  \"orgIds\": [\"{{orgId}}\"],\n  \"deadlineFrom\": \"2026-04-01\",\n  \"deadlineTo\": \"2026-04-30\"\n}", "options": { "raw": { "language": "json" } } },
+						"body": { "mode": "raw", "raw": "{\n  \"formId\": \"{{formId}}\",\n  \"periodType\": \"THANG\",\n  \"periodCode\": \"KBCT04\",\n  \"periodName\": \"Kỳ báo cáo tháng 04\",\n  \"deadlineFrom\": \"2026-04-01\",\n  \"deadlineTo\": \"2026-04-30\"\n}", "options": { "raw": { "language": "json" } } },
 						"url": { "raw": "{{baseUrl}}/api/v1/assignments", "host": ["{{baseUrl}}"], "path": ["api","v1","assignments"] },
-						"description": "POST /assignments — JWT + OPS_ASSIGNMENTS:WRITE"
+						"description": "POST /assignments — Tạo đợt giao báo cáo (Assignment Batch) — JWT + assignments.manage"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201 || pm.response.code === 200) {",
+									"  const envelope = pm.response.json();",
+									"  const data = envelope && envelope.data !== undefined ? envelope.data : envelope;",
+									"  if (data && data.id) pm.collectionVariables.set('batchId', data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Configure Indicator Scopes (Per Org)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"allocations\": [\n    {\n      \"orgId\": \"{{orgId}}\",\n      \"indicatorIds\": [\"{{indicatorId}}\"]\n    }\n  ]\n}", "options": { "raw": { "language": "json" } } },
+						"url": { "raw": "{{baseUrl}}/api/v1/assignments/{{batchId}}/indicator-scopes", "host": ["{{baseUrl}}"], "path": ["api","v1","assignments","{{batchId}}","indicator-scopes"] },
+						"description": "POST /assignments/:batchId/indicator-scopes — Cấu hình chỉ tiêu theo đơn vị + tạo form_assignments — JWT + assignments.manage"
 					},
 					"response": []
 				},

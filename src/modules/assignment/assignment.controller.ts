@@ -17,6 +17,7 @@ import { AssignmentQueryDto } from './dto/assignment-query.dto';
 import { CreateAssignmentsDto } from './dto/create-assignments.dto';
 import { CancelAssignmentDto } from './dto/cancel-assignment.dto';
 import { NextPeriodAssignmentsDto } from './dto/next-period-assignments.dto';
+import { ConfigureAssignmentIndicatorScopesDto } from './dto/configure-assignment-indicator-scopes.dto';
 
 @Controller('assignments')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -32,7 +33,21 @@ export class AssignmentController {
   @Post()
   @Permissions('assignments.manage')
   async create(@Body() dto: CreateAssignmentsDto, @CurrentUser() user: User) {
-    return await this.assignmentService.createBulk(dto, user?.id);
+    return await this.assignmentService.createBatch(dto, user?.id);
+  }
+
+  @Post(':batchId/indicator-scopes')
+  @Permissions('assignments.manage')
+  async configureIndicatorScopes(
+    @Param('batchId', ParseUUIDPipe) batchId: string,
+    @Body() dto: ConfigureAssignmentIndicatorScopesDto,
+    @CurrentUser() user: User,
+  ) {
+    return await this.assignmentService.configureIndicatorScopes(
+      batchId,
+      dto,
+      user?.id,
+    );
   }
 
   @Post(':id/cancel')

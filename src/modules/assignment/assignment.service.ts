@@ -5,21 +5,31 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { FormAssignment } from './entities/form-assignment.entity';
+import { AssignmentBatch } from './entities/assignment-batch.entity';
+import { AssignmentIndicatorScope } from './entities/assignment-indicator-scope.entity';
 import { Form } from '../form-designer/entities/form.entity';
+import { FormIndicator } from '../form-designer/entities/form-indicator.entity';
 import { Organization } from '../organization/entities/organization.entity';
 import { AssignmentQueryDto } from './dto/assignment-query.dto';
 import { CreateAssignmentsDto } from './dto/create-assignments.dto';
 import { NextPeriodAssignmentsDto } from './dto/next-period-assignments.dto';
+import { ConfigureAssignmentIndicatorScopesDto } from './dto/configure-assignment-indicator-scopes.dto';
 
 @Injectable()
 export class AssignmentService {
   constructor(
     @InjectRepository(FormAssignment)
     private readonly assignmentRepo: Repository<FormAssignment>,
+    @InjectRepository(AssignmentBatch)
+    private readonly batchRepo: Repository<AssignmentBatch>,
+    @InjectRepository(AssignmentIndicatorScope)
+    private readonly scopeRepo: Repository<AssignmentIndicatorScope>,
     @InjectRepository(Form)
     private readonly formRepo: Repository<Form>,
+    @InjectRepository(FormIndicator)
+    private readonly indicatorRepo: Repository<FormIndicator>,
     @InjectRepository(Organization)
     private readonly orgRepo: Repository<Organization>,
   ) {}
@@ -46,63 +56,146 @@ export class AssignmentService {
     return { items, meta: { page, limit, total } };
   }
 
-  async createBulk(dto: CreateAssignmentsDto, userId: string | undefined) {
+  async createBatch(dto: CreateAssignmentsDto, userId: string | undefined) {
     const form = await this.formRepo.findOne({ where: { id: dto.formId } });
     if (!form) throw new NotFoundException('Không tìm thấy biểu mẫu');
     if (!form.isActive) throw new ConflictException('ASSIGNMENT_FORM_INACTIVE');
 
     const periodCode = dto.periodCode?.trim();
     if (!periodCode) throw new BadRequestException('PERIOD_CODE_REQUIRED');
-
-    let created = 0;
-    let skipped = 0;
-    const duplicates: Array<{ orgId: string; reason: string }> = [];
+    if (dto.deadlineTo.slice(0, 10) < dto.deadlineFrom.slice(0, 10)) {
+      throw new BadRequestException('DEADLINE_INVALID_RANGE');
+    }
 
     const periodName = dto.periodName?.trim() || null;
+    const exists = await this.batchRepo.exist({
+      where: { formId: dto.formId, periodType: dto.periodType, periodCode },
+    });
+    if (exists) throw new ConflictException('ASSIGNMENT_BATCH_DUPLICATE');
 
-    for (const orgId of dto.orgIds) {
-      const org = await this.orgRepo.findOne({ where: { id: orgId } });
-      if (!org) {
-        duplicates.push({ orgId, reason: 'ORG_NOT_FOUND' });
-        skipped++;
-        continue;
-      }
-      if (!org.isActive) {
-        duplicates.push({ orgId, reason: 'ASSIGNMENT_ORG_INACTIVE' });
-        skipped++;
-        continue;
-      }
-      const exists = await this.assignmentRepo.exist({
-        where: {
-          formId: dto.formId,
-          orgId,
-          periodType: dto.periodType,
-          periodCode,
-          isCancelled: false,
-        },
-      });
-      if (exists) {
-        duplicates.push({ orgId, reason: 'ASSIGNMENT_DUPLICATE' });
-        skipped++;
-        continue;
-      }
-      const row = this.assignmentRepo.create({
+    const batch = await this.batchRepo.save(
+      this.batchRepo.create({
         formId: dto.formId,
-        orgId,
         periodType: dto.periodType,
         periodCode,
         periodName,
         deadlineFrom: dto.deadlineFrom.slice(0, 10),
         deadlineTo: dto.deadlineTo.slice(0, 10),
-        isCancelled: false,
-        cancelReason: null,
-        autoAssign: false,
-        assignedBy: userId ?? null,
+        createdBy: userId ?? null,
+      }),
+    );
+    return {
+      id: batch.id,
+      formId: batch.formId,
+      periodType: batch.periodType,
+      periodCode: batch.periodCode,
+      periodName: batch.periodName,
+      deadlineFrom: batch.deadlineFrom,
+      deadlineTo: batch.deadlineTo,
+    };
+  }
+
+  async configureIndicatorScopes(
+    batchId: string,
+    dto: ConfigureAssignmentIndicatorScopesDto,
+    userId: string | undefined,
+  ) {
+    const batch = await this.batchRepo.findOne({ where: { id: batchId } });
+    if (!batch) throw new NotFoundException('Không tìm thấy đợt giao báo cáo');
+
+    const allocations = dto.allocations ?? [];
+    const orgIds = [...new Set(allocations.map((x) => x.orgId))];
+    const indicatorIds = [
+      ...new Set(allocations.flatMap((x) => x.indicatorIds ?? [])),
+    ];
+
+    const orgs = await this.orgRepo.find({
+      where: { id: In(orgIds) },
+      select: { id: true, isActive: true },
+    });
+    const orgMap = new Map(orgs.map((o) => [o.id, o]));
+    for (const orgId of orgIds) {
+      const org = orgMap.get(orgId);
+      if (!org) throw new NotFoundException('Không tìm thấy đơn vị nhận');
+      if (!org.isActive) throw new ConflictException('ASSIGNMENT_ORG_INACTIVE');
+    }
+
+    const indicators = await this.indicatorRepo.find({
+      where: { id: In(indicatorIds), formId: batch.formId },
+      select: { id: true },
+    });
+    if (indicators.length !== indicatorIds.length) {
+      throw new BadRequestException('INDICATOR_NOT_IN_FORM');
+    }
+
+    await this.scopeRepo
+      .createQueryBuilder()
+      .delete()
+      .from(AssignmentIndicatorScope)
+      .where('batch_id = :batchId', { batchId })
+      .andWhere('org_id IN (:...orgIds)', { orgIds })
+      .execute();
+    const rows: AssignmentIndicatorScope[] = [];
+    for (const a of allocations) {
+      for (const indicatorId of a.indicatorIds) {
+        rows.push(
+          this.scopeRepo.create({
+            batchId,
+            orgId: a.orgId,
+            indicatorId,
+          }),
+        );
+      }
+    }
+    await this.scopeRepo.save(rows);
+
+    let created = 0;
+    let updated = 0;
+    for (const orgId of orgIds) {
+      const existing = await this.assignmentRepo.findOne({
+        where: {
+          formId: batch.formId,
+          orgId,
+          periodType: batch.periodType,
+          periodCode: batch.periodCode,
+          isCancelled: false,
+        },
       });
-      await this.assignmentRepo.save(row);
+      if (existing) {
+        existing.batchId = batchId;
+        existing.periodName = batch.periodName;
+        existing.deadlineFrom = batch.deadlineFrom;
+        existing.deadlineTo = batch.deadlineTo;
+        existing.assignedBy = existing.assignedBy ?? (userId ?? null);
+        await this.assignmentRepo.save(existing);
+        updated++;
+        continue;
+      }
+      await this.assignmentRepo.save(
+        this.assignmentRepo.create({
+          batchId,
+          formId: batch.formId,
+          orgId,
+          periodType: batch.periodType,
+          periodCode: batch.periodCode,
+          periodName: batch.periodName,
+          deadlineFrom: batch.deadlineFrom,
+          deadlineTo: batch.deadlineTo,
+          isCancelled: false,
+          cancelReason: null,
+          autoAssign: false,
+          assignedBy: userId ?? null,
+        }),
+      );
       created++;
     }
-    return { created, skipped, duplicates };
+
+    return {
+      ok: true as const,
+      batchId,
+      scopesInserted: rows.length,
+      assignments: { created, updated },
+    };
   }
 
   async cancel(id: string, reason?: string) {

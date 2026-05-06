@@ -180,11 +180,27 @@ export class SubmissionService {
     if (s.version !== dto.clientVersion) {
       throw new PreconditionFailedException('SUBMISSION_VERSION_MISMATCH');
     }
-    const indIds = new Set(
-      (await this.indicatorRepo.find({ where: { formId: a.formId } })).map(
-        (i) => i.id,
-      ),
-    );
+    let allowedIndicatorIds: Set<string> | null = null;
+    if (a.batchId) {
+      const rows = await this.dataSource.query<{ indicator_id: string }[]>(
+        `
+        SELECT indicator_id
+        FROM assignment_indicator_scopes
+        WHERE batch_id = $1 AND org_id = $2
+      `,
+        [a.batchId, a.orgId],
+      );
+      if (rows.length > 0) {
+        allowedIndicatorIds = new Set(rows.map((r) => r.indicator_id));
+      }
+    }
+    const indIds = allowedIndicatorIds
+      ? allowedIndicatorIds
+      : new Set(
+          (await this.indicatorRepo.find({ where: { formId: a.formId } })).map(
+            (i) => i.id,
+          ),
+        );
     const attrIds = new Set(
       (await this.attributeRepo.find({ where: { formId: a.formId } })).map(
         (x) => x.id,
