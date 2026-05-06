@@ -27,18 +27,24 @@ export class OrganizationService {
 
   private async hasCanAssignReportsColumn(): Promise<boolean> {
     if (this.canAssignReportsColumn !== null) return this.canAssignReportsColumn;
-    const rows = await this.orgRepo.query(
-      `
-      SELECT 1
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-        AND table_name = 'organizations'
-        AND column_name = 'can_assign_reports'
-      LIMIT 1
-    `,
-    );
-    this.canAssignReportsColumn = rows.length > 0;
-    return this.canAssignReportsColumn;
+    try {
+      const rows = await this.orgRepo.query(
+        `
+        SELECT 1
+        FROM pg_attribute a
+        WHERE a.attrelid = to_regclass('organizations')
+          AND a.attname = 'can_assign_reports'
+          AND a.attnum > 0
+          AND NOT a.attisdropped
+        LIMIT 1
+      `,
+      );
+      this.canAssignReportsColumn = rows.length > 0;
+      return this.canAssignReportsColumn;
+    } catch {
+      this.canAssignReportsColumn = false;
+      return false;
+    }
   }
 
   private async selectOrgColumns(qb: ReturnType<Repository<Organization>['createQueryBuilder']>) {
