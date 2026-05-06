@@ -1573,7 +1573,7 @@
 							{ "key": "Content-Type", "value": "application/json" },
 							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
 						],
-						"body": { "mode": "raw", "raw": "{\n  \"formId\": \"{{formId}}\",\n  \"periodType\": \"THANG\",\n  \"periodFrom\": \"2026-04-01\",\n  \"periodTo\": \"2026-04-30\",\n  \"periodCode\": \"KBCT04\",\n  \"periodName\": \"Kỳ báo cáo tháng 04\",\n  \"orgIds\": [\"{{orgId}}\"],\n  \"deadlineFrom\": \"2026-04-01\",\n  \"deadlineTo\": \"2026-04-30\"\n}", "options": { "raw": { "language": "json" } } },
+						"body": { "mode": "raw", "raw": "{\n  \"formId\": \"{{formId}}\",\n  \"periodType\": \"THANG\",\n  \"periodCode\": \"KBCT04\",\n  \"periodName\": \"Kỳ báo cáo tháng 04\",\n  \"orgIds\": [\"{{orgId}}\"],\n  \"deadlineFrom\": \"2026-04-01\",\n  \"deadlineTo\": \"2026-04-30\"\n}", "options": { "raw": { "language": "json" } } },
 						"url": { "raw": "{{baseUrl}}/api/v1/assignments", "host": ["{{baseUrl}}"], "path": ["api","v1","assignments"] },
 						"description": "POST /assignments — JWT + OPS_ASSIGNMENTS:WRITE"
 					},
