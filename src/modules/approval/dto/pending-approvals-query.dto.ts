@@ -1,9 +1,9 @@
 import { Type } from 'class-transformer';
 import {
-  IsDateString,
   IsEnum,
   IsInt,
   IsOptional,
+  IsString,
   IsUUID,
   Max,
   Min,
@@ -24,12 +24,8 @@ export class PendingApprovalsQueryDto {
   periodType?: PeriodType;
 
   @IsOptional()
-  @IsDateString()
-  from?: string;
-
-  @IsOptional()
-  @IsDateString()
-  to?: string;
+  @IsString()
+  periodCode?: string;
 
   @IsOptional()
   @Type(() => Number)

@@ -39,12 +39,8 @@ export class MonitoringService {
       qb.andWhere('a.formId = :formId', { formId: query.formId });
     if (query.periodType)
       qb.andWhere('a.periodType = :periodType', { periodType: query.periodType });
-    if (query.from) {
-      qb.andWhere('a.periodTo >= :pFrom', { pFrom: query.from.slice(0, 10) });
-    }
-    if (query.to) {
-      qb.andWhere('a.periodFrom <= :pTo', { pTo: query.to.slice(0, 10) });
-    }
+    if (query.periodCode?.trim())
+      qb.andWhere('a.periodCode = :pc', { pc: query.periodCode.trim() });
     if (query.status) {
       qb.andWhere('COALESCE(s.status, :draft) = :st', {
         st: query.status,
@@ -60,8 +56,6 @@ export class MonitoringService {
       'f.code AS "formCode"',
       'f.name AS "formName"',
       'a.periodType AS "periodType"',
-      'a.periodFrom AS "periodFrom"',
-      'a.periodTo AS "periodTo"',
       'a.periodCode AS "periodCode"',
       'a.periodName AS "periodName"',
       'a.id AS "assignmentId"',
@@ -89,12 +83,8 @@ export class MonitoringService {
       countQb.andWhere('a.formId = :formId', { formId: query.formId });
     if (query.periodType)
       countQb.andWhere('a.periodType = :periodType', { periodType: query.periodType });
-    if (query.from) {
-      countQb.andWhere('a.periodTo >= :pFrom', { pFrom: query.from.slice(0, 10) });
-    }
-    if (query.to) {
-      countQb.andWhere('a.periodFrom <= :pTo', { pTo: query.to.slice(0, 10) });
-    }
+    if (query.periodCode?.trim())
+      countQb.andWhere('a.periodCode = :pc', { pc: query.periodCode.trim() });
     if (query.status) {
       countQb.andWhere('COALESCE(s.status, :draft) = :st', {
         st: query.status,
@@ -110,8 +100,6 @@ export class MonitoringService {
         type: r.periodType,
         code: r.periodCode,
         name: r.periodName,
-        dateFrom: r.periodFrom,
-        dateTo: r.periodTo,
       },
       assignmentId: r.assignmentId,
       submissionId: r.submissionId,

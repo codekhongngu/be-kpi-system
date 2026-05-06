@@ -72,8 +72,6 @@ export class SubmissionService {
         'f.code AS "formCode"',
         'f.name AS "formName"',
         'a.periodType AS "periodType"',
-        'a.periodFrom AS "periodFrom"',
-        'a.periodTo AS "periodTo"',
         'a.periodCode AS "periodCode"',
         'a.periodName AS "periodName"',
         's.id AS "submissionId"',
@@ -102,8 +100,6 @@ export class SubmissionService {
         type: r.periodType,
         code: r.periodCode,
         name: r.periodName,
-        dateFrom: r.periodFrom,
-        dateTo: r.periodTo,
       },
       submission: r.submissionId
         ? {

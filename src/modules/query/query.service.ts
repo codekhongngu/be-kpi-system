@@ -35,12 +35,8 @@ export class QueryService {
       qb.andWhere('a.formId = :formId', { formId: query.formId });
     if (query.periodType)
       qb.andWhere('a.periodType = :periodType', { periodType: query.periodType });
-    if (query.periodFrom) {
-      qb.andWhere('a.periodTo >= :pFrom', { pFrom: query.periodFrom.slice(0, 10) });
-    }
-    if (query.periodTo) {
-      qb.andWhere('a.periodFrom <= :pTo', { pTo: query.periodTo.slice(0, 10) });
-    }
+    if (query.periodCode?.trim())
+      qb.andWhere('a.periodCode = :pc', { pc: query.periodCode.trim() });
     if (query.status) {
       qb.andWhere('COALESCE(s.status, :draft) = :st', {
         st: query.status,
@@ -73,8 +69,6 @@ export class QueryService {
       'f.code AS "formCode"',
       'f.name AS "formName"',
       'a.periodType AS "periodType"',
-      'a.periodFrom AS "periodFrom"',
-      'a.periodTo AS "periodTo"',
       'a.periodCode AS "periodCode"',
       'a.periodName AS "periodName"',
       'COALESCE(s.status, :draft2) AS "status"',
@@ -103,12 +97,8 @@ export class QueryService {
       countQb.andWhere('a.formId = :formId', { formId: query.formId });
     if (query.periodType)
       countQb.andWhere('a.periodType = :periodType', { periodType: query.periodType });
-    if (query.periodFrom) {
-      countQb.andWhere('a.periodTo >= :pFrom', { pFrom: query.periodFrom.slice(0, 10) });
-    }
-    if (query.periodTo) {
-      countQb.andWhere('a.periodFrom <= :pTo', { pTo: query.periodTo.slice(0, 10) });
-    }
+    if (query.periodCode?.trim())
+      countQb.andWhere('a.periodCode = :pc', { pc: query.periodCode.trim() });
     if (query.status) {
       countQb.andWhere('COALESCE(s.status, :draft) = :st', {
         st: query.status,
@@ -143,8 +133,6 @@ export class QueryService {
         type: r.periodType,
         code: r.periodCode,
         name: r.periodName,
-        dateFrom: r.periodFrom,
-        dateTo: r.periodTo,
       },
       status: r.status,
       completionPct: r.completionPct != null ? Number(r.completionPct) : null,

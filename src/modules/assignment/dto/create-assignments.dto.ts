@@ -17,16 +17,9 @@ export class CreateAssignmentsDto {
   @IsEnum(PeriodType)
   periodType: PeriodType;
 
-  @IsDateString()
-  periodFrom: string;
-
-  @IsDateString()
-  periodTo: string;
-
-  @IsOptional()
   @IsString()
   @MaxLength(30)
-  periodCode?: string;
+  periodCode: string;
 
   @IsOptional()
   @IsString()

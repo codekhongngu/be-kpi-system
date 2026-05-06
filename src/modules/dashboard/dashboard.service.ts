@@ -80,7 +80,7 @@ export class DashboardService {
     const totalPeriodsRows = await this.assignmentRepo.query(`
       SELECT COUNT(*)::int AS "total"
       FROM (
-        SELECT DISTINCT a.period_type, a.period_from, a.period_to
+        SELECT DISTINCT a.period_type, a.period_code
         FROM form_assignments a
         WHERE a.is_cancelled = false
       ) x

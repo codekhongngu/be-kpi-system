@@ -25,12 +25,8 @@ export class MonitoringQueryDto {
   periodType?: PeriodType;
 
   @IsOptional()
-  @IsDateString()
-  from?: string;
-
-  @IsOptional()
-  @IsDateString()
-  to?: string;
+  @IsString()
+  periodCode?: string;
 
   @IsOptional()
   @IsString()

@@ -25,12 +25,8 @@ export class QueryReportsDto {
   periodType?: PeriodType;
 
   @IsOptional()
-  @IsDateString()
-  periodFrom?: string;
-
-  @IsOptional()
-  @IsDateString()
-  periodTo?: string;
+  @IsString()
+  periodCode?: string;
 
   @IsOptional()
   @IsUUID()

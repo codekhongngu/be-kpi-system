@@ -1,10 +1,10 @@
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
-  IsDateString,
   IsEnum,
   IsInt,
   IsOptional,
+  IsString,
   IsUUID,
   Max,
   Min,
@@ -21,12 +21,8 @@ export class AssignmentQueryDto {
   periodType?: PeriodType;
 
   @IsOptional()
-  @IsDateString()
-  from?: string;
-
-  @IsOptional()
-  @IsDateString()
-  to?: string;
+  @IsString()
+  periodCode?: string;
 
   @IsOptional()
   @IsUUID()
