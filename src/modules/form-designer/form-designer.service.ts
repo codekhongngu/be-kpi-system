@@ -253,16 +253,35 @@ export class FormDesignerService {
   }
 
   private mapCellConfig(c: FormCellConfig) {
+    const formula = c.formula?.trim() ? c.formula.trim() : null;
+    const readOnly = formula ? true : !c.isEditable;
     return {
       id: c.id,
       indicatorId: c.indicatorId,
       attributeId: c.attributeId,
-      isEditable: c.isEditable,
-      validationRule: c.validationRule,
-      defaultValue: c.defaultValue,
-      dataType: c.dataType,
-      isRequired: c.isRequired,
-      formula: c.formula,
+      dataType: c.dataType === 'number' ? 'number' : 'text',
+      required: Boolean(c.isRequired),
+      readOnly,
+      formula,
+    };
+  }
+
+  private normalizeCellDataType(value: string | null | undefined): 'text' | 'number' {
+    return value === 'number' ? 'number' : 'text';
+  }
+
+  private buildBaseCellConfig(
+    indicator: FormIndicator,
+    attribute: FormAttribute,
+  ): { dataType: 'text' | 'number'; required: boolean; readOnly: boolean; formula: string | null } {
+    const formula = indicator.formula?.trim() ? indicator.formula.trim() : null;
+    const readOnlyByNode = Boolean(indicator.isReadonly) || Boolean(attribute.isReadonly);
+
+    return {
+      dataType: this.normalizeCellDataType(indicator.dataType ?? attribute.dataType ?? 'text'),
+      required: Boolean(indicator.isRequired) || Boolean(attribute.isRequired),
+      readOnly: formula ? true : readOnlyByNode,
+      formula,
     };
   }
 
@@ -890,30 +909,68 @@ export class FormDesignerService {
           },
         });
 
+        const indicator = indicators.find((x) => x.id === item.indicatorId)!;
+        const attribute = attributes.find((x) => x.id === item.attributeId)!;
+        const base = this.buildBaseCellConfig(indicator, attribute);
+
+        const formula = item.formula !== undefined
+          ? item.formula?.trim() || null
+          : exists?.formula?.trim() || base.formula;
+        const readOnlyInput = item.readOnly !== undefined
+          ? Boolean(item.readOnly)
+          : exists
+            ? !exists.isEditable
+            : base.readOnly;
+        const normalized = {
+          dataType:
+            item.dataType !== undefined
+              ? this.normalizeCellDataType(item.dataType)
+              : exists
+                ? this.normalizeCellDataType(exists.dataType)
+                : base.dataType,
+          required:
+            item.required !== undefined
+              ? Boolean(item.required)
+              : exists
+                ? Boolean(exists.isRequired)
+                : base.required,
+          readOnly: formula ? true : readOnlyInput,
+          formula,
+        };
+
+        const sameAsBase =
+          normalized.dataType === base.dataType &&
+          normalized.required === base.required &&
+          normalized.readOnly === base.readOnly &&
+          normalized.formula === base.formula;
+
+        if (sameAsBase) {
+          if (exists) {
+            await repo.delete({ id: exists.id });
+          }
+          continue;
+        }
+
         if (!exists) {
           const created = repo.create({
             formId,
             indicatorId: item.indicatorId,
             attributeId: item.attributeId,
-            isEditable: item.isEditable ?? true,
-            validationRule: item.validationRule ?? null,
-            defaultValue: item.defaultValue ?? null,
-            dataType: item.dataType ?? null,
-            isRequired: item.isRequired ?? null,
-            formula: item.formula ?? null,
+            dataType: normalized.dataType,
+            isRequired: normalized.required,
+            isEditable: !normalized.readOnly,
+            formula: normalized.formula,
+            validationRule: null,
+            defaultValue: null,
           });
           await repo.save(created);
           continue;
         }
 
-        if (item.isEditable !== undefined) exists.isEditable = item.isEditable;
-        if (item.validationRule !== undefined) {
-          exists.validationRule = item.validationRule;
-        }
-        if (item.defaultValue !== undefined) exists.defaultValue = item.defaultValue;
-        if (item.dataType !== undefined) exists.dataType = item.dataType;
-        if (item.isRequired !== undefined) exists.isRequired = item.isRequired;
-        if (item.formula !== undefined) exists.formula = item.formula;
+        exists.dataType = normalized.dataType;
+        exists.isRequired = normalized.required;
+        exists.isEditable = !normalized.readOnly;
+        exists.formula = normalized.formula;
         await repo.save(exists);
       }
     });
@@ -953,26 +1010,19 @@ export class FormDesignerService {
       attributes.map((attribute) => {
         const key = `${indicator.id}:${attribute.id}`;
         const override = overrideMap.get(key);
-        const mergedValidation = {
-          ...(attribute.validationRule ?? {}),
-          ...(indicator.validationRule ?? {}),
-          ...(override?.validationRule ?? {}),
-        };
+        const base = this.buildBaseCellConfig(indicator, attribute);
+        const formula = override?.formula?.trim() ? override.formula.trim() : base.formula;
+        const readOnly = formula ? true : (override ? !override.isEditable : base.readOnly);
 
         return {
           indicatorId: indicator.id,
           attributeId: attribute.id,
-          dataType: override?.dataType ?? indicator.dataType ?? attribute.dataType ?? 'text',
-          isEditable:
-            override?.isEditable ??
-            !(Boolean(indicator.isReadonly) || Boolean(attribute.isReadonly)),
-          isRequired:
-            override?.isRequired ??
-            (Boolean(indicator.isRequired) || Boolean(attribute.isRequired)),
-          defaultValue: override?.defaultValue ?? null,
-          validationRule:
-            Object.keys(mergedValidation).length > 0 ? mergedValidation : null,
-          formula: override?.formula ?? indicator.formula ?? null,
+          dataType: override?.dataType
+            ? this.normalizeCellDataType(override.dataType)
+            : base.dataType,
+          required: override?.isRequired ?? base.required,
+          readOnly,
+          formula,
           hasOverride: Boolean(override),
         };
       }),

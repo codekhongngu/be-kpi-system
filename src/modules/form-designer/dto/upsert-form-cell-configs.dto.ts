@@ -3,7 +3,6 @@ import {
   IsArray,
   IsBoolean,
   IsIn,
-  IsObject,
   IsOptional,
   IsString,
   Matches,
@@ -22,24 +21,16 @@ class UpsertFormCellConfigItemDto {
   attributeId: string;
 
   @IsOptional()
-  @IsBoolean()
-  isEditable?: boolean;
-
-  @IsOptional()
-  @IsObject()
-  validationRule?: Record<string, unknown> | null;
-
-  @IsOptional()
-  @IsString()
-  defaultValue?: string | null;
-
-  @IsOptional()
   @IsIn(['number', 'text'])
   dataType?: string | null;
 
   @IsOptional()
   @IsBoolean()
-  isRequired?: boolean | null;
+  required?: boolean | null;
+
+  @IsOptional()
+  @IsBoolean()
+  readOnly?: boolean | null;
 
   @IsOptional()
   @IsString()
@@ -51,4 +42,3 @@ export class UpsertFormCellConfigsDto {
   @ArrayMinSize(1)
   items: UpsertFormCellConfigItemDto[];
 }
-
