@@ -15,6 +15,7 @@ import { FormIndicator } from '../form-designer/entities/form-indicator.entity';
 import { FormAttribute } from '../form-designer/entities/form-attribute.entity';
 import { Notification } from '../notification/entities/notification.entity';
 import { User, UserStatus } from '../user/entities/user.entity';
+import { AssignmentService } from '../assignment/assignment.service';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { PatchCellsDto } from './dto/patch-cells.dto';
 import { SubmitSubmissionDto } from './dto/submit-submission.dto';
@@ -35,6 +36,7 @@ export class SubmissionService {
     private readonly attributeRepo: Repository<FormAttribute>,
     @InjectRepository(Notification)
     private readonly notificationRepo: Repository<Notification>,
+    private readonly assignmentService: AssignmentService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -132,6 +134,15 @@ export class SubmissionService {
       version: 1,
     });
     const saved = await this.submissionRepo.save(row);
+
+    // Update assignment status
+    await this.assignmentService.updateAssignmentStatus(
+      a.id,
+      ReportAssignmentStatus.IN_PROGRESS,
+      user.id,
+      'Khởi tạo bản nộp (Draft)',
+    );
+
     return { id: saved.id, status: saved.status };
   }
 
@@ -265,6 +276,14 @@ export class SubmissionService {
     s.submittedAt = new Date();
     s.version += 1;
     await this.submissionRepo.save(s);
+
+    // Update assignment status
+    await this.assignmentService.updateAssignmentStatus(
+      a.id,
+      ReportAssignmentStatus.SUBMITTED,
+      user.id,
+      dto.note,
+    );
 
     // Auto notify approvers in the same org (RBAC QLDL: APPROVALS:WRITE)
     const approverIds = await this.findApproverUserIds(a.orgId);

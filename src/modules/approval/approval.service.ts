@@ -10,7 +10,9 @@ import { ReportSubmission } from '../submission/entities/report-submission.entit
 import { FormAssignment } from '../assignment/entities/form-assignment.entity';
 import { Notification } from '../notification/entities/notification.entity';
 import { User } from '../user/entities/user.entity';
+import { AssignmentService } from '../assignment/assignment.service';
 import { PendingApprovalsQueryDto } from './dto/pending-approvals-query.dto';
+import { ReportAssignmentStatus } from '../../../common';
 
 @Injectable()
 export class ApprovalService {
@@ -21,6 +23,7 @@ export class ApprovalService {
     private readonly assignmentRepo: Repository<FormAssignment>,
     @InjectRepository(Notification)
     private readonly notificationRepo: Repository<Notification>,
+    private readonly assignmentService: AssignmentService,
   ) {}
 
   private assertApproverOrg(user: User, assignment: FormAssignment) {
@@ -117,6 +120,14 @@ export class ApprovalService {
     s.approvedAt = new Date();
     await this.submissionRepo.save(s);
 
+    // Update assignment status
+    await this.assignmentService.updateAssignmentStatus(
+      a.id,
+      ReportAssignmentStatus.APPROVED,
+      user.id,
+      'Phê duyệt báo cáo',
+    );
+
     if (s.submittedBy) {
       await this.notificationRepo.save(
         this.notificationRepo.create({
@@ -155,6 +166,14 @@ export class ApprovalService {
     s.status = 'REJECTED';
     s.rejectReason = reason.trim();
     await this.submissionRepo.save(s);
+
+    // Update assignment status
+    await this.assignmentService.updateAssignmentStatus(
+      a.id,
+      ReportAssignmentStatus.REJECTED,
+      user.id,
+      reason,
+    );
 
     if (s.submittedBy) {
       await this.notificationRepo.save(

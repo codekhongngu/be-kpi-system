@@ -50,6 +50,55 @@ export class AssignmentController {
     );
   }
 
+  @Post('batches/:id/publish')
+  @Permissions('assignments.manage')
+  async publishBatch(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: User,
+  ) {
+    return await this.assignmentService.publishBatch(id, user.id);
+  }
+
+  @Post('batches/:id/cancel')
+  @Permissions('assignments.manage')
+  async cancelBatch(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: CancelAssignmentDto,
+    @CurrentUser() user: User,
+  ) {
+    return await this.assignmentService.cancelBatch(id, user.id, body.reason);
+  }
+
+  @Get('batches/:id/history')
+  @Permissions('assignments.manage')
+  async getBatchHistory(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.assignmentService.getBatchHistory(id);
+  }
+
+  @Get(':id/history')
+  async getHistory(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.assignmentService.getHistory(id);
+  }
+
+  @Get(':id/comments')
+  async getComments(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.assignmentService.getComments(id);
+  }
+
+  @Post(':id/comments')
+  async addComment(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { content: string; type?: string },
+    @CurrentUser() user: User,
+  ) {
+    return await this.assignmentService.addComment(
+      id,
+      user.id,
+      body.content,
+      body.type,
+    );
+  }
+
   @Post(':id/cancel')
   @Permissions('assignments.manage')
   async cancel(

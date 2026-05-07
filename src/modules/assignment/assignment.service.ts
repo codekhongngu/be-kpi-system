@@ -5,10 +5,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Repository, DataSource } from 'typeorm';
 import { FormAssignment } from './entities/form-assignment.entity';
 import { AssignmentBatch } from './entities/assignment-batch.entity';
 import { AssignmentIndicatorScope } from './entities/assignment-indicator-scope.entity';
+import { ReportStatusHistory } from './entities/report-status-history.entity';
+import { AssignmentStatusHistory } from './entities/assignment-status-history.entity';
+import { ReportComment } from './entities/report-comment.entity';
 import { Form } from '../form-designer/entities/form.entity';
 import { FormIndicator } from '../form-designer/entities/form-indicator.entity';
 import { Organization } from '../organization/entities/organization.entity';
@@ -16,6 +19,7 @@ import { AssignmentQueryDto } from './dto/assignment-query.dto';
 import { CreateAssignmentsDto } from './dto/create-assignments.dto';
 import { NextPeriodAssignmentsDto } from './dto/next-period-assignments.dto';
 import { ConfigureAssignmentIndicatorScopesDto } from './dto/configure-assignment-indicator-scopes.dto';
+import { ReportStatus, ReportAssignmentStatus } from '../../../common';
 
 @Injectable()
 export class AssignmentService {
@@ -26,12 +30,19 @@ export class AssignmentService {
     private readonly batchRepo: Repository<AssignmentBatch>,
     @InjectRepository(AssignmentIndicatorScope)
     private readonly scopeRepo: Repository<AssignmentIndicatorScope>,
+    @InjectRepository(ReportStatusHistory)
+    private readonly reportHistoryRepo: Repository<ReportStatusHistory>,
+    @InjectRepository(AssignmentStatusHistory)
+    private readonly assignmentHistoryRepo: Repository<AssignmentStatusHistory>,
+    @InjectRepository(ReportComment)
+    private readonly commentRepo: Repository<ReportComment>,
     @InjectRepository(Form)
     private readonly formRepo: Repository<Form>,
     @InjectRepository(FormIndicator)
     private readonly indicatorRepo: Repository<FormIndicator>,
     @InjectRepository(Organization)
     private readonly orgRepo: Repository<Organization>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async findAll(query: AssignmentQueryDto) {
@@ -76,23 +87,228 @@ export class AssignmentService {
     const batch = await this.batchRepo.save(
       this.batchRepo.create({
         formId: dto.formId,
+        templateVersion: form.version ?? 1,
         periodType: dto.periodType,
         periodCode,
         periodName,
         deadlineFrom: dto.deadlineFrom.slice(0, 10),
         deadlineTo: dto.deadlineTo.slice(0, 10),
+        status: ReportStatus.DRAFT,
         createdBy: userId ?? null,
       }),
     );
+    
+    // Log history
+    await this.reportHistoryRepo.save(
+      this.reportHistoryRepo.create({
+        reportId: batch.id,
+        fromStatus: null,
+        toStatus: ReportStatus.DRAFT,
+        actorId: userId ?? '00000000-0000-0000-0000-000000000000',
+        note: 'Khởi tạo đợt báo cáo',
+      }),
+    );
+
     return {
       id: batch.id,
       formId: batch.formId,
+      status: batch.status,
       periodType: batch.periodType,
       periodCode: batch.periodCode,
       periodName: batch.periodName,
       deadlineFrom: batch.deadlineFrom,
       deadlineTo: batch.deadlineTo,
     };
+  }
+
+  async publishBatch(id: string, userId: string) {
+    const batch = await this.batchRepo.findOne({ where: { id } });
+    if (!batch) throw new NotFoundException('Không tìm thấy đợt báo cáo');
+    if (batch.status !== ReportStatus.DRAFT) {
+      throw new ConflictException('Chỉ có thể phát hành đợt báo cáo ở trạng thái nháp');
+    }
+    if (batch.totalAssignments === 0) {
+      throw new BadRequestException('Đợt báo cáo chưa được giao cho đơn vị nào');
+    }
+
+    const oldStatus = batch.status;
+    batch.status = ReportStatus.ASSIGNED;
+    batch.publishedAt = new Date();
+    await this.batchRepo.save(batch);
+
+    await this.reportHistoryRepo.save(
+      this.reportHistoryRepo.create({
+        reportId: batch.id,
+        fromStatus: oldStatus,
+        toStatus: ReportStatus.ASSIGNED,
+        actorId: userId,
+        note: 'Phát hành báo cáo',
+      }),
+    );
+
+    return { ok: true, status: batch.status };
+  }
+
+  async cancelBatch(id: string, userId: string, reason?: string) {
+    const batch = await this.batchRepo.findOne({ where: { id } });
+    if (!batch) throw new NotFoundException('Không tìm thấy đợt báo cáo');
+    if (batch.status === ReportStatus.CANCELLED || batch.status === ReportStatus.COMPLETED) {
+      throw new ConflictException('Không thể hủy đợt báo cáo đã hoàn tất hoặc đã hủy');
+    }
+
+    const oldStatus = batch.status;
+    batch.status = ReportStatus.CANCELLED;
+    await this.batchRepo.save(batch);
+
+    // Cancel all assignments in this batch
+    await this.assignmentRepo.update(
+      { batchId: id, isCancelled: false },
+      { isCancelled: true, cancelReason: reason || 'Hủy đợt báo cáo tổng' },
+    );
+
+    await this.reportHistoryRepo.save(
+      this.reportHistoryRepo.create({
+        reportId: batch.id,
+        fromStatus: oldStatus,
+        toStatus: ReportStatus.CANCELLED,
+        actorId: userId,
+        note: reason || 'Hủy đợt báo cáo',
+      }),
+    );
+
+    return { ok: true, status: batch.status };
+  }
+
+  async updateBatchCounts(batchId: string) {
+    const batch = await this.batchRepo.findOne({ where: { id: batchId } });
+    if (!batch) return;
+
+    const stats = await this.assignmentRepo
+      .createQueryBuilder('a')
+      .select('a.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .where('a.batchId = :batchId', { batchId })
+      .andWhere('a.isCancelled = false')
+      .groupBy('a.status')
+      .getRawMany();
+
+    const counts = {
+      [ReportAssignmentStatus.ASSIGNED]: 0,
+      [ReportAssignmentStatus.IN_PROGRESS]: 0,
+      [ReportAssignmentStatus.SUBMITTED]: 0,
+      [ReportAssignmentStatus.APPROVED]: 0,
+      [ReportAssignmentStatus.REJECTED]: 0,
+    };
+
+    let total = 0;
+    for (const s of stats) {
+      const c = parseInt(s.count);
+      counts[s.status as ReportAssignmentStatus] = c;
+      total += c;
+    }
+
+    batch.totalAssignments = total;
+    batch.assignedCount = counts[ReportAssignmentStatus.ASSIGNED];
+    batch.inProgressCount = counts[ReportAssignmentStatus.IN_PROGRESS];
+    batch.submittedCount = counts[ReportAssignmentStatus.SUBMITTED];
+    batch.approvedCount = counts[ReportAssignmentStatus.APPROVED];
+    batch.rejectedCount = counts[ReportAssignmentStatus.REJECTED];
+
+    if (batch.approvedCount === total && total > 0) {
+      if (batch.status !== ReportStatus.COMPLETED) {
+        const oldStatus = batch.status;
+        batch.status = ReportStatus.COMPLETED;
+        await this.reportHistoryRepo.save(
+          this.reportHistoryRepo.create({
+            reportId: batch.id,
+            fromStatus: oldStatus,
+            toStatus: ReportStatus.COMPLETED,
+            actorId: '00000000-0000-0000-0000-000000000000', // System auto
+            note: 'Tự động hoàn tất khi tất cả đơn vị đã duyệt',
+          }),
+        );
+      }
+    } else if (batch.status === ReportStatus.COMPLETED) {
+      // Revert from COMPLETED if something changed (e.g. un-approve or new assignment)
+      batch.status = ReportStatus.ASSIGNED;
+    }
+
+    await this.batchRepo.save(batch);
+  }
+
+  async addComment(assignmentId: string, authorId: string, content: string, type = 'GENERAL') {
+    const a = await this.assignmentRepo.findOne({ where: { id: assignmentId } });
+    if (!a) throw new NotFoundException('Không tìm thấy giao việc');
+
+    const comment = this.commentRepo.create({
+      assignmentId,
+      authorId,
+      content,
+      commentType: type,
+    });
+    return await this.commentRepo.save(comment);
+  }
+
+  async getComments(assignmentId: string) {
+    return await this.commentRepo.find({
+      where: { assignmentId },
+      order: { createdAt: 'ASC' },
+    });
+  }
+
+  async getHistory(assignmentId: string) {
+    return await this.assignmentHistoryRepo.find({
+      where: { assignmentId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async getBatchHistory(batchId: string) {
+    return await this.reportHistoryRepo.find({
+      where: { reportId: batchId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async updateAssignmentStatus(
+    id: string,
+    status: ReportAssignmentStatus,
+    actorId: string,
+    note?: string,
+  ) {
+    const a = await this.assignmentRepo.findOne({ where: { id } });
+    if (!a) throw new NotFoundException('Không tìm thấy giao việc');
+
+    const oldStatus = a.status;
+    if (oldStatus === status) return a;
+
+    a.status = status;
+    if (status === ReportAssignmentStatus.SUBMITTED) {
+      a.submittedAt = new Date();
+    } else if (status === ReportAssignmentStatus.APPROVED) {
+      a.approvedAt = new Date();
+      a.approvedBy = actorId;
+    } else if (status === ReportAssignmentStatus.REJECTED) {
+      a.rejectReason = note || null;
+    }
+
+    const saved = await this.assignmentRepo.save(a);
+
+    await this.assignmentHistoryRepo.save(
+      this.assignmentHistoryRepo.create({
+        assignmentId: a.id,
+        fromStatus: oldStatus,
+        toStatus: status,
+        actorId,
+        note,
+      }),
+    );
+
+    if (a.batchId) {
+      await this.updateBatchCounts(a.batchId);
+    }
+
+    return saved;
   }
 
   async configureIndicatorScopes(
@@ -162,6 +378,7 @@ export class AssignmentService {
         },
       });
       if (existing) {
+        const oldStatus = existing.status;
         existing.batchId = batchId;
         existing.periodName = batch.periodName;
         existing.deadlineFrom = batch.deadlineFrom;
@@ -171,7 +388,7 @@ export class AssignmentService {
         updated++;
         continue;
       }
-      await this.assignmentRepo.save(
+      const newAssignment = await this.assignmentRepo.save(
         this.assignmentRepo.create({
           batchId,
           formId: batch.formId,
@@ -181,18 +398,39 @@ export class AssignmentService {
           periodName: batch.periodName,
           deadlineFrom: batch.deadlineFrom,
           deadlineTo: batch.deadlineTo,
+          status: ReportAssignmentStatus.ASSIGNED,
           isCancelled: false,
           cancelReason: null,
           autoAssign: false,
           assignedBy: userId ?? null,
         }),
       );
+      
+      // Log history for new assignment
+      await this.assignmentHistoryRepo.save(
+        this.assignmentHistoryRepo.create({
+          assignmentId: newAssignment.id,
+          fromStatus: null,
+          toStatus: ReportAssignmentStatus.ASSIGNED,
+          actorId: userId ?? '00000000-0000-0000-0000-000000000000',
+          note: 'Giao báo cáo mới',
+        }),
+      );
       created++;
     }
+
+    // Update batch aggregate counts
+    const total = await this.assignmentRepo.count({
+      where: { batchId, isCancelled: false },
+    });
+    batch.totalAssignments = total;
+    batch.assignedCount = total; // Initially all are ASSIGNED status
+    await this.batchRepo.save(batch);
 
     return {
       ok: true as const,
       batchId,
+      totalAssignments: total,
       scopesInserted: rows.length,
       assignments: { created, updated },
     };
@@ -205,6 +443,10 @@ export class AssignmentService {
     a.isCancelled = true;
     a.cancelReason = reason?.trim() ?? null;
     await this.assignmentRepo.save(a);
+
+    if (a.batchId) {
+      await this.updateBatchCounts(a.batchId);
+    }
     return { ok: true };
   }
 

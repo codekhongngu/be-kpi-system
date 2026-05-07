@@ -7,6 +7,7 @@ import { ApprovalService } from './approval.service';
 import { ApprovalController } from './approval.controller';
 import { Role } from '../role/entities/role.entity';
 import { Permission } from '../role/entities/permission.entity';
+import { AssignmentModule } from '../assignment/assignment.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { Permission } from '../role/entities/permission.entity';
       Role,
       Permission,
     ]),
+    AssignmentModule,
   ],
   controllers: [ApprovalController],
   providers: [ApprovalService],

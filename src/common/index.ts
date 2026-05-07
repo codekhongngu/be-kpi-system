@@ -32,3 +32,4 @@ export * from './decorators/ip-address.decorator';
 export * from './decorators/user-agent.decorator';
 
 export * from './period-type';
+export * from './enums/report.enum';

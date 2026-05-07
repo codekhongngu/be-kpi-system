@@ -3,8 +3,9 @@ import {
   CreateDateColumn,
   Entity,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
-import { PeriodType } from '../../../common';
+import { PeriodType, ReportAssignmentStatus } from '../../../common';
 
 @Entity('form_assignments')
 export class FormAssignment {
@@ -19,6 +20,9 @@ export class FormAssignment {
 
   @Column({ name: 'org_id', type: 'uuid' })
   orgId: string;
+
+  @Column({ name: 'assignee_user_id', type: 'uuid', nullable: true })
+  assigneeUserId: string | null;
 
   @Column({ name: 'period_type', type: 'varchar', length: 10 })
   periodType: PeriodType;
@@ -40,6 +44,25 @@ export class FormAssignment {
   @Column({ name: 'deadline_to', type: 'date' })
   deadlineTo: string;
 
+  @Column({
+    type: 'enum',
+    enum: ReportAssignmentStatus,
+    default: ReportAssignmentStatus.ASSIGNED,
+  })
+  status: ReportAssignmentStatus;
+
+  @Column({ name: 'submitted_at', type: 'timestamptz', nullable: true })
+  submittedAt: Date | null;
+
+  @Column({ name: 'approved_at', type: 'timestamptz', nullable: true })
+  approvedAt: Date | null;
+
+  @Column({ name: 'approved_by', type: 'uuid', nullable: true })
+  approvedBy: string | null;
+
+  @Column({ name: 'reject_reason', type: 'text', nullable: true })
+  rejectReason: string | null;
+
   @Column({ name: 'is_cancelled', default: false })
   isCancelled: boolean;
 
@@ -54,4 +77,7 @@ export class FormAssignment {
 
   @CreateDateColumn({ name: 'assigned_at' })
   assignedAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at', nullable: true })
+  updatedAt: Date | null;
 }
