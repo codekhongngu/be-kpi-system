@@ -10,11 +10,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
-  UseInterceptors,
-  UploadedFile,
-  BadRequestException,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -24,7 +20,6 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Permissions, PermissionsGuard } from '../../common';
 import { User, UserStatus } from './entities/user.entity';
 import { ResetPasswordBodyDto } from './dto/reset-password.dto';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { UserDetail, UserListItem } from './types/user-contract.types';
 
 @Controller('users')
@@ -51,26 +46,6 @@ export class UserController {
     @Param('departmentId') departmentId: string,
   ): Promise<UserListItem[]> {
     return await this.userService.findByDepartment(departmentId);
-  }
-
-  @Post('import')
-  @Permissions('users.export')
-  @UseInterceptors(FileInterceptor('file'))
-  @HttpCode(HttpStatus.OK)
-  async importUsers(
-    @CurrentUser() user: User,
-    @UploadedFile() file: { buffer?: Buffer } | undefined,
-  ): Promise<{ jobId: string }> {
-    if (!file?.buffer) {
-      throw new BadRequestException('Thiếu file CSV (field name: file)');
-    }
-    return await this.userService.createImportJob(user.id, file.buffer);
-  }
-
-  @Get('import/:jobId')
-  @Permissions('users.manage')
-  async importStatus(@Param('jobId') jobId: string) {
-    return await this.userService.getImportJob(jobId);
   }
 
   @Get(':id')
@@ -146,3 +121,5 @@ export class UserController {
     return await this.userService.assignRoles(id, assignRolesDto);
   }
 }
+
+

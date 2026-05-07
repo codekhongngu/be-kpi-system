@@ -293,8 +293,6 @@ export class AuthService {
         expiresAt,
         revokedAt: null,
         user,
-        ipAddress: null,
-        userAgent: null,
       }),
     );
 
@@ -342,3 +340,5 @@ export class AuthService {
     return sanitized;
   }
 }
+
+

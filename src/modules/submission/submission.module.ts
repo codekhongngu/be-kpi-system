@@ -2,9 +2,9 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ReportSubmission } from './entities/report-submission.entity';
 import { ReportData } from './entities/report-data.entity';
-import { FormAssignment } from '../assignment/entities/form-assignment.entity';
-import { FormIndicator } from '../form-designer/entities/form-indicator.entity';
-import { FormAttribute } from '../form-designer/entities/form-attribute.entity';
+import { FormAssignment } from '../report-campaign/assignment/entities/form-assignment.entity';
+import { FormIndicator } from '../template-management/entities/form-indicator.entity';
+import { FormAttribute } from '../template-management/entities/form-attribute.entity';
 import { Notification } from '../notification/entities/notification.entity';
 import { SubmissionService } from './submission.service';
 import { SubmissionsController } from './submissions.controller';
@@ -30,3 +30,6 @@ import { Permission } from '../role/entities/permission.entity';
   exports: [SubmissionService],
 })
 export class SubmissionModule {}
+
+
+

@@ -43,10 +43,6 @@ export class CreateOrganizationDto {
   parentId?: string | null;
 
   @IsOptional()
-  @IsUUID()
-  headUserId?: string | null;
-
-  @IsOptional()
   @IsInt()
   @Min(1)
   level?: number;

@@ -41,14 +41,11 @@ export class User {
   @Column({ type: 'varchar', length: 20, nullable: true })
   phone: string | null;
 
-  @Column({ name: 'department_id', type: 'uuid', nullable: true })
-  departmentId: string | null;
-
   @Column({ name: 'org_id', type: 'uuid', nullable: true })
   orgId: string | null;
 
-  @Column({ name: 'avatar_url', type: 'text', nullable: true })
-  avatarUrl: string | null;
+  // Legacy/API-only field; not persisted in DB v2 users table.
+  avatarUrl?: string | null;
 
   @Column({ name: 'failed_login_attempts', type: 'int', default: 0 })
   @Exclude()
@@ -58,21 +55,21 @@ export class User {
   @Exclude()
   lockedUntil: Date | null;
 
-  @Column({ name: 'totp_secret', type: 'varchar', length: 100, nullable: true })
+  // Legacy/API-only field; not persisted in DB v2 users table.
   @Exclude()
-  totpSecret: string | null;
+  totpSecret?: string | null;
 
-  @Column({ name: 'totp_enabled', default: false })
-  totpEnabled: boolean;
+  // Legacy/API-only field; not persisted in DB v2 users table.
+  totpEnabled?: boolean;
 
-  @Column({ name: 'notify_channel', length: 20, default: 'both' })
-  notifyChannel: string;
+  // Legacy/API-only field; not persisted in DB v2 users table.
+  notifyChannel?: string;
 
-  @Column({ length: 10, default: 'vi' })
-  language: string;
+  // Legacy/API-only field; not persisted in DB v2 users table.
+  language?: string;
 
-  @Column({ length: 50, default: 'Asia/Ho_Chi_Minh' })
-  timezone: string;
+  // Legacy/API-only field; not persisted in DB v2 users table.
+  timezone?: string;
 
   @Column({
     type: 'enum',
@@ -81,7 +78,7 @@ export class User {
   })
   status: UserStatus;
 
-  @Column({ name: 'last_login', type: 'timestamp', nullable: true })
+  @Column({ name: 'last_login', type: 'timestamptz', nullable: true })
   lastLogin: Date | null;
 
   @CreateDateColumn({ name: 'created_at' })
@@ -103,3 +100,5 @@ export class User {
   })
   roles: Role[];
 }
+
+

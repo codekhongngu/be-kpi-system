@@ -29,3 +29,5 @@ export class PasswordReset {
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 }
+
+

@@ -9,7 +9,6 @@ import {
   OneToMany,
   JoinColumn,
 } from 'typeorm';
-import { User } from '../../user/entities/user.entity';
 
 @Entity('organizations')
 export class Organization {
@@ -32,13 +31,6 @@ export class Organization {
   @OneToMany(() => Organization, (o) => o.parent)
   children?: Organization[];
 
-  @Column({ name: 'head_user_id', type: 'uuid', nullable: true })
-  headUserId: string | null;
-
-  @ManyToOne(() => User, { nullable: true })
-  @JoinColumn({ name: 'head_user_id' })
-  headUser?: User | null;
-
   @Column({ type: 'int', default: 1 })
   level: number;
 
@@ -60,3 +52,5 @@ export class Organization {
   @DeleteDateColumn({ name: 'deleted_at', nullable: true })
   deletedAt: Date | null;
 }
+
+

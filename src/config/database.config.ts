@@ -2,28 +2,20 @@ import { DataSource } from 'typeorm';
 import { URL } from 'url';
 import { join } from 'path';
 
-// Load .env for TypeORM CLI runs (cross-platform).
-// @nestjs/config depends on dotenv, so it's typically available.
-// If dotenv isn't present, we fall back to process.env as-is.
 try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   require('dotenv').config({ path: join(process.cwd(), '.env') });
 } catch {
   // no-op
 }
 
 function envBool(value: unknown, defaultValue: boolean) {
-  if (value === undefined || value === null || value === '')
-    return defaultValue;
+  if (value === undefined || value === null || value === '') return defaultValue;
   return String(value).toLowerCase() === 'true';
 }
 
 const databaseUrl = process.env.DATABASE_URL;
 const sslEnabled = envBool(process.env.DB_SSL, false);
-const rejectUnauthorized = envBool(
-  process.env.DB_SSL_REJECT_UNAUTHORIZED,
-  true,
-);
+const rejectUnauthorized = envBool(process.env.DB_SSL_REJECT_UNAUTHORIZED, true);
 
 const baseOptions = {
   type: 'postgres' as const,
@@ -34,10 +26,9 @@ const baseOptions = {
     join(__dirname, '..', '**', '*.entity.js'),
   ],
   migrations: [
-    join(__dirname, '..', 'migrations', '*.ts'),
-    join(__dirname, '..', 'migrations', '*.js'),
+    join(__dirname, '..', 'migrations', 'active', '**', '*.ts'),
+    join(__dirname, '..', 'migrations', 'active', '**', '*.js'),
   ],
-  ssl: sslEnabled ? { rejectUnauthorized } : undefined,
 };
 
 export default new DataSource(
@@ -53,6 +44,7 @@ export default new DataSource(
           username: decodeURIComponent(u.username),
           password: decodeURIComponent(u.password),
           database: dbName,
+          ssl: sslEnabled ? { rejectUnauthorized } : undefined,
         };
       })()
     : {
@@ -62,5 +54,6 @@ export default new DataSource(
         username: process.env.DB_USERNAME ?? 'postgres',
         password: process.env.DB_PASSWORD ?? 'postgres',
         database: process.env.DB_DATABASE ?? 'starter_db',
+        ssl: sslEnabled ? { rejectUnauthorized } : undefined,
       },
 );

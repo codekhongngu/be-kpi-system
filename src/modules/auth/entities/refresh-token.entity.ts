@@ -25,13 +25,9 @@ export class AuthRefreshToken {
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
-  @Column({ name: 'ip_address', type: 'varchar', length: 45, nullable: true })
-  ipAddress: string | null;
-
-  @Column({ name: 'user_agent', type: 'text', nullable: true })
-  userAgent: string | null;
-
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 }
+
+

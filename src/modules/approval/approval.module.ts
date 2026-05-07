@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ReportSubmission } from '../submission/entities/report-submission.entity';
-import { FormAssignment } from '../assignment/entities/form-assignment.entity';
+import { FormAssignment } from '../report-campaign/assignment/entities/form-assignment.entity';
 import { Notification } from '../notification/entities/notification.entity';
 import { ApprovalService } from './approval.service';
 import { ApprovalController } from './approval.controller';
@@ -22,3 +22,6 @@ import { Permission } from '../role/entities/permission.entity';
   providers: [ApprovalService],
 })
 export class ApprovalModule {}
+
+
+

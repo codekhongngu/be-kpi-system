@@ -6,23 +6,20 @@ import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { RoleModule } from './modules/role/role.module';
-import { ExampleModule } from './modules/example/example.module';
 import { OrganizationModule } from './modules/organization/organization.module';
-import { FormDesignerModule } from './modules/form-designer/form-designer.module';
-import { AssignmentModule } from './modules/assignment/assignment.module';
+import { TemplateManagementModule } from './modules/template-management/form-designer.module';
 import { SubmissionModule } from './modules/submission/submission.module';
 import { ApprovalModule } from './modules/approval/approval.module';
-import { SummaryModule } from './modules/summary/summary.module';
-import { MonitoringModule } from './modules/monitoring/monitoring.module';
-import { QueryModule } from './modules/query/query.module';
-import { NotificationModule } from './modules/notification/notification.module';
-import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuditLogModule } from './modules/audit-log/audit-log.module';
-import { FileModule } from './modules/file/file.module';
-import { ImportJobModule } from './modules/import-job/import-job.module';
-import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { ReportCampaignModule } from './modules/report-campaign/report-campaign.module';
+import { SummaryAnalyticsModule } from './modules/summary-analytics/summary-analytics.module';
 import { LoggingMiddleware, RequestIdMiddleware } from './common';
 import { URL } from 'url';
+
+function envBool(value: unknown, defaultValue: boolean): boolean {
+  if (value === undefined || value === null || value === '') return defaultValue;
+  return String(value).toLowerCase() === 'true';
+}
 
 @Module({
   imports: [
@@ -35,10 +32,17 @@ import { URL } from 'url';
       useFactory: (configService: ConfigService) => {
         const databaseUrl = configService.get<string>('DATABASE_URL');
         const sslEnabled =
-          configService.get<string>('DB_SSL', 'false') === 'true';
+          envBool(configService.get<string>('DB_SSL'), false);
         const rejectUnauthorized =
-          configService.get<string>('DB_SSL_REJECT_UNAUTHORIZED', 'true') ===
-          'true';
+          envBool(
+            configService.get<string>('DB_SSL_REJECT_UNAUTHORIZED'),
+            true,
+          );
+        const synchronize = envBool(
+          configService.get<string>('DB_SYNCHRONIZE'),
+          false,
+        );
+        const logging = envBool(configService.get<string>('DB_LOGGING'), true);
 
         if (databaseUrl) {
           const u = new URL(databaseUrl);
@@ -52,8 +56,8 @@ import { URL } from 'url';
             password: decodeURIComponent(u.password),
             database: dbName,
             ssl: sslEnabled ? { rejectUnauthorized } : undefined,
-            synchronize: configService.get<boolean>('DB_SYNCHRONIZE', false),
-            logging: configService.get<boolean>('DB_LOGGING', true),
+            synchronize,
+            logging,
             autoLoadEntities: true,
           };
         }
@@ -66,8 +70,8 @@ import { URL } from 'url';
           password: configService.get<string>('DB_PASSWORD', 'postgres'),
           database: configService.get<string>('DB_DATABASE', 'starter_db'),
           ssl: sslEnabled ? { rejectUnauthorized } : undefined,
-          synchronize: configService.get<boolean>('DB_SYNCHRONIZE', false),
-          logging: configService.get<boolean>('DB_LOGGING', true),
+          synchronize,
+          logging,
           autoLoadEntities: true,
         };
       },
@@ -76,21 +80,13 @@ import { URL } from 'url';
     AuthModule,
     UserModule,
     RoleModule,
-    FormDesignerModule,
-    AssignmentModule,
+    TemplateManagementModule,
     SubmissionModule,
     ApprovalModule,
-    SummaryModule,
-    MonitoringModule,
-    QueryModule,
-    NotificationModule,
-    AnalyticsModule,
+    SummaryAnalyticsModule,
     OrganizationModule,
-    ExampleModule,
     AuditLogModule,
-    FileModule,
-    ImportJobModule,
-    DashboardModule,
+    ReportCampaignModule,
   ],
   controllers: [AppController],
   providers: [AppService],
@@ -101,3 +97,4 @@ export class AppModule implements NestModule {
     consumer.apply(RequestIdMiddleware, LoggingMiddleware).forRoutes('*');
   }
 }
+

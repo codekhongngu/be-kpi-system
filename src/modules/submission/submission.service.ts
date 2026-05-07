@@ -10,9 +10,9 @@ import { DataSource, Repository } from 'typeorm';
 import { randomBytes } from 'crypto';
 import { ReportSubmission } from './entities/report-submission.entity';
 import { ReportData } from './entities/report-data.entity';
-import { FormAssignment } from '../assignment/entities/form-assignment.entity';
-import { FormIndicator } from '../form-designer/entities/form-indicator.entity';
-import { FormAttribute } from '../form-designer/entities/form-attribute.entity';
+import { FormAssignment } from '../report-campaign/assignment/entities/form-assignment.entity';
+import { FormIndicator } from '../template-management/entities/form-indicator.entity';
+import { FormAttribute } from '../template-management/entities/form-attribute.entity';
 import { Notification } from '../notification/entities/notification.entity';
 import { User, UserStatus } from '../user/entities/user.entity';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
@@ -316,3 +316,6 @@ export class SubmissionService {
     return rows.map((r) => r.id);
   }
 }
+
+
+

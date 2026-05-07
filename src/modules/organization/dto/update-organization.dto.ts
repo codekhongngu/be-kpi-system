@@ -12,11 +12,6 @@ export class UpdateOrganizationDto extends PartialType(CreateOrganizationDto) {
   @IsUUID()
   parentId?: string | null;
 
-  @ValidateIf((_, v) => v === null || typeof v === 'string')
-  @IsOptional()
-  @IsUUID()
-  headUserId?: string | null;
-
   @IsOptional()
   @Transform(({ value }) => {
     if (value === undefined || value === null || value === '') return undefined;

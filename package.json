@@ -38,7 +38,9 @@
     "migrate:revert": "npx ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d src/config/database.config.ts",
     "migrate:generate": "npx ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d src/config/database.config.ts",
     "backup:db": "./scripts/backup-db.sh",
-    "seed": "./scripts/seed.sh"
+    "seed": "./scripts/seed.sh",
+    "migrate:v2": "npx ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d src/config/database.v2.config.ts",
+    "migrate:v2:revert": "npx ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d src/config/database.v2.config.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

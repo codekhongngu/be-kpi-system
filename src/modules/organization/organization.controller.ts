@@ -17,6 +17,7 @@ import { OrganizationService } from './organization.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { OrganizationQueryDto } from './dto/organization-query.dto';
+import { OrganizationClosureQueryDto } from './dto/organization-closure-query.dto';
 
 @Controller('orgs')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -41,6 +42,39 @@ export class OrganizationController {
   @Permissions('orgs.manage')
   async detail(@Param('id') id: string) {
     return await this.service.findOne(id);
+  }
+
+  @Get(':id/ancestors')
+  @Permissions('orgs.manage')
+  async ancestors(
+    @Param('id') id: string,
+    @Query() query: OrganizationClosureQueryDto,
+  ) {
+    const items = await this.service.getAncestors(id, query);
+    return { items };
+  }
+
+  @Get(':id/descendants')
+  @Permissions('orgs.manage')
+  async descendants(
+    @Param('id') id: string,
+    @Query() query: OrganizationClosureQueryDto,
+  ) {
+    const items = await this.service.getDescendants(id, query);
+    return { items };
+  }
+
+  @Get(':id/subtree')
+  @Permissions('orgs.manage')
+  async subtree(
+    @Param('id') id: string,
+    @Query() query: OrganizationClosureQueryDto,
+  ) {
+    const items = await this.service.getDescendants(id, {
+      ...query,
+      includeSelf: query.includeSelf ?? true,
+    });
+    return { items };
   }
 
   @Patch(':id')
@@ -68,3 +102,5 @@ export class OrganizationController {
     return await this.service.remove(id);
   }
 }
+
+

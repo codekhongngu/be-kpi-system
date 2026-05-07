@@ -12,10 +12,6 @@ import { ConfigService } from '@nestjs/config';
 import { User, UserStatus } from './entities/user.entity';
 import { Role } from '../role/entities/role.entity';
 import { Organization } from '../organization/entities/organization.entity';
-import {
-  ImportJob,
-  ImportJobStatus,
-} from '../import-job/entities/import-job.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserQueryDto } from './dto/user-query.dto';
@@ -26,13 +22,6 @@ import type {
   UserListItem,
 } from './types/user-contract.types';
 
-type ImportErrorRow = { row: number; message: string; field?: string };
-type ImportJobSummary = {
-  success: number;
-  failed: number;
-  errors: ImportErrorRow[];
-};
-
 @Injectable()
 export class UserService {
   constructor(
@@ -42,8 +31,6 @@ export class UserService {
     private readonly roleRepository: Repository<Role>,
     @InjectRepository(Organization)
     private readonly orgRepository: Repository<Organization>,
-    @InjectRepository(ImportJob)
-    private readonly importJobRepository: Repository<ImportJob>,
     private readonly configService: ConfigService,
   ) {}
 
@@ -94,14 +81,14 @@ export class UserService {
     if (createUserDto.isActive === true) status = UserStatus.ACTIVE;
 
     const user = new User();
+    const normalizedOrgId = rest.orgId ?? rest.departmentId ?? null;
     Object.assign(user, {
       username: rest.username,
       email: rest.email,
       fullName: rest.fullName ?? null,
       phone: rest.phone ?? null,
       code: rest.code ?? null,
-      orgId: rest.orgId ?? null,
-      departmentId: rest.departmentId ?? null,
+      orgId: normalizedOrgId,
       passwordHash,
       status,
     });
@@ -142,7 +129,7 @@ export class UserService {
     }
 
     if (query.departmentId) {
-      qb.andWhere('user.departmentId = :departmentId', {
+      qb.andWhere('user.orgId = :departmentId', {
         departmentId: query.departmentId,
       });
     }
@@ -303,6 +290,8 @@ export class UserService {
     if (updateUserDto.orgId !== undefined) {
       const nextOrgId = updateUserDto.orgId ?? user.orgId ?? null;
       await this.assertFkReferences(nextOrgId);
+    } else if (updateUserDto.departmentId !== undefined) {
+      await this.assertFkReferences(updateUserDto.departmentId ?? null);
     }
 
     if (updateUserDto.password) {
@@ -320,8 +309,12 @@ export class UserService {
       roleIds?: string[];
       isActive?: boolean;
     };
-
-    Object.assign(user, patch);
+    const normalizedPatch = { ...patch } as any;
+    if (normalizedPatch.departmentId !== undefined) {
+      normalizedPatch.orgId = normalizedPatch.departmentId;
+      delete normalizedPatch.departmentId;
+    }
+    Object.assign(user, normalizedPatch);
 
     if (isActive === true) {
       user.status = UserStatus.ACTIVE;
@@ -415,7 +408,7 @@ export class UserService {
 
   async findByDepartment(departmentId: string): Promise<UserListItem[]> {
     const users = await this.userRepository.find({
-      where: { departmentId },
+      where: { orgId: departmentId },
     });
     return this.toUserListItems(users);
   }
@@ -455,186 +448,6 @@ export class UserService {
     user.roles = roles;
     await this.userRepository.save(user);
     return { ok: true };
-  }
-
-  async createImportJob(
-    createdById: string | null,
-    fileBuffer: Buffer,
-  ): Promise<{ jobId: string }> {
-    const job = this.importJobRepository.create({
-      type: 'USERS_IMPORT_CSV',
-      status: 'QUEUED',
-      createdBy: createdById ? ({ id: createdById } as User) : null,
-      finishedAt: null,
-      summary: { queued: true, bytes: fileBuffer.length },
-    });
-    const saved = await this.importJobRepository.save(job);
-    void this.processImportJob(saved.id, fileBuffer, createdById);
-    return { jobId: saved.id };
-  }
-
-  async getImportJob(jobId: string) {
-    const job = await this.importJobRepository.findOne({
-      where: { id: jobId },
-    });
-    if (!job) throw new NotFoundException('Không tìm thấy import job');
-
-    const summary = (job.summary ?? {}) as Partial<ImportJobSummary> & {
-      status?: ImportJobStatus;
-    };
-
-    return {
-      jobId: job.id,
-      status: job.status,
-      success: summary.success ?? 0,
-      failed: summary.failed ?? 0,
-      errors: summary.errors ?? [],
-      finishedAt: job.finishedAt,
-    };
-  }
-
-  private async processImportJob(
-    jobId: string,
-    fileBuffer: Buffer,
-    actorId: string | null,
-  ) {
-    const job = await this.importJobRepository.findOne({
-      where: { id: jobId },
-    });
-    if (!job) return;
-
-    job.status = 'RUNNING';
-    job.summary = {
-      ...(job.summary ?? {}),
-      startedAt: new Date().toISOString(),
-    };
-    await this.importJobRepository.save(job);
-
-    const errors: ImportErrorRow[] = [];
-    let success = 0;
-    let failed = 0;
-
-    try {
-      const text = fileBuffer.toString('utf8');
-      const lines = text
-        .split(/\r?\n/)
-        .map((l) => l.trim())
-        .filter((l) => l.length > 0);
-
-      if (lines.length < 2) {
-        throw new BadRequestException(
-          'File CSV không hợp lệ (thiếu header hoặc dữ liệu)',
-        );
-      }
-
-      const header = this.parseCsvLine(lines[0]).map((h) =>
-        h.trim().toLowerCase(),
-      );
-      const expected = [
-        'code',
-        'fullname',
-        'email',
-        'username',
-        'password',
-        'orgid',
-        'roleids',
-        'status',
-      ];
-      const missing = expected.filter((h) => !header.includes(h));
-      if (missing.length) {
-        throw new BadRequestException(
-          `CSV thiếu cột: ${missing.join(', ')}. Header yêu cầu: ${expected.join(',')}`,
-        );
-      }
-
-      for (let i = 1; i < lines.length; i++) {
-        const rowNum = i + 1; // 1-based including header
-        try {
-          const cols = this.parseCsvLine(lines[i]);
-          if (cols.length !== header.length) {
-            throw new Error(
-              `Số cột không khớp header (${cols.length} vs ${header.length})`,
-            );
-          }
-          const row: Record<string, string> = {};
-          header.forEach((h, idx) => {
-            row[h] = cols[idx]?.trim() ?? '';
-          });
-
-          const plainPassword = row.password || this.generateStrongPassword();
-          const dto: CreateUserDto = {
-            code: row.code || undefined,
-            fullName: row.fullname || undefined,
-            email: row.email,
-            username: row.username,
-            password: plainPassword,
-            orgId: row.orgid || undefined,
-            status: (row.status as UserStatus) || UserStatus.ACTIVE,
-            roleIds: row.roleids
-              ? row.roleids
-                  .split('|')
-                  .map((s) => s.trim())
-                  .filter(Boolean)
-              : [],
-          };
-
-          this.assertPasswordPolicy(plainPassword);
-
-          const existing = await this.userRepository.findOne({
-            where: [{ username: dto.username }, { email: dto.email }],
-            withDeleted: true,
-          });
-
-          if (existing) {
-            if (existing.deletedAt) {
-              await this.userRepository.restore({ id: existing.id });
-            }
-            await this.update(existing.id, {
-              fullName: dto.fullName,
-              email: dto.email,
-              username: dto.username,
-              password: dto.password,
-              code: dto.code,
-              orgId: dto.orgId ?? null,
-              status: dto.status,
-              roleIds: dto.roleIds,
-            });
-          } else {
-            await this.create(dto);
-          }
-
-          success++;
-        } catch (e: any) {
-          failed++;
-          errors.push({
-            row: rowNum,
-            message: e?.message ? String(e.message) : 'Lỗi không xác định',
-          });
-        }
-      }
-
-      job.status = 'DONE';
-      job.finishedAt = new Date();
-      job.summary = {
-        success,
-        failed,
-        errors: errors.slice(0, 500),
-        truncatedErrors: errors.length > 500,
-      };
-      await this.importJobRepository.save(job);
-    } catch (e: any) {
-      job.status = 'FAILED';
-      job.finishedAt = new Date();
-      job.summary = {
-        success,
-        failed,
-        errors: [
-          ...errors,
-          { row: 0, message: e?.message ? String(e.message) : 'Import failed' },
-        ],
-      };
-      await this.importJobRepository.save(job);
-    }
   }
 
   private toUserListItem(user: User, map: Map<string, string[]>): UserListItem {
@@ -735,31 +548,6 @@ export class UserService {
     }
     return `Aa1!${randomBytes(16).toString('base64url')}`;
   }
-
-  /**
-   * Minimal CSV line parser supporting quoted fields with commas.
-   */
-  private parseCsvLine(line: string): string[] {
-    const out: string[] = [];
-    let cur = '';
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (ch === '"') {
-        if (inQuotes && line[i + 1] === '"') {
-          cur += '"';
-          i++;
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (ch === ',' && !inQuotes) {
-        out.push(cur);
-        cur = '';
-      } else {
-        cur += ch;
-      }
-    }
-    out.push(cur);
-    return out;
-  }
 }
+
+

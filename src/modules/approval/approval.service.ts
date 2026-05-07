@@ -7,7 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ReportSubmission } from '../submission/entities/report-submission.entity';
-import { FormAssignment } from '../assignment/entities/form-assignment.entity';
+import { FormAssignment } from '../report-campaign/assignment/entities/form-assignment.entity';
 import { Notification } from '../notification/entities/notification.entity';
 import { User } from '../user/entities/user.entity';
 import { PendingApprovalsQueryDto } from './dto/pending-approvals-query.dto';
@@ -193,3 +193,6 @@ export class ApprovalService {
     return { ok: true as const };
   }
 }
+
+
+

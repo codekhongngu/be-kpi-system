@@ -10,19 +10,17 @@ import { Organization } from './entities/organization.entity';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { OrganizationQueryDto } from './dto/organization-query.dto';
-import { User } from '../user/entities/user.entity';
 
 type OrgTreeNode = Organization & { children: OrgTreeNode[] };
 
 @Injectable()
 export class OrganizationService {
   private canAssignReportsColumn: boolean | null = null;
+  private organizationClosureTable: boolean | null = null;
 
   constructor(
     @InjectRepository(Organization)
     private readonly orgRepo: Repository<Organization>,
-    @InjectRepository(User)
-    private readonly userRepo: Repository<User>,
   ) {}
 
   private async hasCanAssignReportsColumn(): Promise<boolean> {
@@ -53,7 +51,6 @@ export class OrganizationService {
       'o.code',
       'o.name',
       'o.parentId',
-      'o.headUserId',
       'o.level',
       'o.isActive',
       'o.description',
@@ -86,15 +83,11 @@ export class OrganizationService {
     if (dto.parentId) {
       await this.assertOrgExists(dto.parentId);
     }
-    if (dto.headUserId) {
-      await this.assertUserExists(dto.headUserId);
-    }
 
     const org = this.orgRepo.create({
       code,
       name: dto.name,
       parentId: dto.parentId ?? null,
-      headUserId: dto.headUserId ?? null,
       level: dto.level ?? 1,
       isActive: true,
       canAssignReports: dto.canAssignReports ?? true,
@@ -176,15 +169,9 @@ export class OrganizationService {
       }
     }
 
-    if (dto.headUserId !== undefined) {
-      if (dto.headUserId) await this.assertUserExists(dto.headUserId);
-    }
-
     Object.assign(org, {
       ...dto,
       parentId: dto.parentId !== undefined ? dto.parentId : org.parentId,
-      headUserId:
-        dto.headUserId !== undefined ? dto.headUserId : org.headUserId,
     });
 
     return await this.orgRepo.save(org);
@@ -214,14 +201,8 @@ export class OrganizationService {
       throw new ConflictException('ORG_DELETE_BLOCKED: Đơn vị còn đơn vị con');
     }
 
-    const userCount = await this.userRepo.count({ where: { orgId: id } });
-    if (userCount > 0) {
-      throw new ConflictException(
-        'ORG_DELETE_BLOCKED: Đơn vị còn người dùng liên quan',
-      );
-    }
-
     const tablesToCheck = [
+      { table: 'users', col: 'org_id' },
       { table: 'form_assignments', col: 'org_id' },
       { table: 'report_summaries', col: 'org_id' },
     ] as const;
@@ -264,13 +245,6 @@ export class OrganizationService {
     }
   }
 
-  private async assertUserExists(id: string) {
-    const exists = await this.userRepo.exist({ where: { id } });
-    if (!exists) {
-      throw new NotFoundException('FK_NOT_FOUND: head user không tồn tại');
-    }
-  }
-
   private async assertNoCycle(orgId: string, newParentId: string) {
     const rows = await this.orgRepo
       .createQueryBuilder('o')
@@ -287,4 +261,90 @@ export class OrganizationService {
       cur = parentById.get(cur) ?? null;
     }
   }
+
+  private async hasOrganizationClosureTable(): Promise<boolean> {
+    if (this.organizationClosureTable !== null) {
+      return this.organizationClosureTable;
+    }
+    try {
+      const rows = await this.orgRepo.query(
+        `
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'organization_closure'
+        LIMIT 1
+      `,
+      );
+      this.organizationClosureTable = rows.length > 0;
+      return this.organizationClosureTable;
+    } catch {
+      this.organizationClosureTable = false;
+      return false;
+    }
+  }
+
+  private async assertClosureReady() {
+    const has = await this.hasOrganizationClosureTable();
+    if (!has) {
+      throw new BadRequestException(
+        'DB_MISSING_TABLE: organization_closure',
+      );
+    }
+  }
+
+  async getAncestors(
+    id: string,
+    opts?: { includeSelf?: boolean; isActive?: boolean },
+  ): Promise<Organization[]> {
+    await this.findOne(id);
+    await this.assertClosureReady();
+
+    const includeSelf = opts?.includeSelf === true;
+    const qb = this.orgRepo
+      .createQueryBuilder('o')
+      .innerJoin(
+        'organization_closure',
+        'oc',
+        'oc.ancestor_id = o.id AND oc.descendant_id = :id',
+        { id },
+      );
+    await this.selectOrgColumns(qb);
+
+    if (!includeSelf) qb.andWhere('oc.depth > 0');
+    if (opts?.isActive !== undefined) {
+      qb.andWhere('o.isActive = :active', { active: opts.isActive });
+    }
+
+    qb.orderBy('oc.depth', 'DESC');
+    return await qb.getMany();
+  }
+
+  async getDescendants(
+    id: string,
+    opts?: { includeSelf?: boolean; isActive?: boolean },
+  ): Promise<Organization[]> {
+    await this.findOne(id);
+    await this.assertClosureReady();
+
+    const includeSelf = opts?.includeSelf === true;
+    const qb = this.orgRepo
+      .createQueryBuilder('o')
+      .innerJoin(
+        'organization_closure',
+        'oc',
+        'oc.descendant_id = o.id AND oc.ancestor_id = :id',
+        { id },
+      );
+    await this.selectOrgColumns(qb);
+
+    if (!includeSelf) qb.andWhere('oc.depth > 0');
+    if (opts?.isActive !== undefined) {
+      qb.andWhere('o.isActive = :active', { active: opts.isActive });
+    }
+
+    qb.orderBy('oc.depth', 'ASC').addOrderBy('o.code', 'ASC');
+    return await qb.getMany();
+  }
 }
+
+
