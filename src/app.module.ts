@@ -68,7 +68,7 @@ function envBool(value: unknown, defaultValue: boolean): boolean {
           port: configService.get<number>('DB_PORT', 5432),
           username: configService.get<string>('DB_USERNAME', 'postgres'),
           password: configService.get<string>('DB_PASSWORD', 'postgres'),
-          database: configService.get<string>('DB_DATABASE', 'starter_db'),
+          database: configService.get<string>('DB_DATABASE', 'db_commune_tuyphuoc_v2'),
           ssl: sslEnabled ? { rejectUnauthorized } : undefined,
           synchronize,
           logging,
