@@ -74,17 +74,30 @@ export class AssignmentService {
     const skip = (page - 1) * limit;
     const qb = this.batchRepo.createQueryBuilder('b');
     
+    qb.leftJoinAndSelect('b.formRef', 'f');
+    
     if (query.formId) qb.andWhere('b.formId = :formId', { formId: query.formId });
     if (query.status) qb.andWhere('b.status = :status', { status: query.status });
     if (query.periodType) qb.andWhere('b.periodType = :periodType', { periodType: query.periodType });
 
     qb.orderBy('b.createdAt', 'DESC').skip(skip).take(limit);
     const [items, total] = await qb.getManyAndCount();
-    return { items, meta: { page, limit, total } };
+
+    // Map lại data để trả về format dễ dùng hơn nếu cần
+    const mappedItems = items.map(item => ({
+      ...item,
+      formCode: item.formRef?.code,
+      formName: item.formRef?.name,
+    }));
+
+    return { items: mappedItems, meta: { page, limit, total } };
   }
 
   async findBatchById(id: string) {
-    const batch = await this.batchRepo.findOne({ where: { id } });
+    const batch = await this.batchRepo.findOne({ 
+      where: { id },
+      relations: ['formRef']
+    });
     if (!batch) throw new NotFoundException('Không tìm thấy đợt báo cáo');
     
     // Lấy danh sách các đơn vị đã được giao trong batch này
@@ -92,7 +105,12 @@ export class AssignmentService {
       where: { batchId: id, isCancelled: false },
     });
 
-    return { ...batch, assignments };
+    return { 
+      ...batch, 
+      formCode: batch.formRef?.code,
+      formName: batch.formRef?.name,
+      assignments 
+    };
   }
 
   async updateBatch(id: string, dto: Partial<CreateAssignmentsDto>, userId: string) {

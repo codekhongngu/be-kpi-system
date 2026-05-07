@@ -285,11 +285,11 @@ Danh mục **lĩnh vực** dùng khi thiết kế biểu mẫu: `forms` tham chi
 
 - **Query**: `formId?, status?, periodType?, page?, limit?`
 - **200**: `{ items: AssignmentBatch[], meta: PageMeta }`
-- **Description**: Danh sách đợt báo cáo tổng. `status`: `DRAFT | ASSIGNED | COMPLETED | CANCELLED`.
+- **Description**: Danh sách đợt báo cáo tổng. Mỗi item bao gồm thông tin `formCode` và `formName`. `status`: `DRAFT | ASSIGNED | COMPLETED | CANCELLED`.
 
 #### `GET /assignments/batches/{id}`
 
-- **200**: `AssignmentBatchDetail` (bao gồm danh sách `assignments` con).
+- **200**: `AssignmentBatchDetail` (bao gồm `formCode`, `formName` và danh sách `assignments` con).
 
 #### `POST /assignments`
 

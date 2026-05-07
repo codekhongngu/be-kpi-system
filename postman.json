@@ -1610,7 +1610,7 @@
 								{ "key": "formId", "value": "" }
 							]
 						},
-						"description": "GET /assignments/batches — Danh sách đợt báo cáo — JWT + assignments.manage"
+						"description": "GET /assignments/batches — Danh sách đợt báo cáo (Bao gồm formCode, formName) — JWT + assignments.manage"
 					},
 					"response": []
 				},
@@ -1620,7 +1620,7 @@
 						"method": "GET",
 						"header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
 						"url": { "raw": "{{baseUrl}}/api/v1/assignments/batches/{{batchId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","assignments","batches","{{batchId}}"] },
-						"description": "GET /assignments/batches/:id — Chi tiết đợt báo cáo kèm danh sách đơn vị đã giao — JWT + assignments.manage"
+						"description": "GET /assignments/batches/:id — Chi tiết đợt báo cáo (Bao gồm formCode, formName) kèm danh sách đơn vị đã giao — JWT + assignments.manage"
 					},
 					"response": []
 				},

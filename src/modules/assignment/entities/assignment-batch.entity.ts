@@ -1,5 +1,6 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { PeriodType, ReportStatus } from '../../../common';
+import { Form } from '../../form-designer/entities/form.entity';
 
 @Entity('assignment_batches')
 export class AssignmentBatch {
@@ -8,6 +9,10 @@ export class AssignmentBatch {
 
   @Column({ name: 'form_id', type: 'uuid' })
   formId: string;
+
+  @ManyToOne(() => Form, { nullable: false, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'form_id' })
+  formRef: Form;
 
   @Column({ name: 'template_version', type: 'int', default: 1 })
   templateVersion: number;
