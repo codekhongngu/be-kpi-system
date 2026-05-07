@@ -9,7 +9,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { PeriodType } from '../../../common/period-type';
-import { TemplateStatus, TemplateType } from '../entities/form.entity';
+import { TemplateType } from '../entities/form.entity';
 
 export class PatchFormDto {
   @ApiPropertyOptional({
@@ -66,14 +66,6 @@ export class PatchFormDto {
   @IsOptional()
   @IsEnum(TemplateType)
   templateType?: TemplateType;
-
-  @ApiPropertyOptional({
-    description: 'Trang thai bieu mau',
-    enum: TemplateStatus,
-  })
-  @IsOptional()
-  @IsEnum(TemplateStatus)
-  templateStatus?: TemplateStatus;
 
   @ApiPropertyOptional({
     description: 'Trạng thái hoạt động',
