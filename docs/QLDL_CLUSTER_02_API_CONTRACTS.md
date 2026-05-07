@@ -279,22 +279,77 @@ Danh mục **lĩnh vực** dùng khi thiết kế biểu mẫu: `forms` tham chi
 
 ---
 
-### Assignments
+### Assignments & Batches
 
-#### `GET /assignments`
+#### `GET /assignments/batches`
 
-- **Query**: `formId?, orgId?, periodType?, from?, to?, isCancelled?, page?, limit?`
-- **200**: `{ items: Assignment[], meta }`
+- **Query**: `formId?, status?, periodType?, page?, limit?`
+- **200**: `{ items: AssignmentBatch[], meta: PageMeta }`
+- **Description**: Danh sách đợt báo cáo tổng. `status`: `DRAFT | ASSIGNED | COMPLETED | CANCELLED`.
+
+#### `GET /assignments/batches/{id}`
+
+- **200**: `AssignmentBatchDetail` (bao gồm danh sách `assignments` con).
 
 #### `POST /assignments`
 
 - **Body**: `CreateAssignmentsRequest`
-- **200**: `{ created, skipped, duplicates[] }`
+- **201**: `{ id, status: "DRAFT", ... }`
+- **Description**: Tạo đợt báo cáo mới (Assignment Batch). Mặc định ở trạng thái `DRAFT`.
 
-#### `POST /assignments/{id}/cancel`
+#### `POST /assignments/batches/{id}`
+
+- **Body**: `{ periodName?, deadlineFrom?, deadlineTo? }`
+- **200**: `AssignmentBatch`
+- **Description**: Cập nhật thông tin chung đợt báo cáo. **Chỉ cho phép khi đợt báo cáo ở trạng thái `DRAFT`**.
+
+#### `POST /assignments/batches/{id}/publish`
+
+- **200**: `{ ok: true, status: "ASSIGNED" }`
+- **Description**: Phát hành đợt báo cáo. Chuyển trạng thái từ `DRAFT -> ASSIGNED`. Sau khi phát hành, không thể sửa thông tin chung hoặc cấu hình chỉ tiêu.
+
+#### `POST /assignments/batches/{id}/cancel`
 
 - **Body**: `{ reason?: string }`
+- **200**: `{ ok: true, status: "CANCELLED" }`
+- **Description**: Hủy đợt báo cáo tổng và tất cả các giao việc (`form_assignments`) liên quan.
+
+#### `POST /assignments/batches/{id}/delete`
+
 - **200**: `{ ok: true }`
+- **Description**: Xóa đợt báo cáo. **Chỉ cho phép khi ở trạng thái `DRAFT` và chưa có đơn vị nào nhập liệu**.
+
+#### `GET /assignments/batches/{id}/history`
+
+- **200**: `{ items: ReportStatusHistory[] }`
+- **Description**: Xem lịch sử chuyển trạng thái của đợt báo cáo tổng.
+
+#### `POST /assignments/{batchId}/indicator-scopes`
+
+- **Body**: `{ allocations: Array<{ orgId: string, indicatorIds: string[] }> }`
+- **200**: `{ ok: true, assignments: { created, updated } }`
+- **Description**: Cấu hình phân chỉ tiêu theo từng đơn vị. Chức năng này hỗ trợ **cập nhật đè** (xóa cấu hình cũ của đơn vị đó và áp dụng mới). **Chỉ cho phép khi đợt báo cáo ở trạng thái `DRAFT`**.
+
+#### `GET /assignments`
+
+- **Query**: `formId?, orgId?, periodType?, periodCode?, isCancelled?, page?, limit?`
+- **200**: `{ items: Assignment[], meta }`
+
+#### `GET /assignments/{id}/history`
+
+- **200**: `{ items: AssignmentStatusHistory[] }`
+- **Description**: Xem lịch sử chuyển trạng thái của một giao việc (đơn vị cụ thể).
+
+#### `GET /assignments/{id}/comments`
+
+- **200**: `{ items: ReportComment[] }`
+- **Description**: Danh sách thảo luận/phản hồi của đơn vị.
+
+#### `POST /assignments/{id}/comments`
+
+- **Body**: `{ content: string, type?: string }`
+- **201**: `ReportComment`
+- **Description**: Gửi thảo luận/phản hồi.
 
 #### `POST /assignments/next-period`
 

@@ -1595,6 +1595,132 @@
 					]
 				},
 				{
+					"name": "List Assignment Batches",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+						"url": { 
+							"raw": "{{baseUrl}}/api/v1/assignments/batches?page=1&limit=20&status=&formId=", 
+							"host": ["{{baseUrl}}"], 
+							"path": ["api","v1","assignments","batches"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "20" },
+								{ "key": "status", "value": "", "description": "DRAFT | ASSIGNED | COMPLETED | CANCELLED" },
+								{ "key": "formId", "value": "" }
+							]
+						},
+						"description": "GET /assignments/batches — Danh sách đợt báo cáo — JWT + assignments.manage"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Batch Detail",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+						"url": { "raw": "{{baseUrl}}/api/v1/assignments/batches/{{batchId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","assignments","batches","{{batchId}}"] },
+						"description": "GET /assignments/batches/:id — Chi tiết đợt báo cáo kèm danh sách đơn vị đã giao — JWT + assignments.manage"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Batch",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"periodName\": \"Kỳ báo cáo tháng 04 (Updated)\",\n  \"deadlineFrom\": \"2026-04-05\",\n  \"deadlineTo\": \"2026-05-10\"\n}", "options": { "raw": { "language": "json" } } },
+						"url": { "raw": "{{baseUrl}}/api/v1/assignments/batches/{{batchId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","assignments","batches","{{batchId}}"] },
+						"description": "POST /assignments/batches/:id — Cập nhật thông tin đợt báo cáo (Chỉ khi DRAFT) — JWT + assignments.manage"
+					},
+					"response": []
+				},
+				{
+					"name": "Publish Batch",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"url": { "raw": "{{baseUrl}}/api/v1/assignments/batches/{{batchId}}/publish", "host": ["{{baseUrl}}"], "path": ["api","v1","assignments","batches","{{batchId}}","publish"] },
+						"description": "POST /assignments/batches/:id/publish — Phát hành báo cáo cho các đơn vị (DRAFT -> ASSIGNED) — JWT + assignments.manage"
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Batch",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"reason\": \"Hủy do sai cấu hình\"\n}", "options": { "raw": { "language": "json" } } },
+						"url": { "raw": "{{baseUrl}}/api/v1/assignments/batches/{{batchId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api","v1","assignments","batches","{{batchId}}","cancel"] },
+						"description": "POST /assignments/batches/:id/cancel — Hủy đợt báo cáo và tất cả giao việc liên quan — JWT + assignments.manage"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Batch",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"url": { "raw": "{{baseUrl}}/api/v1/assignments/batches/{{batchId}}/delete", "host": ["{{baseUrl}}"], "path": ["api","v1","assignments","batches","{{batchId}}","delete"] },
+						"description": "POST /assignments/batches/:id/delete — Xóa đợt báo cáo (Chỉ khi DRAFT và chưa có dữ liệu) — JWT + assignments.manage"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Batch History",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+						"url": { "raw": "{{baseUrl}}/api/v1/assignments/batches/{{batchId}}/history", "host": ["{{baseUrl}}"], "path": ["api","v1","assignments","batches","{{batchId}}","history"] },
+						"description": "GET /assignments/batches/:id/history — Lịch sử chuyển trạng thái của đợt báo cáo — JWT + assignments.manage"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Assignment History",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+						"url": { "raw": "{{baseUrl}}/api/v1/assignments/{{assignmentId}}/history", "host": ["{{baseUrl}}"], "path": ["api","v1","assignments","{{assignmentId}}","history"] },
+						"description": "GET /assignments/:id/history — Lịch sử chuyển trạng thái của 1 đơn vị — JWT"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Assignment Comments",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+						"url": { "raw": "{{baseUrl}}/api/v1/assignments/{{assignmentId}}/comments", "host": ["{{baseUrl}}"], "path": ["api","v1","assignments","{{assignmentId}}","comments"] },
+						"description": "GET /assignments/:id/comments — Danh sách thảo luận của đơn vị — JWT"
+					},
+					"response": []
+				},
+				{
+					"name": "Add Assignment Comment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"content\": \"Vui lòng kiểm tra lại số liệu chỉ tiêu I001\",\n  \"type\": \"GENERAL\"\n}", "options": { "raw": { "language": "json" } } },
+						"url": { "raw": "{{baseUrl}}/api/v1/assignments/{{assignmentId}}/comments", "host": ["{{baseUrl}}"], "path": ["api","v1","assignments","{{assignmentId}}","comments"] },
+						"description": "POST /assignments/:id/comments — Thêm thảo luận/phản hồi — JWT"
+					},
+					"response": []
+				},
+				{
 					"name": "Configure Indicator Scopes (Per Org)",
 					"request": {
 						"method": "POST",
