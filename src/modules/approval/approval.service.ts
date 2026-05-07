@@ -12,7 +12,7 @@ import { Notification } from '../notification/entities/notification.entity';
 import { User } from '../user/entities/user.entity';
 import { AssignmentService } from '../assignment/assignment.service';
 import { PendingApprovalsQueryDto } from './dto/pending-approvals-query.dto';
-import { ReportAssignmentStatus } from '../../../common';
+import { ReportAssignmentStatus } from '../../common';
 
 @Injectable()
 export class ApprovalService {

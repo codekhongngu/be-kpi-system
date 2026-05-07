@@ -2,10 +2,13 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { PeriodType, ReportAssignmentStatus } from '../../../common';
+import { AssignmentBatch } from './assignment-batch.entity';
 
 @Entity('form_assignments')
 export class FormAssignment {
@@ -14,6 +17,10 @@ export class FormAssignment {
 
   @Column({ name: 'batch_id', type: 'uuid', nullable: true })
   batchId: string | null;
+
+  @ManyToOne(() => AssignmentBatch, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'batch_id' })
+  batchRef: AssignmentBatch | null;
 
   @Column({ name: 'form_id', type: 'uuid' })
   formId: string;

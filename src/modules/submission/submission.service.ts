@@ -20,6 +20,7 @@ import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { PatchCellsDto } from './dto/patch-cells.dto';
 import { SubmitSubmissionDto } from './dto/submit-submission.dto';
 import { MyAssignmentsQueryDto } from './dto/my-assignments-query.dto';
+import { ReportAssignmentStatus } from '../../common';
 
 @Injectable()
 export class SubmissionService {
@@ -230,7 +231,9 @@ export class SubmissionService {
           indicatorId: ch.indicatorId,
           attributeId: ch.attributeId,
           code: 'CELL_KEY_INVALID',
-          message: 'Ô không thuộc biểu mẫu của giao việc',
+          message: allowedIndicatorIds && !allowedIndicatorIds.has(ch.indicatorId) 
+            ? 'Chỉ tiêu này không được phân quyền nhập liệu cho đơn vị của bạn'
+            : 'Ô không thuộc biểu mẫu của giao việc',
         });
         continue;
       }

@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository, DataSource } from 'typeorm';
+import { In, Repository, DataSource, IsNull } from 'typeorm';
 import { FormAssignment } from './entities/form-assignment.entity';
 import { AssignmentBatch } from './entities/assignment-batch.entity';
 import { AssignmentIndicatorScope } from './entities/assignment-indicator-scope.entity';
@@ -19,7 +19,7 @@ import { AssignmentQueryDto } from './dto/assignment-query.dto';
 import { CreateAssignmentsDto } from './dto/create-assignments.dto';
 import { NextPeriodAssignmentsDto } from './dto/next-period-assignments.dto';
 import { ConfigureAssignmentIndicatorScopesDto } from './dto/configure-assignment-indicator-scopes.dto';
-import { ReportStatus, ReportAssignmentStatus } from '../../../common';
+import { PeriodType, ReportStatus, ReportAssignmentStatus } from '../../common';
 
 @Injectable()
 export class AssignmentService {
@@ -50,6 +50,7 @@ export class AssignmentService {
     const limit = Math.min(query.limit ?? 20, 200);
     const skip = (page - 1) * limit;
     const qb = this.assignmentRepo.createQueryBuilder('a');
+    qb.leftJoinAndSelect('a.batchRef', 'batch');
     if (query.formId)
       qb.andWhere('a.formId = :formId', { formId: query.formId });
     if (query.periodType)
@@ -65,6 +66,88 @@ export class AssignmentService {
     qb.orderBy('a.assignedAt', 'DESC').skip(skip).take(limit);
     const [items, total] = await qb.getManyAndCount();
     return { items, meta: { page, limit, total } };
+  }
+
+  async findAllBatches(query: any) {
+    const page = query.page ?? 1;
+    const limit = Math.min(query.limit ?? 20, 200);
+    const skip = (page - 1) * limit;
+    const qb = this.batchRepo.createQueryBuilder('b');
+    
+    if (query.formId) qb.andWhere('b.formId = :formId', { formId: query.formId });
+    if (query.status) qb.andWhere('b.status = :status', { status: query.status });
+    if (query.periodType) qb.andWhere('b.periodType = :periodType', { periodType: query.periodType });
+
+    qb.orderBy('b.createdAt', 'DESC').skip(skip).take(limit);
+    const [items, total] = await qb.getManyAndCount();
+    return { items, meta: { page, limit, total } };
+  }
+
+  async findBatchById(id: string) {
+    const batch = await this.batchRepo.findOne({ where: { id } });
+    if (!batch) throw new NotFoundException('Không tìm thấy đợt báo cáo');
+    
+    // Lấy danh sách các đơn vị đã được giao trong batch này
+    const assignments = await this.assignmentRepo.find({
+      where: { batchId: id, isCancelled: false },
+    });
+
+    return { ...batch, assignments };
+  }
+
+  async updateBatch(id: string, dto: Partial<CreateAssignmentsDto>, userId: string) {
+    const batch = await this.batchRepo.findOne({ where: { id } });
+    if (!batch) throw new NotFoundException('Không tìm thấy đợt báo cáo');
+    
+    if (batch.status !== ReportStatus.DRAFT) {
+      throw new ConflictException('Chỉ có thể sửa đợt báo cáo ở trạng thái nháp');
+    }
+
+    if (dto.periodName) batch.periodName = dto.periodName;
+    if (dto.deadlineFrom) batch.deadlineFrom = dto.deadlineFrom.slice(0, 10);
+    if (dto.deadlineTo) batch.deadlineTo = dto.deadlineTo.slice(0, 10);
+    
+    const saved = await this.batchRepo.save(batch);
+    
+    await this.reportHistoryRepo.save(
+      this.reportHistoryRepo.create({
+        reportId: batch.id,
+        fromStatus: batch.status,
+        toStatus: batch.status,
+        actorId: userId,
+        note: 'Cập nhật thông tin chung đợt báo cáo',
+      }),
+    );
+
+    return saved;
+  }
+
+  async deleteBatch(id: string) {
+    const batch = await this.batchRepo.findOne({ where: { id } });
+    if (!batch) throw new NotFoundException('Không tìm thấy đợt báo cáo');
+    
+    if (batch.status !== ReportStatus.DRAFT) {
+      throw new ConflictException('Chỉ có thể xóa đợt báo cáo ở trạng thái nháp');
+    }
+
+    // Xóa các assignment liên quan (nếu chưa có dữ liệu nhập)
+    const assignments = await this.assignmentRepo.find({ where: { batchId: id } });
+    for (const a of assignments) {
+      const hasSubmission = await this.dataSource.query(
+        'SELECT 1 FROM report_submissions WHERE assignment_id = $1 LIMIT 1',
+        [a.id]
+      );
+      if (hasSubmission.length > 0) {
+        throw new ConflictException(`Không thể xóa vì đơn vị ${a.orgId} đã có dữ liệu nhập`);
+      }
+    }
+
+    await this.assignmentRepo.delete({ batchId: id });
+    await this.scopeRepo.delete({ batchId: id });
+    await this.reportHistoryRepo.delete({ reportId: id });
+    await this.batchRepo.delete(id);
+
+    return { ok: true };
   }
 
   async createBatch(dto: CreateAssignmentsDto, userId: string | undefined) {
@@ -87,7 +170,7 @@ export class AssignmentService {
     const batch = await this.batchRepo.save(
       this.batchRepo.create({
         formId: dto.formId,
-        templateVersion: form.version ?? 1,
+        templateVersion: 1,
         periodType: dto.periodType,
         periodCode,
         periodName,

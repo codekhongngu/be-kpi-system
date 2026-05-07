@@ -30,10 +30,38 @@ export class AssignmentController {
     return await this.assignmentService.findAll(query);
   }
 
+  @Get('batches')
+  @Permissions('assignments.manage')
+  async listBatches(@Query() query: any) {
+    return await this.assignmentService.findAllBatches(query);
+  }
+
+  @Get('batches/:id')
+  @Permissions('assignments.manage')
+  async getBatch(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.assignmentService.findBatchById(id);
+  }
+
   @Post()
   @Permissions('assignments.manage')
   async create(@Body() dto: CreateAssignmentsDto, @CurrentUser() user: User) {
     return await this.assignmentService.createBatch(dto, user?.id);
+  }
+
+  @Post('batches/:id')
+  @Permissions('assignments.manage')
+  async updateBatch(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: Partial<CreateAssignmentsDto>,
+    @CurrentUser() user: User,
+  ) {
+    return await this.assignmentService.updateBatch(id, dto, user.id);
+  }
+
+  @Post('batches/:id/delete')
+  @Permissions('assignments.manage')
+  async deleteBatch(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.assignmentService.deleteBatch(id);
   }
 
   @Post(':batchId/indicator-scopes')
