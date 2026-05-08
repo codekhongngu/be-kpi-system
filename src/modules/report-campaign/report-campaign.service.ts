@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import {
   AssignmentBatch,
   AssignmentBatchStatus,
@@ -26,6 +26,7 @@ import { Organization } from '../organization/entities/organization.entity';
 import { CreateReportCampaignDto } from './dto/create-report-campaign.dto';
 import { UpdateReportCampaignDto } from './dto/update-report-campaign.dto';
 import { UpsertReportCampaignScopesDto } from './dto/upsert-report-campaign-scopes.dto';
+import { ReportCampaignQueryDto } from './dto/report-campaign-query.dto';
 
 @Injectable()
 export class ReportCampaignService {
@@ -44,7 +45,24 @@ export class ReportCampaignService {
     private readonly templateScopeRepo: Repository<FormTemplateIndicatorOrgRule>,
     @InjectRepository(Organization)
     private readonly orgRepo: Repository<Organization>,
+    private readonly dataSource: DataSource,
   ) {}
+
+  async findAll(query: ReportCampaignQueryDto) {
+    const page = query.page ?? 1;
+    const limit = Math.min(query.limit ?? 20, 200);
+    const skip = (page - 1) * limit;
+    const qb = this.batchRepo.createQueryBuilder('c');
+    if (query.formId) qb.andWhere('c.formId = :formId', { formId: query.formId });
+    if (query.status) qb.andWhere('c.status = :st', { st: query.status });
+    if (query.periodType) qb.andWhere('c.periodType = :pt', { pt: query.periodType });
+    if (query.periodCode?.trim()) {
+      qb.andWhere('c.periodCode = :pc', { pc: query.periodCode.trim() });
+    }
+    qb.orderBy('c.createdAt', 'DESC').skip(skip).take(limit);
+    const [items, total] = await qb.getManyAndCount();
+    return { items, meta: { page, limit, total } };
+  }
 
   async create(dto: CreateReportCampaignDto, userId: string | undefined) {
     const form = await this.formRepo.findOne({ where: { id: dto.formId } });
@@ -207,50 +225,85 @@ export class ReportCampaignService {
   }
 
   async confirmDispatch(campaignId: string, userId: string | undefined) {
+    return await this.dataSource.transaction(async (manager) => {
+      const campaignRepo = manager.getRepository(AssignmentBatch);
+      const scopeRepo = manager.getRepository(AssignmentIndicatorScope);
+      const assignmentRepo = manager.getRepository(FormAssignment);
+
+      const campaign = await campaignRepo.findOne({
+        where: { id: campaignId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
+
+      // Idempotent retry: if already dispatched, return success.
+      if (campaign.status === AssignmentBatchStatus.DISPATCHED) {
+        return { ok: true, status: campaign.status };
+      }
+      if (campaign.status !== AssignmentBatchStatus.DRAFT) {
+        throw new ConflictException('CAMPAIGN_NOT_EDITABLE');
+      }
+
+      const scopes = await scopeRepo.find({ where: { batchId: campaignId } });
+      if (scopes.length === 0) throw new BadRequestException('CAMPAIGN_SCOPE_EMPTY');
+
+      const orgIds = [...new Set(scopes.map((x) => x.orgId))];
+      for (const orgId of orgIds) {
+        const exists = await assignmentRepo.exist({
+          where: { batchId: campaignId, orgId, isCancelled: false },
+        });
+        if (exists) continue;
+        await assignmentRepo.save(
+          assignmentRepo.create({
+            batchId: campaign.id,
+            formId: campaign.formId,
+            orgId,
+            periodType: campaign.periodType,
+            periodCode: campaign.periodCode,
+            periodName: campaign.periodName,
+            deadlineFrom: campaign.deadlineFrom,
+            deadlineTo: campaign.deadlineTo,
+            isCancelled: false,
+            cancelReason: null,
+            assignedBy: userId ?? null,
+          }),
+        );
+      }
+
+      campaign.status = AssignmentBatchStatus.DISPATCHED;
+      campaign.dispatchedAt = new Date();
+      campaign.dispatchedBy = userId ?? null;
+      await campaignRepo.save(campaign);
+
+      return { ok: true, status: campaign.status };
+    });
+  }
+
+  async cancel(campaignId: string, _userId: string | undefined) {
     const campaign = await this.batchRepo.findOne({ where: { id: campaignId } });
     if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
+    if (campaign.status === AssignmentBatchStatus.CANCELLED) {
+      return { ok: true, status: campaign.status };
+    }
     if (campaign.status !== AssignmentBatchStatus.DRAFT) {
-      throw new ConflictException('CAMPAIGN_NOT_EDITABLE');
+      throw new ConflictException('CAMPAIGN_NOT_CANCELLABLE');
     }
-
-    const scopes = await this.scopeRepo.find({ where: { batchId: campaignId } });
-    if (scopes.length === 0) throw new BadRequestException('CAMPAIGN_SCOPE_EMPTY');
-
-    const orgIds = [...new Set(scopes.map((x) => x.orgId))];
-    for (const orgId of orgIds) {
-      const exists = await this.assignmentRepo.exist({
-        where: {
-          formId: campaign.formId,
-          orgId,
-          periodType: campaign.periodType,
-          periodCode: campaign.periodCode,
-          isCancelled: false,
-        },
-      });
-      if (exists) continue;
-      await this.assignmentRepo.save(
-        this.assignmentRepo.create({
-          batchId: campaign.id,
-          formId: campaign.formId,
-          orgId,
-          periodType: campaign.periodType,
-          periodCode: campaign.periodCode,
-          periodName: campaign.periodName,
-          deadlineFrom: campaign.deadlineFrom,
-          deadlineTo: campaign.deadlineTo,
-          isCancelled: false,
-          cancelReason: null,
-          autoAssign: false,
-          assignedBy: userId ?? null,
-        }),
-      );
-    }
-
-    campaign.status = AssignmentBatchStatus.DISPATCHED;
-    campaign.dispatchedAt = new Date();
-    campaign.dispatchedBy = userId ?? null;
+    campaign.status = AssignmentBatchStatus.CANCELLED;
     await this.batchRepo.save(campaign);
+    return { ok: true, status: campaign.status };
+  }
 
+  async close(campaignId: string, _userId: string | undefined) {
+    const campaign = await this.batchRepo.findOne({ where: { id: campaignId } });
+    if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
+    if (campaign.status === AssignmentBatchStatus.CLOSED) {
+      return { ok: true, status: campaign.status };
+    }
+    if (campaign.status !== AssignmentBatchStatus.DISPATCHED) {
+      throw new ConflictException('CAMPAIGN_NOT_CLOSABLE');
+    }
+    campaign.status = AssignmentBatchStatus.CLOSED;
+    await this.batchRepo.save(campaign);
     return { ok: true, status: campaign.status };
   }
 }

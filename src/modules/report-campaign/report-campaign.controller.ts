@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -17,11 +18,18 @@ import { ReportCampaignService } from './report-campaign.service';
 import { CreateReportCampaignDto } from './dto/create-report-campaign.dto';
 import { UpdateReportCampaignDto } from './dto/update-report-campaign.dto';
 import { UpsertReportCampaignScopesDto } from './dto/upsert-report-campaign-scopes.dto';
+import { ReportCampaignQueryDto } from './dto/report-campaign-query.dto';
 
 @Controller('report-campaigns')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class ReportCampaignController {
   constructor(private readonly service: ReportCampaignService) {}
+
+  @Get()
+  @Permissions('campaigns.manage', 'assignments.manage')
+  async list(@Query() query: ReportCampaignQueryDto) {
+    return await this.service.findAll(query);
+  }
 
   @Post()
   @Permissions('campaigns.manage', 'assignments.manage')
@@ -72,6 +80,18 @@ export class ReportCampaignController {
   @Permissions('campaigns.dispatch', 'assignments.manage')
   async confirmDispatch(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return await this.service.confirmDispatch(id, user?.id);
+  }
+
+  @Post(':id/cancel')
+  @Permissions('campaigns.manage', 'assignments.manage')
+  async cancel(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    return await this.service.cancel(id, user?.id);
+  }
+
+  @Post(':id/close')
+  @Permissions('campaigns.manage', 'assignments.manage')
+  async close(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    return await this.service.close(id, user?.id);
   }
 }
 
