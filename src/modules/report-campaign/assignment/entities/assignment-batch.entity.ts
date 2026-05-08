@@ -1,5 +1,6 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { PeriodType } from '../../../../common';
+import { Form } from '../../../template-management/entities/form.entity';
 
 export enum AssignmentBatchStatus {
   DRAFT = 'DRAFT',
@@ -15,6 +16,10 @@ export class AssignmentBatch {
 
   @Column({ name: 'template_id', type: 'uuid' })
   formId: string;
+
+  @ManyToOne(() => Form)
+  @JoinColumn({ name: 'template_id', referencedColumnName: 'id' })
+  form: Form;
 
   @Column({ name: 'period_type', type: 'varchar', length: 10 })
   periodType: PeriodType;

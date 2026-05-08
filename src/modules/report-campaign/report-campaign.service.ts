@@ -120,9 +120,19 @@ export class ReportCampaignService {
   }
 
   async findOne(id: string) {
-    const campaign = await this.batchRepo.findOne({ where: { id } });
+    const campaign = await this.batchRepo.findOne({ 
+      where: { id },
+      relations: ['form']
+    });
     if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
-    return campaign;
+    
+    const { form, ...campaignData } = campaign;
+    
+    return {
+      ...campaignData,
+      templateCode: campaign.form?.code,
+      templateName: campaign.form?.name,
+    };
   }
 
   async patch(id: string, dto: UpdateReportCampaignDto) {
