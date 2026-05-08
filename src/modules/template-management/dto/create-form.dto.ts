@@ -11,7 +11,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { PeriodType } from '../../../common/period-type';
-import { TemplateStatus, TemplateType } from '../entities/form.entity';
+import { TemplateType } from '../entities/form.entity';
 
 export class CreateFormDto {
   /**
@@ -90,15 +90,6 @@ export class CreateFormDto {
   @IsOptional()
   @IsEnum(TemplateType)
   templateType?: TemplateType;
-
-  @ApiPropertyOptional({
-    description: 'Trang thai bieu mau',
-    enum: TemplateStatus,
-    example: TemplateStatus.DRAFT,
-  })
-  @IsOptional()
-  @IsEnum(TemplateStatus)
-  templateStatus?: TemplateStatus;
 
   @ApiPropertyOptional({
     description: 'Trạng thái hoạt động',

@@ -14,6 +14,7 @@
     { "key": "permissionId", "value": "" },
     { "key": "orgId", "value": "" },
     { "key": "formId", "value": "" },
+    { "key": "fieldCategoryId", "value": "" },
     { "key": "indicatorId", "value": "" },
     { "key": "attrId", "value": "" },
     { "key": "submissionId", "value": "" },
@@ -119,15 +120,22 @@
     {
       "name": "Template Management",
       "item": [
-        { "name": "Forms - List", "request": { "method": "GET", "url": "{{baseUrl}}/forms" } },
-        { "name": "Forms - Create", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{}" }, "url": "{{baseUrl}}/forms" } },
+        { "name": "Forms - List", "request": { "method": "GET", "url": "{{baseUrl}}/forms?page=1&limit=20" } },
+        { "name": "Forms - Create", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"BM KPI Thang\",\n  \"fieldCategoryId\": \"{{fieldCategoryId}}\",\n  \"periodType\": \"THANG\",\n  \"templateType\": \"AGGREGATE\",\n  \"isActive\": true\n}" }, "url": "{{baseUrl}}/forms" } },
         { "name": "Forms - Detail", "request": { "method": "GET", "url": "{{baseUrl}}/forms/{{formId}}" } },
+        { "name": "Forms - Patch", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"BM KPI Thang - Updated\",\n  \"description\": \"Update metadata\",\n  \"periodType\": \"THANG\",\n  \"templateType\": \"AGGREGATE\"\n}" }, "url": "{{baseUrl}}/forms/{{formId}}" } },
+        { "name": "Forms - Mark Ready", "request": { "method": "POST", "url": "{{baseUrl}}/forms/{{formId}}/mark-ready" } },
+        { "name": "Forms - Archive", "request": { "method": "POST", "url": "{{baseUrl}}/forms/{{formId}}/archive" } },
+        { "name": "Forms - Activate", "request": { "method": "POST", "url": "{{baseUrl}}/forms/{{formId}}/activate" } },
+        { "name": "Forms - Deactivate", "request": { "method": "POST", "url": "{{baseUrl}}/forms/{{formId}}/deactivate" } },
+        { "name": "Forms - Copy", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"BM KPI Thang - Copy\"\n}" }, "url": "{{baseUrl}}/forms/{{formId}}/copy" } },
+        { "name": "Forms - Delete", "request": { "method": "DELETE", "url": "{{baseUrl}}/forms/{{formId}}" } },
         { "name": "Form Indicators - List", "request": { "method": "GET", "url": "{{baseUrl}}/forms/{{formId}}/indicators" } },
         { "name": "Form Attributes - List", "request": { "method": "GET", "url": "{{baseUrl}}/forms/{{formId}}/attributes" } },
         { "name": "Template Scopes - List", "request": { "method": "GET", "url": "{{baseUrl}}/forms/{{formId}}/template-scopes" } },
         { "name": "Cell Configs - Effective", "request": { "method": "GET", "url": "{{baseUrl}}/forms/{{formId}}/cell-configs/effective" } },
-        { "name": "Field Categories - List", "request": { "method": "GET", "url": "{{baseUrl}}/field-categories" } },
-        { "name": "Indicator Catalog - List", "request": { "method": "GET", "url": "{{baseUrl}}/indicator-catalog" } }
+        { "name": "Field Categories - List", "request": { "method": "GET", "url": "{{baseUrl}}/field-categories?isGetAll=true" } },
+        { "name": "Indicator Catalog - List", "request": { "method": "GET", "url": "{{baseUrl}}/indicator-catalog?page=1&limit=50" } }
       ]
     },
     {

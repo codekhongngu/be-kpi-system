@@ -85,8 +85,8 @@ export class TemplateManagementService {
   private async ensureTemplateStructureEditable(formId: string): Promise<void> {
     const f = await this.formRepo.findOne({ where: { id: formId } });
     if (!f) throw new NotFoundException('Không tìm thấy biểu mẫu');
-    if (f.templateStatus === TemplateStatus.IN_USE) {
-      throw new ConflictException('FORM_TEMPLATE_LOCKED_IN_USE');
+    if (![TemplateStatus.DRAFT, TemplateStatus.READY].includes(f.templateStatus)) {
+      throw new ConflictException('FORM_TEMPLATE_LOCKED_STATUS');
     }
     const used = await this.hasCampaignOrAssignment(formId);
     if (used) throw new ConflictException('FORM_TEMPLATE_LOCKED_HAS_REPORTS');
@@ -413,7 +413,7 @@ export class TemplateManagementService {
         code,
         name: dto.name.trim(),
         templateType: dto.templateType ?? TemplateType.AGGREGATE,
-        templateStatus: dto.templateStatus ?? TemplateStatus.DRAFT,
+        templateStatus: TemplateStatus.DRAFT,
         periodType: dto.periodType ?? PeriodType.THANG,
         fieldCategoryRef: { id: fc.id } as FieldCategory,
         description: dto.description?.trim() ?? null,
@@ -494,10 +494,31 @@ export class TemplateManagementService {
       }
       f.templateType = dto.templateType;
     }
-    if (dto.templateStatus !== undefined) f.templateStatus = dto.templateStatus;
     if (dto.isActive !== undefined) f.isActive = dto.isActive;
     await this.formRepo.save(f);
     return { ok: true };
+  }
+
+  async markFormReady(id: string) {
+    const f = await this.formRepo.findOne({ where: { id } });
+    if (!f) throw new NotFoundException('Không tìm thấy biểu mẫu');
+    if (f.templateStatus !== TemplateStatus.DRAFT) {
+      throw new ConflictException('FORM_INVALID_STATUS_TRANSITION');
+    }
+    f.templateStatus = TemplateStatus.READY;
+    await this.formRepo.save(f);
+    return { ok: true, templateStatus: f.templateStatus };
+  }
+
+  async archiveForm(id: string) {
+    const f = await this.formRepo.findOne({ where: { id } });
+    if (!f) throw new NotFoundException('Không tìm thấy biểu mẫu');
+    if (![TemplateStatus.READY, TemplateStatus.IN_USE].includes(f.templateStatus)) {
+      throw new ConflictException('FORM_INVALID_STATUS_TRANSITION');
+    }
+    f.templateStatus = TemplateStatus.ARCHIVED;
+    await this.formRepo.save(f);
+    return { ok: true, templateStatus: f.templateStatus };
   }
 
   async removeForm(id: string) {

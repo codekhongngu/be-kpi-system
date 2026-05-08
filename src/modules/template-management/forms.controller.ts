@@ -76,6 +76,18 @@ export class FormsController {
     return await this.formDesigner.setActive(id, false);
   }
 
+  @Post(':id/mark-ready')
+  @Permissions('forms.manage')
+  async markReady(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.formDesigner.markFormReady(id);
+  }
+
+  @Post(':id/archive')
+  @Permissions('forms.manage')
+  async archive(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.formDesigner.archiveForm(id);
+  }
+
   @Post(':id/copy')
   @Permissions('forms.manage')
   @HttpCode(HttpStatus.CREATED)
