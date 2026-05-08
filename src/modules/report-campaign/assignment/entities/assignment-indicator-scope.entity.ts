@@ -6,12 +6,12 @@ export enum AssignmentIndicatorScopeSource {
   MANUAL = 'MANUAL',
 }
 
-@Entity('assignment_indicator_scopes')
+@Entity('report_campaign_indicator_org_scopes')
 export class AssignmentIndicatorScope {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'batch_id', type: 'uuid' })
+  @Column({ name: 'campaign_id', type: 'uuid' })
   batchId: string;
 
   @Column({ name: 'org_id', type: 'uuid' })
@@ -24,7 +24,7 @@ export class AssignmentIndicatorScope {
     name: 'source',
     type: 'varchar',
     length: 30,
-    default: AssignmentIndicatorScopeSource.MANUAL,
+    default: AssignmentIndicatorScopeSource.CAMPAIGN_OVERRIDE,
   })
   source: AssignmentIndicatorScopeSource;
 

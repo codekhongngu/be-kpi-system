@@ -6,15 +6,15 @@ import {
 } from 'typeorm';
 import { PeriodType } from '../../../../common';
 
-@Entity('form_assignments')
+@Entity('report_assignments')
 export class FormAssignment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'batch_id', type: 'uuid', nullable: true })
+  @Column({ name: 'campaign_id', type: 'uuid', nullable: true })
   batchId: string | null;
 
-  @Column({ name: 'form_id', type: 'uuid' })
+  @Column({ name: 'template_id', type: 'uuid' })
   formId: string;
 
   @Column({ name: 'org_id', type: 'uuid' })
@@ -46,8 +46,7 @@ export class FormAssignment {
   @Column({ name: 'cancel_reason', type: 'text', nullable: true })
   cancelReason: string | null;
 
-  @Column({ name: 'auto_assign', default: false })
-  autoAssign: boolean;
+  autoAssign = false;
 
   @Column({ name: 'assigned_by', type: 'uuid', nullable: true })
   assignedBy: string | null;

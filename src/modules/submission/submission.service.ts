@@ -62,7 +62,7 @@ export class SubmissionService {
     const qb = this.assignmentRepo
       .createQueryBuilder('a')
       .leftJoin(ReportSubmission, 's', 's.assignmentId = a.id')
-      .innerJoin('forms', 'f', 'f.id = a.formId')
+      .innerJoin('form_templates', 'f', 'f.id = a.formId')
       .where('a.orgId = :orgId', { orgId: user.orgId })
       .andWhere('a.isCancelled = false')
       .select([
@@ -185,7 +185,7 @@ export class SubmissionService {
       const rows = await this.dataSource.query<{ indicator_id: string }[]>(
         `
         SELECT indicator_id
-        FROM assignment_indicator_scopes
+        FROM report_campaign_indicator_org_scopes
         WHERE batch_id = $1 AND org_id = $2
       `,
         [a.batchId, a.orgId],
@@ -276,13 +276,16 @@ export class SubmissionService {
       const rows = approverIds.map((uid) =>
         this.notificationRepo.create({
           userId: uid,
+          aggregateType: 'notification',
           type: 'SUBMISSION_PENDING_APPROVAL',
-          title,
-          body,
-          channel: 'IN_APP',
-          isRead: false,
-          refTable: 'report_submissions',
-          refId: null,
+          payload: {
+            title,
+            body,
+            channel: 'IN_APP',
+            isRead: false,
+            refTable: 'report_submissions',
+            refId: null,
+          },
           status: 'PENDING',
           retryCount: 0,
           sentAt: null,

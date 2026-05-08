@@ -76,7 +76,7 @@ export class TemplateManagementService {
     });
     if (campaignExists) return true;
     const rows = await this.dataSource.query<{ c: string }[]>(
-      'SELECT COUNT(1)::text AS c FROM form_assignments WHERE form_id = $1',
+      'SELECT COUNT(1)::text AS c FROM report_assignments WHERE template_id = $1',
       [formId],
     );
     return Number(rows?.[0]?.c ?? 0) > 0;
@@ -346,17 +346,11 @@ export class TemplateManagementService {
     const statusRaw = query.status?.trim();
     if (statusRaw) {
       const normalized = statusRaw.toLowerCase();
-      if (['active', '1', 'true'].includes(normalized)) {
-        qb.andWhere('f.isActive = true');
-      } else if (['inactive', '0', 'false'].includes(normalized)) {
-        qb.andWhere('f.isActive = false');
-      } else {
+      if (!['active', 'inactive', '1', '0', 'true', 'false'].includes(normalized)) {
         throw new BadRequestException(
           'status không hợp lệ, chỉ nhận active/inactive/true/false/1/0',
         );
       }
-    } else if (query.isActive !== undefined) {
-      qb.andWhere('f.isActive = :ia', { ia: query.isActive });
     }
 
     if (query.periodType) {
@@ -526,7 +520,7 @@ export class TemplateManagementService {
     const f = await this.formRepo.findOne({ where: { id } });
     if (!f) throw new NotFoundException('Không tìm thấy biểu mẫu');
     const ac = await this.dataSource.query<{ c: string }[]>(
-      'SELECT COUNT(1)::text AS c FROM form_assignments WHERE form_id = $1',
+      'SELECT COUNT(1)::text AS c FROM report_assignments WHERE template_id = $1',
       [id],
     );
     const n = Number(ac[0]?.c ?? 0);
@@ -766,7 +760,7 @@ export class TemplateManagementService {
     const code = dto.code.trim();
     const dup = await this.indRepo
       .createQueryBuilder('ind')
-      .where('ind.form_id = :formId', { formId })
+      .where('ind.template_id = :formId', { formId })
       .andWhere('ind.code ILIKE :code', { code })
       .getExists();
     if (dup) throw new ConflictException('INDICATOR_CODE_DUPLICATE');
@@ -826,7 +820,7 @@ export class TemplateManagementService {
       const code = dto.code.trim();
       const dup = await this.indRepo
         .createQueryBuilder('ind')
-        .where('ind.form_id = :formId', { formId })
+        .where('ind.template_id = :formId', { formId })
         .andWhere('ind.code ILIKE :code', { code })
         .andWhere('ind.id != :id', { id: indicatorId })
         .getExists();
@@ -930,7 +924,7 @@ export class TemplateManagementService {
     });
     if (!i) throw new NotFoundException('Không tìm thấy chỉ tiêu');
     const rows = await this.dataSource.query<{ c: string }[]>(
-      'SELECT COUNT(1)::text AS c FROM report_data WHERE indicator_id = $1',
+      'SELECT COUNT(1)::text AS c FROM report_submission_cells WHERE indicator_id = $1',
       [indicatorId],
     );
     const dataCount = Number(rows[0]?.c ?? 0);

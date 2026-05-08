@@ -9,19 +9,19 @@ import {
 } from 'typeorm';
 import { Form } from './form.entity';
 
-@Entity('form_indicators')
+@Entity('form_template_indicators')
 export class FormIndicator {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'form_id', type: 'uuid' })
+  @Column({ name: 'template_id', type: 'uuid' })
   formId: string;
 
   @Column({ name: 'parent_id', type: 'uuid', nullable: true })
   parentId: string | null;
 
   @ManyToOne(() => Form, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'form_id' })
+  @JoinColumn({ name: 'template_id' })
   form: Form;
 
   @ManyToOne(() => FormIndicator, (indicator) => indicator.children, {
@@ -56,8 +56,7 @@ export class FormIndicator {
   @Column({ name: 'is_required', type: 'boolean', default: true })
   isRequired: boolean;
 
-  @Column({ name: 'is_readonly', type: 'boolean', default: false })
-  isReadonly: boolean;
+  isReadonly = false;
 
   @Column({ name: 'is_calculated', type: 'boolean', default: false })
   isCalculated: boolean;
@@ -65,23 +64,15 @@ export class FormIndicator {
   @Column({ type: 'text', nullable: true })
   formula: string | null;
 
-  @Column({ name: 'group_name', type: 'varchar', length: 255, nullable: true })
-  groupName: string | null;
+  groupName: string | null = null;
 
   @Column({ name: 'sort_order', type: 'int', default: 0 })
   sortOrder: number;
 
-  @Column({ name: 'min_value', type: 'numeric', nullable: true })
-  minValue: string | null;
-
-  @Column({ name: 'max_value', type: 'numeric', nullable: true })
-  maxValue: string | null;
-
-  @Column({ name: 'validation_rule', type: 'jsonb', nullable: true })
-  validationRule: Record<string, unknown> | null;
-
-  @Column({ name: 'is_active', type: 'boolean', default: true })
-  isActive: boolean;
+  minValue: string | null = null;
+  maxValue: string | null = null;
+  validationRule: Record<string, unknown> | null = null;
+  isActive = true;
 
   @Column({ name: 'catalog_indicator_id', type: 'uuid', nullable: true })
   catalogIndicatorId: string | null;

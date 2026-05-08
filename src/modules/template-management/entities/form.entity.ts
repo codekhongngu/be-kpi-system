@@ -23,7 +23,7 @@ export enum TemplateStatus {
   ARCHIVED = 'ARCHIVED',
 }
 
-@Entity('forms')
+@Entity('form_templates')
 export class Form {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -60,19 +60,10 @@ export class Form {
   @Column({ name: 'period_type', type: 'varchar', length: 10, default: PeriodType.THANG })
   periodType: PeriodType;
 
-  @Column({ name: 'is_active', type: 'boolean', default: true })
-  isActive: boolean;
-
-  @Column({
-    name: 'template_file',
-    type: 'varchar',
-    length: 500,
-    nullable: true,
-  })
-  templateFile: string | null;
-
-  @Column({ name: 'parent_form_id', type: 'uuid', nullable: true })
-  parentFormId: string | null;
+  // v2 schema no longer stores these legacy fields on form_templates.
+  isActive = true;
+  templateFile: string | null = null;
+  parentFormId: string | null = null;
 
   @Column({ name: 'created_by', type: 'uuid', nullable: true })
   createdBy: string | null;

@@ -5,34 +5,22 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
-@Entity('notifications')
+@Entity('app_outbox_events')
 export class Notification {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'user_id', type: 'uuid' })
+  @Column({ name: 'aggregate_id', type: 'uuid' })
   userId: string;
 
-  @Column({ name: 'type', type: 'varchar', length: 50 })
+  @Column({ name: 'event_type', type: 'varchar', length: 160 })
   type: string;
 
-  @Column({ type: 'varchar', length: 500, nullable: true })
-  title: string | null;
+  @Column({ name: 'aggregate_type', type: 'varchar', length: 120, default: 'notification' })
+  aggregateType: string;
 
-  @Column({ type: 'text', nullable: true })
-  body: string | null;
-
-  @Column({ type: 'varchar', length: 20 })
-  channel: string;
-
-  @Column({ name: 'is_read', type: 'boolean', default: false })
-  isRead: boolean;
-
-  @Column({ name: 'ref_table', type: 'varchar', length: 100, nullable: true })
-  refTable: string | null;
-
-  @Column({ name: 'ref_id', type: 'bigint', nullable: true })
-  refId: string | null;
+  @Column({ name: 'payload', type: 'jsonb' })
+  payload: Record<string, unknown>;
 
   @Column({ type: 'varchar', length: 20, default: 'PENDING' })
   status: string;
@@ -40,8 +28,15 @@ export class Notification {
   @Column({ name: 'retry_count', type: 'int', default: 0 })
   retryCount: number;
 
-  @Column({ name: 'sent_at', type: 'timestamptz', nullable: true })
+  @Column({ name: 'processed_at', type: 'timestamptz', nullable: true })
   sentAt: Date | null;
+
+  title: string | null = null;
+  body: string | null = null;
+  channel = 'IN_APP';
+  isRead = false;
+  refTable: string | null = null;
+  refId: string | null = null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

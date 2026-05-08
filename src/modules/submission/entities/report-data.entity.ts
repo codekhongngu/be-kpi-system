@@ -5,7 +5,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity('report_data')
+@Entity('report_submission_cells')
 export class ReportData {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -19,10 +19,10 @@ export class ReportData {
   @Column({ name: 'attribute_id', type: 'uuid' })
   attributeId: string;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ name: 'value_text', type: 'text', nullable: true })
   value: string | null;
 
-  @Column({ name: 'value_numeric', type: 'numeric', nullable: true })
+  @Column({ name: 'value_number', type: 'numeric', nullable: true })
   valueNumeric: string | null;
 
   @Column({ name: 'updated_by', type: 'uuid', nullable: true })

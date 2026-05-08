@@ -9,19 +9,19 @@ import {
 } from 'typeorm';
 import { Form } from './form.entity';
 
-@Entity('form_attributes')
+@Entity('form_template_attributes')
 export class FormAttribute {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'form_id', type: 'uuid' })
+  @Column({ name: 'template_id', type: 'uuid' })
   formId: string;
 
   @Column({ name: 'parent_id', type: 'uuid', nullable: true })
   parentId: string | null;
 
   @ManyToOne(() => Form, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'form_id' })
+  @JoinColumn({ name: 'template_id' })
   form: Form;
 
   @ManyToOne(() => FormAttribute, (attribute) => attribute.children, {
@@ -42,23 +42,15 @@ export class FormAttribute {
   @Column({ name: 'is_required', type: 'boolean', default: false })
   isRequired: boolean;
 
-  @Column({ name: 'is_visible', type: 'boolean', default: true })
-  isVisible: boolean;
-
-  @Column({ name: 'is_readonly', type: 'boolean', default: false })
-  isReadonly: boolean;
-
-  @Column({ name: 'is_system', type: 'boolean', default: false })
-  isSystem: boolean;
+  isVisible = true;
+  isReadonly = false;
+  isSystem = false;
 
   @Column({ name: 'sort_order', type: 'int', default: 0 })
   sortOrder: number;
 
-  @Column({ type: 'jsonb', nullable: true })
-  options: Record<string, unknown> | null;
-
-  @Column({ name: 'validation_rule', type: 'jsonb', nullable: true })
-  validationRule: Record<string, unknown> | null;
+  options: Record<string, unknown> | null = null;
+  validationRule: Record<string, unknown> | null = null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

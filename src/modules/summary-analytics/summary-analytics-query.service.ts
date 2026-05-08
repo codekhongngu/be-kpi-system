@@ -24,7 +24,7 @@ export class SummaryAnalyticsQueryService {
       .createQueryBuilder('a')
       .leftJoin(ReportSubmission, 's', 's.assignmentId = a.id')
       .innerJoin('organizations', 'o', 'o.id = a.orgId')
-      .innerJoin('forms', 'f', 'f.id = a.formId')
+      .innerJoin('form_templates', 'f', 'f.id = a.formId')
       .where('a.isCancelled = false');
 
     if (user.orgId) qb.andWhere('a.orgId = :userOrg', { userOrg: user.orgId });
@@ -84,7 +84,7 @@ export class SummaryAnalyticsQueryService {
     const countQb = this.assignmentRepo
       .createQueryBuilder('a')
       .leftJoin(ReportSubmission, 's', 's.assignmentId = a.id')
-      .innerJoin('forms', 'f', 'f.id = a.formId')
+      .innerJoin('form_templates', 'f', 'f.id = a.formId')
       .where('a.isCancelled = false');
     if (user.orgId) countQb.andWhere('a.orgId = :userOrg', { userOrg: user.orgId });
     if (query.orgId) countQb.andWhere('a.orgId = :orgId', { orgId: query.orgId });

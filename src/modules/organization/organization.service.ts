@@ -203,7 +203,7 @@ export class OrganizationService {
 
     const tablesToCheck = [
       { table: 'users', col: 'org_id' },
-      { table: 'form_assignments', col: 'org_id' },
+      { table: 'report_assignments', col: 'org_id' },
       { table: 'report_summaries', col: 'org_id' },
     ] as const;
 

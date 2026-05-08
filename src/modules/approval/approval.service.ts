@@ -38,7 +38,7 @@ export class ApprovalService {
       .createQueryBuilder('s')
       .innerJoin(FormAssignment, 'a', 'a.id = s.assignment_id')
       .innerJoin('organizations', 'o', 'o.id = a.org_id')
-      .innerJoin('forms', 'f', 'f.id = a.form_id')
+      .innerJoin('form_templates', 'f', 'f.id = a.template_id')
       .where('s.status = :st', { st: 'PENDING' });
 
     if (user.orgId) {
@@ -46,7 +46,7 @@ export class ApprovalService {
     }
     if (query.orgId) qb.andWhere('a.org_id = :qOrg', { qOrg: query.orgId });
     if (query.formId)
-      qb.andWhere('a.form_id = :formId', { formId: query.formId });
+      qb.andWhere('a.template_id = :formId', { formId: query.formId });
     if (query.periodType)
       qb.andWhere('a.period_type = :periodType', { periodType: query.periodType });
     if (query.periodCode?.trim())
@@ -79,7 +79,7 @@ export class ApprovalService {
     if (query.orgId)
       countQb.andWhere('a.org_id = :qOrg', { qOrg: query.orgId });
     if (query.formId)
-      countQb.andWhere('a.form_id = :formId', { formId: query.formId });
+      countQb.andWhere('a.template_id = :formId', { formId: query.formId });
     if (query.periodType)
       countQb.andWhere('a.period_type = :periodType', { periodType: query.periodType });
     if (query.periodCode?.trim())
@@ -121,13 +121,16 @@ export class ApprovalService {
       await this.notificationRepo.save(
         this.notificationRepo.create({
           userId: s.submittedBy,
+          aggregateType: 'notification',
           type: 'SUBMISSION_APPROVED',
-          title: 'Báo cáo đã được duyệt',
-          body: `Báo cáo của bạn đã được duyệt. submissionId=${s.id}.`,
-          channel: 'IN_APP',
-          isRead: false,
-          refTable: 'report_submissions',
-          refId: null,
+          payload: {
+            title: 'Báo cáo đã được duyệt',
+            body: `Báo cáo của bạn đã được duyệt. submissionId=${s.id}.`,
+            channel: 'IN_APP',
+            isRead: false,
+            refTable: 'report_submissions',
+            refId: null,
+          },
           status: 'PENDING',
           retryCount: 0,
           sentAt: null,
@@ -160,15 +163,18 @@ export class ApprovalService {
       await this.notificationRepo.save(
         this.notificationRepo.create({
           userId: s.submittedBy,
+          aggregateType: 'notification',
           type: 'SUBMISSION_REJECTED',
-          title: 'Báo cáo bị từ chối',
-          body:
-            `Báo cáo của bạn bị từ chối. ` +
-            `submissionId=${s.id}. Lý do: ${s.rejectReason}`,
-          channel: 'IN_APP',
-          isRead: false,
-          refTable: 'report_submissions',
-          refId: null,
+          payload: {
+            title: 'Báo cáo bị từ chối',
+            body:
+              `Báo cáo của bạn bị từ chối. ` +
+              `submissionId=${s.id}. Lý do: ${s.rejectReason}`,
+            channel: 'IN_APP',
+            isRead: false,
+            refTable: 'report_submissions',
+            refId: null,
+          },
           status: 'PENDING',
           retryCount: 0,
           sentAt: null,

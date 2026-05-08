@@ -12,7 +12,7 @@ import { Form } from './form.entity';
 import { FormAttribute } from './form-attribute.entity';
 import { FormIndicator } from './form-indicator.entity';
 
-@Entity('form_cell_configs')
+@Entity('form_template_cell_configs')
 @Unique('UQ_form_cell_configs_form_indicator_attribute', [
   'formId',
   'indicatorId',
@@ -22,7 +22,7 @@ export class FormCellConfig {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'form_id', type: 'uuid' })
+  @Column({ name: 'template_id', type: 'uuid' })
   formId: string;
 
   @Column({ name: 'indicator_id', type: 'uuid' })
@@ -32,7 +32,7 @@ export class FormCellConfig {
   attributeId: string;
 
   @ManyToOne(() => Form, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'form_id' })
+  @JoinColumn({ name: 'template_id' })
   form: Form;
 
   @ManyToOne(() => FormIndicator, { onDelete: 'CASCADE' })

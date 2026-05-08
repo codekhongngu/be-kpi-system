@@ -8,12 +8,12 @@ export enum AssignmentBatchStatus {
   CANCELLED = 'CANCELLED',
 }
 
-@Entity('assignment_batches')
+@Entity('report_campaigns')
 export class AssignmentBatch {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'form_id', type: 'uuid' })
+  @Column({ name: 'template_id', type: 'uuid' })
   formId: string;
 
   @Column({ name: 'period_type', type: 'varchar', length: 10 })

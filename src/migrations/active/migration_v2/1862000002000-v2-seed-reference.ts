@@ -61,6 +61,24 @@ export class V2SeedReference1862000002000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS pgcrypto`);
 
+    const hasColumn = async (table: string, column: string): Promise<boolean> => {
+      const rows = await queryRunner.query(
+        `
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = $1
+          AND column_name = $2
+        LIMIT 1
+        `,
+        [table, column],
+      );
+      return Array.isArray(rows) && rows.length > 0;
+    };
+
+    const orgHasCanAssignReports = await hasColumn('organizations', 'can_assign_reports');
+    const attrHasCode = await hasColumn('form_template_attributes', 'code');
+
     for (const [code, name, category] of PERMISSIONS) {
       await queryRunner.query(
         `
@@ -90,30 +108,58 @@ export class V2SeedReference1862000002000 implements MigrationInterface {
       ON CONFLICT ("role_id", "permission_id") DO NOTHING
     `);
 
-    await queryRunner.query(
-      `
-      INSERT INTO "organizations" ("id", "code", "name", "level", "can_assign_reports", "is_active", "description", "created_at", "updated_at")
-      VALUES ($1, 'XA-ROOT', 'Chinh quyen cap xa (2 cap)', 1, true, true, 'Don vi goc seed cho cay to chuc', now(), now())
-      ON CONFLICT ("code") DO UPDATE SET "name" = EXCLUDED."name", "updated_at" = now()
-      `,
-      [IDS.rootOrg],
-    );
-
-    for (const [code, name, parentCode, level] of ORG_ROWS) {
+    if (orgHasCanAssignReports) {
       await queryRunner.query(
         `
-        INSERT INTO "organizations" ("code", "name", "parent_id", "level", "can_assign_reports", "is_active", "created_at", "updated_at")
-        SELECT $1, $2, p."id", $3, true, true, now(), now()
-        FROM "organizations" p
-        WHERE p."code" = $4
-        ON CONFLICT ("code") DO UPDATE SET
-          "name" = EXCLUDED."name",
-          "parent_id" = EXCLUDED."parent_id",
-          "level" = EXCLUDED."level",
-          "updated_at" = now()
+        INSERT INTO "organizations" ("id", "code", "name", "level", "can_assign_reports", "is_active", "description", "created_at", "updated_at")
+        VALUES ($1, 'XA-ROOT', 'Chinh quyen cap xa (2 cap)', 1, true, true, 'Don vi goc seed cho cay to chuc', now(), now())
+        ON CONFLICT ("code") DO UPDATE SET "name" = EXCLUDED."name", "updated_at" = now()
         `,
-        [code, name, level, parentCode],
+        [IDS.rootOrg],
       );
+    } else {
+      await queryRunner.query(
+        `
+        INSERT INTO "organizations" ("id", "code", "name", "level", "is_active", "description", "created_at", "updated_at")
+        VALUES ($1, 'XA-ROOT', 'Chinh quyen cap xa (2 cap)', 1, true, 'Don vi goc seed cho cay to chuc', now(), now())
+        ON CONFLICT ("code") DO UPDATE SET "name" = EXCLUDED."name", "updated_at" = now()
+        `,
+        [IDS.rootOrg],
+      );
+    }
+
+    for (const [code, name, parentCode, level] of ORG_ROWS) {
+      if (orgHasCanAssignReports) {
+        await queryRunner.query(
+          `
+          INSERT INTO "organizations" ("code", "name", "parent_id", "level", "can_assign_reports", "is_active", "created_at", "updated_at")
+          SELECT $1, $2, p."id", $3, true, true, now(), now()
+          FROM "organizations" p
+          WHERE p."code" = $4
+          ON CONFLICT ("code") DO UPDATE SET
+            "name" = EXCLUDED."name",
+            "parent_id" = EXCLUDED."parent_id",
+            "level" = EXCLUDED."level",
+            "updated_at" = now()
+          `,
+          [code, name, level, parentCode],
+        );
+      } else {
+        await queryRunner.query(
+          `
+          INSERT INTO "organizations" ("code", "name", "parent_id", "level", "is_active", "created_at", "updated_at")
+          SELECT $1, $2, p."id", $3, true, now(), now()
+          FROM "organizations" p
+          WHERE p."code" = $4
+          ON CONFLICT ("code") DO UPDATE SET
+            "name" = EXCLUDED."name",
+            "parent_id" = EXCLUDED."parent_id",
+            "level" = EXCLUDED."level",
+            "updated_at" = now()
+          `,
+          [code, name, level, parentCode],
+        );
+      }
     }
 
     await queryRunner.query(
@@ -173,15 +219,27 @@ export class V2SeedReference1862000002000 implements MigrationInterface {
     `);
 
     for (const [id, name, sortOrder, parentId] of ATTRS) {
-      await queryRunner.query(
-        `
-        INSERT INTO "form_template_attributes" (
-          "id", "template_id", "parent_id", "code", "name", "data_type", "sort_order", "created_at"
-        ) VALUES ($1, $2, $3, $4, $5, 'number', $6, now())
-        ON CONFLICT ("id") DO NOTHING
-        `,
-        [id, IDS.template, parentId, `ATTR-${sortOrder + 1}`, name, sortOrder],
-      );
+      if (attrHasCode) {
+        await queryRunner.query(
+          `
+          INSERT INTO "form_template_attributes" (
+            "id", "template_id", "parent_id", "code", "name", "data_type", "sort_order", "created_at"
+          ) VALUES ($1, $2, $3, $4, $5, 'number', $6, now())
+          ON CONFLICT ("id") DO NOTHING
+          `,
+          [id, IDS.template, parentId, `ATTR-${sortOrder + 1}`, name, sortOrder],
+        );
+      } else {
+        await queryRunner.query(
+          `
+          INSERT INTO "form_template_attributes" (
+            "id", "template_id", "parent_id", "name", "data_type", "sort_order", "created_at"
+          ) VALUES ($1, $2, $3, $4, 'number', $5, now())
+          ON CONFLICT ("id") DO NOTHING
+          `,
+          [id, IDS.template, parentId, name, sortOrder],
+        );
+      }
     }
 
     for (const [id, code, displayIndex, name, sortOrder, parentId] of INDS) {
