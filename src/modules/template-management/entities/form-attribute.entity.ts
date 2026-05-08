@@ -42,9 +42,14 @@ export class FormAttribute {
   @Column({ name: 'is_required', type: 'boolean', default: false })
   isRequired: boolean;
 
-  isVisible = true;
-  isReadonly = false;
-  isSystem = false;
+  @Column({ name: 'is_visible', type: 'boolean', default: true })
+  isVisible: boolean;
+
+  @Column({ name: 'is_readonly', type: 'boolean', default: false })
+  isReadonly: boolean;
+
+  @Column({ name: 'is_system', type: 'boolean', default: false })
+  isSystem: boolean;
 
   @Column({ name: 'sort_order', type: 'int', default: 0 })
   sortOrder: number;

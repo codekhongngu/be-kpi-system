@@ -6,28 +6,99 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:5000/api/v1" },
-    { "key": "accessToken", "value": "" },
-    { "key": "refreshToken", "value": "" },
-    { "key": "userId", "value": "" },
-    { "key": "roleId", "value": "" },
-    { "key": "permissionId", "value": "" },
-    { "key": "orgId", "value": "" },
-    { "key": "formId", "value": "" },
-    { "key": "fieldCategoryId", "value": "" },
-    { "key": "indicatorId", "value": "" },
-    { "key": "attrId", "value": "" },
-    { "key": "submissionId", "value": "" },
-    { "key": "campaignId", "value": "" },
-    { "key": "assignmentId", "value": "" },
-    { "key": "batchId", "value": "" },
-    { "key": "summaryId", "value": "" },
-    { "key": "notificationId", "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api/v1"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "roleId",
+      "value": ""
+    },
+    {
+      "key": "permissionId",
+      "value": ""
+    },
+    {
+      "key": "orgId",
+      "value": ""
+    },
+    {
+      "key": "formId",
+      "value": ""
+    },
+    {
+      "key": "fieldCategoryId",
+      "value": ""
+    },
+    {
+      "key": "indicatorId",
+      "value": ""
+    },
+    {
+      "key": "attrId",
+      "value": ""
+    },
+    {
+      "key": "submissionId",
+      "value": ""
+    },
+    {
+      "key": "campaignId",
+      "value": ""
+    },
+    {
+      "key": "assignmentId",
+      "value": ""
+    },
+    {
+      "key": "batchId",
+      "value": ""
+    },
+    {
+      "key": "summaryId",
+      "value": ""
+    },
+    {
+      "key": "notificationId",
+      "value": ""
+    },
+    {
+      "key": "indicatorId2",
+      "value": ""
+    },
+    {
+      "key": "attrId2",
+      "value": ""
+    },
+    {
+      "key": "orgId2",
+      "value": ""
+    },
+    {
+      "key": "catalogIndicatorId",
+      "value": ""
+    }
   ],
   "auth": {
     "type": "bearer",
     "bearer": [
-      { "key": "token", "value": "{{accessToken}}", "type": "string" }
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
     ]
   },
   "item": [
@@ -60,7 +131,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -69,86 +143,933 @@
             "url": "{{baseUrl}}/auth/login"
           }
         },
-        { "name": "Register", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"username\": \"newuser\",\n  \"email\": \"newuser@example.com\",\n  \"password\": \"Admin@123\",\n  \"fullName\": \"New User\",\n  \"orgId\": \"{{orgId}}\"\n}" }, "url": "{{baseUrl}}/auth/register" } },
-        { "name": "Refresh Token", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" }, "url": "{{baseUrl}}/auth/refresh-token" } },
-        { "name": "Me", "request": { "method": "GET", "url": "{{baseUrl}}/auth/me" } },
-        { "name": "Change Password", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"oldPassword\": \"Admin@123\",\n  \"newPassword\": \"Admin@1234\"\n}" }, "url": "{{baseUrl}}/auth/change-password" } },
-        { "name": "Forgot Password", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@localhost.local\"\n}" }, "url": "{{baseUrl}}/auth/forgot-password" } },
-        { "name": "Reset Password", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"token\": \"paste-reset-token\",\n  \"newPassword\": \"Admin@1234\"\n}" }, "url": "{{baseUrl}}/auth/reset-password" } },
-        { "name": "Logout", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" }, "url": "{{baseUrl}}/auth/logout" } }
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"newuser\",\n  \"email\": \"newuser@example.com\",\n  \"password\": \"Admin@123\",\n  \"fullName\": \"New User\",\n  \"orgId\": \"{{orgId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/register"
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/refresh-token"
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/me"
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"Admin@123\",\n  \"newPassword\": \"Admin@1234\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/change-password"
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@localhost.local\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/forgot-password"
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"paste-reset-token\",\n  \"newPassword\": \"Admin@1234\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/reset-password"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/logout"
+          }
+        }
       ]
     },
     {
       "name": "User",
       "item": [
-        { "name": "Create User", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"username\": \"user01\",\n  \"email\": \"user01@example.com\",\n  \"password\": \"Admin@123\",\n  \"fullName\": \"User 01\",\n  \"orgId\": \"{{orgId}}\",\n  \"roleIds\": [\"{{roleId}}\"]\n}" }, "url": "{{baseUrl}}/users" } },
-        { "name": "List Users", "request": { "method": "GET", "url": "{{baseUrl}}/users?page=1&limit=20" } },
-        { "name": "Get User", "request": { "method": "GET", "url": "{{baseUrl}}/users/{{userId}}" } },
-        { "name": "Update User", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"fullName\": \"User 01 Updated\",\n  \"orgId\": \"{{orgId}}\"\n}" }, "url": "{{baseUrl}}/users/{{userId}}" } },
-        { "name": "User Permissions", "request": { "method": "GET", "url": "{{baseUrl}}/users/{{userId}}/permissions" } },
-        { "name": "Assign User Roles", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"roleIds\": [\"{{roleId}}\"]\n}" }, "url": "{{baseUrl}}/users/{{userId}}/roles" } },
-        { "name": "Activate User", "request": { "method": "PATCH", "url": "{{baseUrl}}/users/{{userId}}/activate" } },
-        { "name": "Deactivate User", "request": { "method": "PATCH", "url": "{{baseUrl}}/users/{{userId}}/deactivate" } },
-        { "name": "Delete User", "request": { "method": "DELETE", "url": "{{baseUrl}}/users/{{userId}}" } }
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"user01\",\n  \"email\": \"user01@example.com\",\n  \"password\": \"Admin@123\",\n  \"fullName\": \"User 01\",\n  \"orgId\": \"{{orgId}}\",\n  \"roleIds\": [\"{{roleId}}\"]\n}"
+            },
+            "url": "{{baseUrl}}/users"
+          }
+        },
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users?page=1&limit=20"
+          }
+        },
+        {
+          "name": "Get User",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"User 01 Updated\",\n  \"orgId\": \"{{orgId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/users/{{userId}}"
+          }
+        },
+        {
+          "name": "User Permissions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users/{{userId}}/permissions"
+          }
+        },
+        {
+          "name": "Assign User Roles",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roleIds\": [\"{{roleId}}\"]\n}"
+            },
+            "url": "{{baseUrl}}/users/{{userId}}/roles"
+          }
+        },
+        {
+          "name": "Activate User",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/users/{{userId}}/activate"
+          }
+        },
+        {
+          "name": "Deactivate User",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/users/{{userId}}/deactivate"
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/users/{{userId}}"
+          }
+        }
       ]
     },
     {
       "name": "Role & Permission",
       "item": [
-        { "name": "Create Role", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"code\": \"MANAGER\",\n  \"name\": \"Manager\",\n  \"description\": \"Manager role\"\n}" }, "url": "{{baseUrl}}/roles" } },
-        { "name": "List Roles", "request": { "method": "GET", "url": "{{baseUrl}}/roles" } },
-        { "name": "Role Permissions", "request": { "method": "GET", "url": "{{baseUrl}}/roles/{{roleId}}/permissions" } },
-        { "name": "Update Role Permissions", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"permissionIds\": [\"{{permissionId}}\"]\n}" }, "url": "{{baseUrl}}/roles/{{roleId}}/permissions" } },
-        { "name": "List Role Groups", "request": { "method": "GET", "url": "{{baseUrl}}/role-groups" } },
-        { "name": "Create Permission", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"code\": \"sample.read\",\n  \"name\": \"Sample Read\",\n  \"category\": \"sample\"\n}" }, "url": "{{baseUrl}}/permissions" } },
-        { "name": "List Permissions", "request": { "method": "GET", "url": "{{baseUrl}}/permissions" } },
-        { "name": "Permission Categories", "request": { "method": "GET", "url": "{{baseUrl}}/permissions/categories" } }
+        {
+          "name": "Create Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"MANAGER\",\n  \"name\": \"Manager\",\n  \"description\": \"Manager role\"\n}"
+            },
+            "url": "{{baseUrl}}/roles"
+          }
+        },
+        {
+          "name": "List Roles",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/roles"
+          }
+        },
+        {
+          "name": "Role Permissions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/roles/{{roleId}}/permissions"
+          }
+        },
+        {
+          "name": "Update Role Permissions",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permissionIds\": [\"{{permissionId}}\"]\n}"
+            },
+            "url": "{{baseUrl}}/roles/{{roleId}}/permissions"
+          }
+        },
+        {
+          "name": "List Role Groups",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/role-groups"
+          }
+        },
+        {
+          "name": "Create Permission",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"sample.read\",\n  \"name\": \"Sample Read\",\n  \"category\": \"sample\"\n}"
+            },
+            "url": "{{baseUrl}}/permissions"
+          }
+        },
+        {
+          "name": "List Permissions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/permissions"
+          }
+        },
+        {
+          "name": "Permission Categories",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/permissions/categories"
+          }
+        }
       ]
     },
     {
       "name": "Organization",
       "item": [
-        { "name": "List Orgs", "request": { "method": "GET", "url": "{{baseUrl}}/orgs" } },
-        { "name": "Create Org", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"code\": \"ORG-NEW\",\n  \"name\": \"Organization New\",\n  \"parentId\": null\n}" }, "url": "{{baseUrl}}/orgs" } },
-        { "name": "Get Org", "request": { "method": "GET", "url": "{{baseUrl}}/orgs/{{orgId}}" } },
-        { "name": "Update Org", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Organization Updated\"\n}" }, "url": "{{baseUrl}}/orgs/{{orgId}}" } },
-        { "name": "Lock Org", "request": { "method": "POST", "url": "{{baseUrl}}/orgs/{{orgId}}/lock" } },
-        { "name": "Unlock Org", "request": { "method": "POST", "url": "{{baseUrl}}/orgs/{{orgId}}/unlock" } },
-        { "name": "Delete Org", "request": { "method": "DELETE", "url": "{{baseUrl}}/orgs/{{orgId}}" } }
+        {
+          "name": "List Orgs",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/orgs"
+          }
+        },
+        {
+          "name": "Create Org",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"ORG-NEW\",\n  \"name\": \"Organization New\",\n  \"parentId\": null\n}"
+            },
+            "url": "{{baseUrl}}/orgs"
+          }
+        },
+        {
+          "name": "Get Org",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/orgs/{{orgId}}"
+          }
+        },
+        {
+          "name": "Update Org",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Organization Updated\"\n}"
+            },
+            "url": "{{baseUrl}}/orgs/{{orgId}}"
+          }
+        },
+        {
+          "name": "Lock Org",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/orgs/{{orgId}}/lock"
+          }
+        },
+        {
+          "name": "Unlock Org",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/orgs/{{orgId}}/unlock"
+          }
+        },
+        {
+          "name": "Delete Org",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/orgs/{{orgId}}"
+          }
+        }
       ]
     },
     {
       "name": "Template Management",
       "item": [
-        { "name": "Forms - List", "request": { "method": "GET", "url": "{{baseUrl}}/forms?page=1&limit=20" } },
-        { "name": "Forms - Create", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"BM KPI Thang\",\n  \"fieldCategoryId\": \"{{fieldCategoryId}}\",\n  \"periodType\": \"THANG\",\n  \"templateType\": \"AGGREGATE\",\n  \"isActive\": true\n}" }, "url": "{{baseUrl}}/forms" } },
-        { "name": "Forms - Detail", "request": { "method": "GET", "url": "{{baseUrl}}/forms/{{formId}}" } },
-        { "name": "Forms - Patch", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"BM KPI Thang - Updated\",\n  \"description\": \"Update metadata\",\n  \"periodType\": \"THANG\",\n  \"templateType\": \"AGGREGATE\"\n}" }, "url": "{{baseUrl}}/forms/{{formId}}" } },
-        { "name": "Forms - Mark Ready", "request": { "method": "POST", "url": "{{baseUrl}}/forms/{{formId}}/mark-ready" } },
-        { "name": "Forms - Archive", "request": { "method": "POST", "url": "{{baseUrl}}/forms/{{formId}}/archive" } },
-        { "name": "Forms - Activate", "request": { "method": "POST", "url": "{{baseUrl}}/forms/{{formId}}/activate" } },
-        { "name": "Forms - Deactivate", "request": { "method": "POST", "url": "{{baseUrl}}/forms/{{formId}}/deactivate" } },
-        { "name": "Forms - Copy", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"BM KPI Thang - Copy\"\n}" }, "url": "{{baseUrl}}/forms/{{formId}}/copy" } },
-        { "name": "Forms - Delete", "request": { "method": "DELETE", "url": "{{baseUrl}}/forms/{{formId}}" } },
-        { "name": "Form Indicators - List", "request": { "method": "GET", "url": "{{baseUrl}}/forms/{{formId}}/indicators" } },
-        { "name": "Form Attributes - List", "request": { "method": "GET", "url": "{{baseUrl}}/forms/{{formId}}/attributes" } },
-        { "name": "Template Scopes - List", "request": { "method": "GET", "url": "{{baseUrl}}/forms/{{formId}}/template-scopes" } },
-        { "name": "Cell Configs - Effective", "request": { "method": "GET", "url": "{{baseUrl}}/forms/{{formId}}/cell-configs/effective" } },
-        { "name": "Field Categories - List", "request": { "method": "GET", "url": "{{baseUrl}}/field-categories?isGetAll=true" } },
-        { "name": "Indicator Catalog - List", "request": { "method": "GET", "url": "{{baseUrl}}/indicator-catalog?page=1&limit=50" } }
+        {
+          "name": "Forms - List",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/forms?q=kpi&search=kpi&fieldCategory=finance&category=finance&fieldCategoryId={{fieldCategoryId}}&period=2026-05&periodType=THANG&isActive=true&status=active&page=1&limit=20"
+          }
+        },
+        {
+          "name": "Forms - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"FM-2026-Q2\",\n  \"name\": \"Bi?u m?u KPI qu? 2\",\n  \"fieldCategoryId\": \"{{fieldCategoryId}}\",\n  \"description\": \"Bi?u m?u m?u cho k? ho?ch KPI\",\n  \"periodType\": \"THANG\",\n  \"templateType\": \"AGGREGATE\",\n  \"isActive\": true\n}"
+            },
+            "url": "{{baseUrl}}/forms"
+          }
+        },
+        {
+          "name": "Forms - Detail",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/forms/{{formId}}"
+          }
+        },
+        {
+          "name": "Forms - Patch",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bi?u m?u KPI qu? 2 - c?p nh?t\",\n  \"fieldCategoryId\": \"{{fieldCategoryId}}\",\n  \"description\": \"C?p nh?t m? t? bi?u m?u\",\n  \"periodType\": \"THANG\",\n  \"templateType\": \"UNIQUE\",\n  \"isActive\": true\n}"
+            },
+            "url": "{{baseUrl}}/forms/{{formId}}"
+          }
+        },
+        {
+          "name": "Forms - Mark Ready",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/forms/{{formId}}/mark-ready"
+          }
+        },
+        {
+          "name": "Forms - Archive",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/forms/{{formId}}/archive"
+          }
+        },
+        {
+          "name": "Forms - Activate",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/forms/{{formId}}/activate"
+          }
+        },
+        {
+          "name": "Forms - Deactivate",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/forms/{{formId}}/deactivate"
+          }
+        },
+        {
+          "name": "Forms - Copy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"FM-2026-Q2-COPY\",\n  \"name\": \"B?n sao bi?u m?u KPI qu? 2\",\n  \"fieldCategoryId\": \"{{fieldCategoryId}}\",\n  \"parentFormId\": \"{{formId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/forms/{{formId}}/copy"
+          }
+        },
+        {
+          "name": "Forms - Upload Template File",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/forms/{{formId}}/template"
+          }
+        },
+        {
+          "name": "Forms - Delete",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/forms/{{formId}}"
+          }
+        },
+        {
+          "name": "Form Indicators - List",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/forms/{{formId}}/indicators?parentId={{indicatorId2}}"
+          }
+        },
+        {
+          "name": "Form Indicators - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"parentId\": null,\n  \"displayIndex\": \"1.1\",\n  \"code\": \"DT01\",\n  \"name\": \"Doanh thu\",\n  \"unit\": \"VND\",\n  \"dataType\": \"number\",\n  \"isRequired\": true,\n  \"isReadonly\": false,\n  \"isCalculated\": false,\n  \"formula\": null,\n  \"groupName\": \"K?t qu? kinh doanh\",\n  \"minValue\": \"0\",\n  \"maxValue\": null,\n  \"validationRule\": {\n    \"min\": 0,\n    \"max\": 1000000000\n  },\n  \"isActive\": true,\n  \"catalogIndicatorId\": \"{{catalogIndicatorId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/forms/{{formId}}/indicators"
+          }
+        },
+        {
+          "name": "Form Indicators - Patch",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"parentId\": \"{{indicatorId2}}\",\n  \"displayIndex\": \"1.2\",\n  \"code\": \"DT01-UPDATED\",\n  \"name\": \"Doanh thu c?p nh?t\",\n  \"unit\": \"VND\",\n  \"dataType\": \"number\",\n  \"isRequired\": true,\n  \"isReadonly\": true,\n  \"isCalculated\": false,\n  \"formula\": \"SUM(A1:A10)\",\n  \"groupName\": \"K?t qu? kinh doanh\",\n  \"minValue\": \"0\",\n  \"maxValue\": null,\n  \"validationRule\": {\n    \"precision\": 2\n  },\n  \"isActive\": true,\n  \"catalogIndicatorId\": \"{{catalogIndicatorId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/forms/{{formId}}/indicators/{{indicatorId}}"
+          }
+        },
+        {
+          "name": "Form Indicators - Delete",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/forms/{{formId}}/indicators/{{indicatorId}}"
+          }
+        },
+        {
+          "name": "Form Indicators - Reorder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"id\": \"{{indicatorId}}\",\n      \"parentId\": null\n    },\n    {\n      \"id\": \"{{indicatorId2}}\",\n      \"parentId\": \"{{indicatorId}}\"\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/forms/{{formId}}/indicators/reorder"
+          }
+        },
+        {
+          "name": "Form Indicators - Validate Formula",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"formula\": \"SUM(A1:A10) / 2\",\n  \"code\": \"DT01\",\n  \"indicatorId\": \"{{indicatorId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/forms/{{formId}}/indicators/formula/validate"
+          }
+        },
+        {
+          "name": "Form Attributes - List",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/forms/{{formId}}/attributes?parentId={{attrId2}}"
+          }
+        },
+        {
+          "name": "Form Attributes - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"parentId\": null,\n  \"name\": \"??n v? t?nh\",\n  \"dataType\": \"text\",\n  \"isRequired\": false,\n  \"isVisible\": true,\n  \"isReadonly\": false,\n  \"isSystem\": false,\n  \"options\": {\n    \"maxLength\": 50,\n    \"placeholder\": \"Nh?p ??n v?\"\n  },\n  \"validationRule\": {\n    \"requiredWhen\": \"isCalculated=false\"\n  }\n}"
+            },
+            "url": "{{baseUrl}}/forms/{{formId}}/attributes"
+          }
+        },
+        {
+          "name": "Form Attributes - Patch",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"parentId\": \"{{attrId2}}\",\n  \"name\": \"??n v? t?nh - c?p nh?t\",\n  \"dataType\": \"text\",\n  \"isRequired\": true,\n  \"isVisible\": true,\n  \"isReadonly\": true,\n  \"options\": {\n    \"maxLength\": 100\n  },\n  \"validationRule\": {\n    \"allowEmpty\": false\n  }\n}"
+            },
+            "url": "{{baseUrl}}/forms/{{formId}}/attributes/{{attrId}}"
+          }
+        },
+        {
+          "name": "Form Attributes - Delete",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/forms/{{formId}}/attributes/{{attrId}}"
+          }
+        },
+        {
+          "name": "Form Attributes - Reorder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"id\": \"{{attrId}}\",\n      \"parentId\": null\n    },\n    {\n      \"id\": \"{{attrId2}}\",\n      \"parentId\": \"{{attrId}}\"\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/forms/{{formId}}/attributes/reorder"
+          }
+        },
+        {
+          "name": "Cell Configs - List",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/forms/{{formId}}/cell-configs"
+          }
+        },
+        {
+          "name": "Cell Configs - Effective",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/forms/{{formId}}/cell-configs/effective"
+          }
+        },
+        {
+          "name": "Cell Configs - Upsert",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"indicatorId\": \"{{indicatorId}}\",\n      \"attributeId\": \"{{attrId}}\",\n      \"dataType\": \"number\",\n      \"required\": true,\n      \"readOnly\": false,\n      \"formula\": \"SUM(B2:B10)\"\n    },\n    {\n      \"indicatorId\": \"{{indicatorId2}}\",\n      \"attributeId\": \"{{attrId2}}\",\n      \"dataType\": \"text\",\n      \"required\": false,\n      \"readOnly\": true,\n      \"formula\": null\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/forms/{{formId}}/cell-configs"
+          }
+        },
+        {
+          "name": "Cell Configs - Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"indicatorId\": \"{{indicatorId}}\",\n      \"attributeId\": \"{{attrId}}\"\n    },\n    {\n      \"indicatorId\": \"{{indicatorId2}}\",\n      \"attributeId\": \"{{attrId2}}\"\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/forms/{{formId}}/cell-configs"
+          }
+        },
+        {
+          "name": "Template Scopes - List",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/forms/{{formId}}/template-scopes"
+          }
+        },
+        {
+          "name": "Template Scopes - Upsert",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"orgId\": \"{{orgId}}\",\n      \"indicatorId\": \"{{indicatorId}}\"\n    },\n    {\n      \"orgId\": \"{{orgId2}}\",\n      \"indicatorId\": \"{{indicatorId2}}\"\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/forms/{{formId}}/template-scopes"
+          }
+        },
+        {
+          "name": "Template Scopes - Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"orgId\": \"{{orgId}}\",\n      \"indicatorId\": \"{{indicatorId}}\"\n    },\n    {\n      \"orgId\": \"{{orgId2}}\",\n      \"indicatorId\": \"{{indicatorId2}}\"\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/forms/{{formId}}/template-scopes"
+          }
+        },
+        {
+          "name": "Field Categories - List",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/field-categories?q=finance&isActive=true&status=true&isGetAll=false&page=1&limit=20"
+          }
+        },
+        {
+          "name": "Field Categories - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"finance_kpi\",\n  \"name\": \"Finance KPI\",\n  \"description\": \"Nh?m ch? ti?u t?i ch?nh\",\n  \"sortOrder\": 1,\n  \"isActive\": true\n}"
+            },
+            "url": "{{baseUrl}}/field-categories"
+          }
+        },
+        {
+          "name": "Field Categories - Patch",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"finance_kpi_v2\",\n  \"name\": \"Finance KPI v2\",\n  \"description\": \"Nh?m ch? ti?u t?i ch?nh - c?p nh?t\",\n  \"sortOrder\": 2,\n  \"isActive\": true\n}"
+            },
+            "url": "{{baseUrl}}/field-categories/{{fieldCategoryId}}"
+          }
+        },
+        {
+          "name": "Field Categories - Delete",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/field-categories/{{fieldCategoryId}}"
+          }
+        },
+        {
+          "name": "Indicator Catalog - List",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/indicator-catalog?q=doanh&page=1&limit=50"
+          }
+        },
+        {
+          "name": "Indicator Catalog - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"DOANH_THU\",\n  \"name\": \"Doanh thu\",\n  \"unit\": \"VND\",\n  \"dataType\": \"number\"\n}"
+            },
+            "url": "{{baseUrl}}/indicator-catalog"
+          }
+        },
+        {
+          "name": "Indicator Catalog - Patch",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"DOANH_THU_UPDATE\",\n  \"name\": \"Doanh thu c?p nh?t\",\n  \"unit\": \"VND\",\n  \"dataType\": \"number\"\n}"
+            },
+            "url": "{{baseUrl}}/indicator-catalog/{{catalogIndicatorId}}"
+          }
+        },
+        {
+          "name": "Indicator Catalog - Delete",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/indicator-catalog/{{catalogIndicatorId}}"
+          }
+        }
       ]
     },
     {
       "name": "Submission & Approval",
       "item": [
-        { "name": "My Assignments", "request": { "method": "GET", "url": "{{baseUrl}}/my/assignments" } },
-        { "name": "Create Submission", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{}" }, "url": "{{baseUrl}}/submissions" } },
-        { "name": "Get Submission", "request": { "method": "GET", "url": "{{baseUrl}}/submissions/{{submissionId}}" } },
-        { "name": "Update Submission Cells", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"cells\": []\n}" }, "url": "{{baseUrl}}/submissions/{{submissionId}}/cells" } },
-        { "name": "Submit Submission", "request": { "method": "POST", "url": "{{baseUrl}}/submissions/{{submissionId}}/submit" } },
-        { "name": "Pending Approvals", "request": { "method": "GET", "url": "{{baseUrl}}/approvals/pending" } },
-        { "name": "Approve", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{}" }, "url": "{{baseUrl}}/approvals/{{submissionId}}/approve" } },
-        { "name": "Reject", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"note\": \"Rejected\"\n}" }, "url": "{{baseUrl}}/approvals/{{submissionId}}/reject" } }
+        {
+          "name": "My Assignments",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/my/assignments"
+          }
+        },
+        {
+          "name": "Create Submission",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{baseUrl}}/submissions"
+          }
+        },
+        {
+          "name": "Get Submission",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/submissions/{{submissionId}}"
+          }
+        },
+        {
+          "name": "Update Submission Cells",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cells\": []\n}"
+            },
+            "url": "{{baseUrl}}/submissions/{{submissionId}}/cells"
+          }
+        },
+        {
+          "name": "Submit Submission",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/submissions/{{submissionId}}/submit"
+          }
+        },
+        {
+          "name": "Pending Approvals",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/approvals/pending"
+          }
+        },
+        {
+          "name": "Approve",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{baseUrl}}/approvals/{{submissionId}}/approve"
+          }
+        },
+        {
+          "name": "Reject",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Rejected\"\n}"
+            },
+            "url": "{{baseUrl}}/approvals/{{submissionId}}/reject"
+          }
+        }
       ]
     },
     {
@@ -166,23 +1087,105 @@
     {
       "name": "Summary & Analytics",
       "item": [
-        { "name": "Summaries - List", "request": { "method": "GET", "url": "{{baseUrl}}/summaries" } },
-        { "name": "Summaries - Detail", "request": { "method": "GET", "url": "{{baseUrl}}/summaries/{{summaryId}}" } },
-        { "name": "Summaries - Recompute", "request": { "method": "POST", "url": "{{baseUrl}}/summaries/{{summaryId}}/recompute" } },
-        { "name": "Analytics KPIs", "request": { "method": "GET", "url": "{{baseUrl}}/analytics/kpis" } },
-        { "name": "Analytics Charts", "request": { "method": "GET", "url": "{{baseUrl}}/analytics/charts" } },
-        { "name": "Analytics Pivot", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{}" }, "url": "{{baseUrl}}/analytics/pivot" } },
-        { "name": "Query Reports", "request": { "method": "GET", "url": "{{baseUrl}}/query/reports" } }
+        {
+          "name": "Summaries - List",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/summaries"
+          }
+        },
+        {
+          "name": "Summaries - Detail",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/summaries/{{summaryId}}"
+          }
+        },
+        {
+          "name": "Summaries - Recompute",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/summaries/{{summaryId}}/recompute"
+          }
+        },
+        {
+          "name": "Analytics KPIs",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/analytics/kpis"
+          }
+        },
+        {
+          "name": "Analytics Charts",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/analytics/charts"
+          }
+        },
+        {
+          "name": "Analytics Pivot",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{baseUrl}}/analytics/pivot"
+          }
+        },
+        {
+          "name": "Query Reports",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/query/reports"
+          }
+        }
       ]
     },
     {
       "name": "Notification & Audit",
       "item": [
-        { "name": "Notifications", "request": { "method": "GET", "url": "{{baseUrl}}/notifications" } },
-        { "name": "Mark Notification Read", "request": { "method": "POST", "url": "{{baseUrl}}/notifications/{{notificationId}}/read" } },
-        { "name": "Notification Logs", "request": { "method": "GET", "url": "{{baseUrl}}/notifications/logs" } },
-        { "name": "Audit Logs", "request": { "method": "GET", "url": "{{baseUrl}}/audit-logs" } },
-        { "name": "Audit By Entity", "request": { "method": "GET", "url": "{{baseUrl}}/audit-logs/entity/users/{{userId}}" } }
+        {
+          "name": "Notifications",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/notifications"
+          }
+        },
+        {
+          "name": "Mark Notification Read",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/notifications/{{notificationId}}/read"
+          }
+        },
+        {
+          "name": "Notification Logs",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/notifications/logs"
+          }
+        },
+        {
+          "name": "Audit Logs",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/audit-logs"
+          }
+        },
+        {
+          "name": "Audit By Entity",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/audit-logs/entity/users/{{userId}}"
+          }
+        }
       ]
     }
   ]

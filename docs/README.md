@@ -19,3 +19,12 @@ Bo tai lieu trien khai theo dac ta/use case/database QLDL:
 - `AUTH.md`
 - `FORM_TEMPLATE_DESIGN.md` - thiet ke template-form (khuon mau, lock & clone)
 - `REPORT_MANAGEMENT_DESIGN.md` - thiet ke report instance + tabs/action theo role
+
+## Template Management FE implementation
+
+- `template-management-impl/README.md`
+- `template-management-impl/00-context-and-rules.md`
+- `template-management-impl/01-folder-structure.md`
+- `template-management-impl/02-api-contracts.md`
+- `template-management-impl/03-ui-flow-and-tabs.md`
+- `template-management-impl/04-implementation-plan.md`

@@ -42,10 +42,8 @@ import { DeleteFormCellConfigsDto } from './dto/delete-form-cell-configs.dto';
 import { UpsertTemplateScopesDto } from './dto/upsert-template-scope.dto';
 
 const DEFAULT_FORM_SYSTEM_ATTRIBUTES = [
-  { name: 'Thứ tự', dataType: 'integer', sortOrder: 0 },
-  { name: 'Mã chỉ tiêu', dataType: 'text', sortOrder: 1 },
-  { name: 'Tên chỉ tiêu', dataType: 'text', sortOrder: 2 },
-  { name: 'Đơn vị tính', dataType: 'text', sortOrder: 3 },
+  { name: 'Tên chỉ tiêu', dataType: 'text', sortOrder: 0 },
+  { name: 'Đơn vị tính', dataType: 'text', sortOrder: 1 },
 ];
 
 @Injectable()
@@ -106,6 +104,7 @@ export class TemplateManagementService {
           isRequired: false,
           isVisible: true,
           isSystem: true,
+          isReadonly: true,
           sortOrder: def.sortOrder,
           options: null,
         }),
@@ -607,9 +606,11 @@ export class TemplateManagementService {
             dataType: a.dataType,
             isRequired: a.isRequired,
             isVisible: a.isVisible,
+            isReadonly: a.isReadonly,
             isSystem: a.isSystem,
             sortOrder: a.sortOrder,
             options: a.options,
+            validationRule: a.validationRule,
           }),
         );
         attrMap.set(a.id, newAttr.id);
@@ -692,7 +693,7 @@ export class TemplateManagementService {
       isRequired: dto.isRequired ?? false,
       isVisible: dto.isVisible ?? true,
       isReadonly: dto.isReadonly ?? false,
-      isSystem: dto.isSystem ?? false,
+      isSystem: false,
       sortOrder: nextSort,
       options: dto.options ?? null,
       validationRule: dto.validationRule ?? null,
@@ -711,6 +712,9 @@ export class TemplateManagementService {
       where: { id: attrId, formId },
     });
     if (!a) throw new NotFoundException('Không tìm thấy thuộc tính');
+    if (a.isSystem) {
+      throw new ConflictException('ATTRIBUTE_SYSTEM_PROTECTED');
+    }
     if (dto.parentId !== undefined) {
       await this.ensureAttributeParent(formId, dto.parentId ?? null);
       await this.ensureNoAttributeCycle(formId, attrId, dto.parentId ?? null);
@@ -1190,19 +1194,24 @@ export class TemplateManagementService {
         const payloadIds = payloadOrderByParent.get(parentKey) ?? [];
         const payloadIdSet = new Set(payloadIds);
 
-        const remaining = existing
-          .filter(
-            (row) =>
-              effectiveParentId(row.id) === parentId &&
-              !payloadIdSet.has(row.id),
-          )
+        const siblings = existing
+          .filter((row) => effectiveParentId(row.id) === parentId)
           .sort((a, b) => {
             if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
             return a.id.localeCompare(b.id);
           })
-          .map((x) => x.id);
+          .map((row) => row.id);
+        const finalIds = [...siblings];
+        const payloadPositions: number[] = [];
+        for (let idx = 0; idx < siblings.length; idx++) {
+          if (payloadIdSet.has(siblings[idx])) {
+            payloadPositions.push(idx);
+          }
+        }
+        for (let idx = 0; idx < payloadPositions.length; idx++) {
+          finalIds[payloadPositions[idx]] = payloadIds[idx];
+        }
 
-        const finalIds = [...payloadIds, ...remaining];
         for (let idx = 0; idx < finalIds.length; idx++) {
           const id = finalIds[idx];
           const payloadItem = payloadById.get(id);
@@ -1222,11 +1231,15 @@ export class TemplateManagementService {
     await this.ensureForm(formId);
     const existing = await this.attrRepo.find({ where: { formId } });
     const idSet = new Set(existing.map((x) => x.id));
+    const systemIds = new Set(existing.filter((x) => x.isSystem).map((x) => x.id));
     for (const item of items) {
       if (!idSet.has(item.id)) {
         throw new BadRequestException(
           `attributeId không thuộc form: ${item.id}`,
         );
+      }
+      if (systemIds.has(item.id)) {
+        throw new ConflictException('ATTRIBUTE_SYSTEM_PROTECTED');
       }
     }
     await this.dataSource.transaction(async (manager) => {
@@ -1310,19 +1323,24 @@ export class TemplateManagementService {
         const payloadIds = payloadOrderByParent.get(parentKey) ?? [];
         const payloadIdSet = new Set(payloadIds);
 
-        const remaining = existing
-          .filter(
-            (row) =>
-              effectiveParentId(row.id) === parentId &&
-              !payloadIdSet.has(row.id),
-          )
+        const siblings = existing
+          .filter((row) => effectiveParentId(row.id) === parentId)
           .sort((a, b) => {
             if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
             return a.id.localeCompare(b.id);
           })
-          .map((x) => x.id);
+          .map((row) => row.id);
+        const finalIds = [...siblings];
+        const payloadPositions: number[] = [];
+        for (let idx = 0; idx < siblings.length; idx++) {
+          if (payloadIdSet.has(siblings[idx])) {
+            payloadPositions.push(idx);
+          }
+        }
+        for (let idx = 0; idx < payloadPositions.length; idx++) {
+          finalIds[payloadPositions[idx]] = payloadIds[idx];
+        }
 
-        const finalIds = [...payloadIds, ...remaining];
         for (let idx = 0; idx < finalIds.length; idx++) {
           const id = finalIds[idx];
           const payloadItem = payloadById.get(id);
