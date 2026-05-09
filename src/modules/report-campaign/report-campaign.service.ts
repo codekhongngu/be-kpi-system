@@ -153,11 +153,32 @@ export class ReportCampaignService {
 
   async listScopes(campaignId: string) {
     const rows = await this.scopeRepo.find({ where: { batchId: campaignId } });
+    
+    // Get org details
+    const orgIds = [...new Set(rows.map(x => x.orgId))];
+    const orgs = await this.orgRepo.find({ 
+      where: { id: In(orgIds) },
+      select: { id: true, name: true, code: true }
+    });
+    const orgMap = new Map(orgs.map(org => [org.id, org]));
+    
+    // Get indicator details
+    const indicatorIds = [...new Set(rows.map(x => x.indicatorId))];
+    const indicators = await this.indicatorRepo.find({
+      where: { id: In(indicatorIds) },
+      select: { id: true, code: true, name: true }
+    });
+    const indicatorMap = new Map(indicators.map(ind => [ind.id, ind]));
+    
     return {
       items: rows.map((x) => ({
         id: x.id,
         orgId: x.orgId,
+        orgName: orgMap.get(x.orgId)?.name,
+        orgCode: orgMap.get(x.orgId)?.code,
         indicatorId: x.indicatorId,
+        indicatorCode: indicatorMap.get(x.indicatorId)?.code,
+        indicatorName: indicatorMap.get(x.indicatorId)?.name,
         source: x.source,
       })),
     };
