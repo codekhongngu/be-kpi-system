@@ -166,7 +166,7 @@ export class ReportCampaignService {
     const indicatorIds = [...new Set(rows.map(x => x.indicatorId))];
     const indicators = await this.indicatorRepo.find({
       where: { id: In(indicatorIds) },
-      select: { id: true, code: true, name: true }
+      select: { id: true, code: true, name: true, parentId: true, sortOrder: true }
     });
     const indicatorMap = new Map(indicators.map(ind => [ind.id, ind]));
     
@@ -179,6 +179,8 @@ export class ReportCampaignService {
         indicatorId: x.indicatorId,
         indicatorCode: indicatorMap.get(x.indicatorId)?.code,
         indicatorName: indicatorMap.get(x.indicatorId)?.name,
+        parent_id: indicatorMap.get(x.indicatorId)?.parentId,
+        sort_order: indicatorMap.get(x.indicatorId)?.sortOrder,
         source: x.source,
       })),
     };
