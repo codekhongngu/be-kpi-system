@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { ReportSummary } from './entities/report-summary.entity';
 import { CreateSummaryDto } from './dto/create-summary.dto';
 import { SummaryQueryDto } from './dto/summary-query.dto';
@@ -10,6 +10,7 @@ export class SummaryAnalyticsSummaryService {
   constructor(
     @InjectRepository(ReportSummary)
     private readonly summaryRepo: Repository<ReportSummary>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async findAll(query: SummaryQueryDto) {
@@ -98,8 +99,66 @@ export class SummaryAnalyticsSummaryService {
   async recompute(id: string) {
     const s = await this.summaryRepo.findOne({ where: { id } });
     if (!s) throw new NotFoundException('Khong tim thay ban tong hop');
+
+    let defaultValues: any[] = [];
+    let submissionCells: any[] = [];
+
+    // Find campaignId
+    const campaigns = await this.dataSource.query(
+      `SELECT id FROM report_campaigns WHERE template_id = $1 AND period_type = $2 AND period_code = $3 LIMIT 1`,
+      [s.formId, s.periodType, s.periodCode],
+    );
+    const campaignId = campaigns[0]?.id;
+
+    if (campaignId) {
+      defaultValues = await this.dataSource.query(
+        `SELECT indicator_id, attribute_id, value_text, value_number
+         FROM report_campaign_default_values
+         WHERE campaign_id = $1`,
+        [campaignId],
+      );
+
+      // Fetch approved submission cells within the org tree
+      submissionCells = await this.dataSource.query(
+        `SELECT c.indicator_id, c.attribute_id, c.value, c.value_numeric
+         FROM report_submission_cells c
+         INNER JOIN report_submissions sub ON sub.id = c.submission_id
+         INNER JOIN report_assignments a ON a.id = sub.assignment_id
+         INNER JOIN organization_closure oc ON oc.descendant_id = a.org_id
+         WHERE a.batch_id = $1 AND oc.ancestor_id = $2 AND sub.status = 'APPROVED'`,
+        [campaignId, s.orgId],
+      );
+    }
+
+    const mergedData = new Map<string, any>();
+
+    // 1. Dùng giá trị từ đơn vị (submission_cells) - Cộng dồn nếu là số
+    for (const cell of submissionCells) {
+      const key = `${cell.indicator_id}:${cell.attribute_id}`;
+      const existing = mergedData.get(key) || { valueText: null, valueNumber: 0 };
+      mergedData.set(key, {
+        valueText: cell.value ?? existing.valueText,
+        valueNumber: existing.valueNumber + (cell.value_numeric ? Number(cell.value_numeric) : 0),
+      });
+    }
+
+    // 2. Dùng giá trị từ campaign (defaultValue ưu tiên đè lên, vì ô này locked)
+    for (const dv of defaultValues) {
+      const key = `${dv.indicator_id}:${dv.attribute_id}`;
+      mergedData.set(key, {
+        valueText: dv.value_text,
+        valueNumber: dv.value_number != null ? Number(dv.value_number) : null,
+      });
+    }
+
+    const indicators: Record<string, any> = {};
+    for (const [key, val] of mergedData.entries()) {
+      indicators[key] = val;
+    }
+
     s.summaryData = {
       ...(s.summaryData ?? {}),
+      indicators,
       recomputedAt: new Date().toISOString(),
     };
     await this.summaryRepo.save(s);

@@ -53,26 +53,11 @@ export class FormIndicator {
   @Column({ name: 'data_type', type: 'varchar', length: 20 })
   dataType: string;
 
-  @Column({ name: 'is_required', type: 'boolean', default: true })
-  isRequired: boolean;
-
-  isReadonly = false;
-
-  @Column({ name: 'is_calculated', type: 'boolean', default: false })
-  isCalculated: boolean;
-
-  @Column({ type: 'text', nullable: true })
-  formula: string | null;
-
-  groupName: string | null = null;
+  @Column({ type: 'varchar', length: 10, default: 'INPUT' })
+  type: 'INPUT' | 'TITLE';
 
   @Column({ name: 'sort_order', type: 'int', default: 0 })
   sortOrder: number;
-
-  minValue: string | null = null;
-  maxValue: string | null = null;
-  validationRule: Record<string, unknown> | null = null;
-  isActive = true;
 
   @Column({ name: 'catalog_indicator_id', type: 'uuid', nullable: true })
   catalogIndicatorId: string | null;

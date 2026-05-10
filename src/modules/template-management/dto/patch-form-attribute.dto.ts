@@ -1,7 +1,4 @@
 import {
-  IsBoolean,
-  IsIn,
-  IsObject,
   IsOptional,
   IsString,
   Matches,
@@ -21,30 +18,4 @@ export class PatchFormAttributeDto {
   @IsString()
   @MaxLength(255)
   name?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(20)
-  @IsIn(['number', 'text'])
-  dataType?: string | null;
-
-  @IsOptional()
-  @IsBoolean()
-  isRequired?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  isVisible?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  isReadonly?: boolean;
-
-  @IsOptional()
-  @IsObject()
-  options?: Record<string, unknown> | null;
-
-  @IsOptional()
-  @IsObject()
-  validationRule?: Record<string, unknown> | null;
 }

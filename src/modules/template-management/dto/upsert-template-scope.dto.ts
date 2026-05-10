@@ -1,26 +1,19 @@
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsString, Matches, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsUUID, ValidateNested } from 'class-validator';
 
 export class TemplateScopeItemDto {
-  @IsString()
-  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, {
-    message: 'orgId must be a valid UUID format'
-  })
+  @IsUUID()
   orgId: string;
 
-  @IsString()
-  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, {
-    message: 'indicatorId must be a valid UUID format'
-  })
+  @IsUUID()
   indicatorId: string;
 }
 
 export class UpsertTemplateScopesDto {
   @IsArray()
-  @ArrayMinSize(1)
+  @ArrayMinSize(0)
   @ArrayMaxSize(5000)
   @ValidateNested({ each: true })
   @Type(() => TemplateScopeItemDto)
   items: TemplateScopeItemDto[];
 }
-

@@ -1,8 +1,5 @@
 import {
-  IsBoolean,
-  IsIn,
   IsNotEmpty,
-  IsObject,
   IsOptional,
   IsString,
   Matches,
@@ -22,34 +19,4 @@ export class CreateFormAttributeDto {
   @IsNotEmpty()
   @MaxLength(255)
   name: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(20)
-  @IsIn(['number', 'text'])
-  dataType?: string | null;
-
-  @IsOptional()
-  @IsBoolean()
-  isRequired?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  isVisible?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  isReadonly?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  isSystem?: boolean;
-
-  @IsOptional()
-  @IsObject()
-  options?: Record<string, unknown> | null;
-
-  @IsOptional()
-  @IsObject()
-  validationRule?: Record<string, unknown> | null;
 }

@@ -23,56 +23,23 @@ export class OrganizationService {
     private readonly orgRepo: Repository<Organization>,
   ) {}
 
-  private async hasCanAssignReportsColumn(): Promise<boolean> {
-    if (this.canAssignReportsColumn !== null) return this.canAssignReportsColumn;
-    try {
-      const rows = await this.orgRepo.query(
-        `
-        SELECT 1
-        FROM pg_attribute a
-        WHERE a.attrelid = to_regclass('organizations')
-          AND a.attname = 'can_assign_reports'
-          AND a.attnum > 0
-          AND NOT a.attisdropped
-        LIMIT 1
-      `,
-      );
-      this.canAssignReportsColumn = rows.length > 0;
-      return this.canAssignReportsColumn;
-    } catch {
-      this.canAssignReportsColumn = false;
-      return false;
-    }
-  }
-
   private async selectOrgColumns(qb: ReturnType<Repository<Organization>['createQueryBuilder']>) {
-    const base = [
+    qb.select([
       'o.id',
       'o.code',
       'o.name',
       'o.parentId',
       'o.level',
       'o.isActive',
+      'o.canAssignReports',
       'o.description',
       'o.createdAt',
       'o.updatedAt',
       'o.deletedAt',
-    ];
-    const has = await this.hasCanAssignReportsColumn();
-    qb.select(has ? [...base, 'o.canAssignReports'] : base);
-    return has;
+    ]);
   }
 
   async create(dto: CreateOrganizationDto): Promise<Organization> {
-    if (dto.canAssignReports !== undefined) {
-      const has = await this.hasCanAssignReportsColumn();
-      if (!has) {
-        throw new BadRequestException(
-          'DB_MISSING_COLUMN: organizations.can_assign_reports',
-        );
-      }
-    }
-
     const code = dto.code.trim();
     const exists = await this.orgRepo.exist({
       where: { code: ILike(code) },
@@ -98,18 +65,13 @@ export class OrganizationService {
 
   async findAll(query: OrganizationQueryDto) {
     const qb = this.orgRepo.createQueryBuilder('o');
-    const hasCanAssignReports = await this.selectOrgColumns(qb);
+    await this.selectOrgColumns(qb);
 
     if (query.isActive !== undefined) {
       qb.andWhere('o.isActive = :isActive', { isActive: query.isActive });
     }
 
     if (query.canAssignReports !== undefined) {
-      if (!hasCanAssignReports) {
-        throw new BadRequestException(
-          'DB_MISSING_COLUMN: organizations.can_assign_reports',
-        );
-      }
       qb.andWhere('o.canAssignReports = :car', { car: query.canAssignReports });
     }
 
@@ -136,15 +98,6 @@ export class OrganizationService {
   }
 
   async update(id: string, dto: UpdateOrganizationDto): Promise<Organization> {
-    if (dto.canAssignReports !== undefined) {
-      const has = await this.hasCanAssignReportsColumn();
-      if (!has) {
-        throw new BadRequestException(
-          'DB_MISSING_COLUMN: organizations.can_assign_reports',
-        );
-      }
-    }
-
     const org = await this.findOne(id);
 
     if (dto.code && dto.code !== org.code) {

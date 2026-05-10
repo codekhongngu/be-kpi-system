@@ -23,10 +23,16 @@ import {
 import { FormIndicator } from '../template-management/entities/form-indicator.entity';
 import { FormTemplateIndicatorOrgRule } from '../template-management/entities/form-template-indicator-org-rule.entity';
 import { Organization } from '../organization/entities/organization.entity';
+import { ReportCampaignDefaultValue } from './entities/report-campaign-default-value.entity';
+import { FormAttribute } from '../template-management/entities/form-attribute.entity';
 import { CreateReportCampaignDto } from './dto/create-report-campaign.dto';
 import { UpdateReportCampaignDto } from './dto/update-report-campaign.dto';
 import { UpsertReportCampaignScopesDto } from './dto/upsert-report-campaign-scopes.dto';
 import { ReportCampaignQueryDto } from './dto/report-campaign-query.dto';
+import {
+  UpsertCampaignDefaultValuesDto,
+  DeleteCampaignDefaultValuesDto,
+} from './dto/upsert-campaign-default-values.dto';
 
 @Injectable()
 export class ReportCampaignService {
@@ -45,6 +51,10 @@ export class ReportCampaignService {
     private readonly templateScopeRepo: Repository<FormTemplateIndicatorOrgRule>,
     @InjectRepository(Organization)
     private readonly orgRepo: Repository<Organization>,
+    @InjectRepository(ReportCampaignDefaultValue)
+    private readonly defaultValueRepo: Repository<ReportCampaignDefaultValue>,
+    @InjectRepository(FormAttribute)
+    private readonly attributeRepo: Repository<FormAttribute>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -153,34 +163,11 @@ export class ReportCampaignService {
 
   async listScopes(campaignId: string) {
     const rows = await this.scopeRepo.find({ where: { batchId: campaignId } });
-    
-    // Get org details
-    const orgIds = [...new Set(rows.map(x => x.orgId))];
-    const orgs = await this.orgRepo.find({ 
-      where: { id: In(orgIds) },
-      select: { id: true, name: true, code: true }
-    });
-    const orgMap = new Map(orgs.map(org => [org.id, org]));
-    
-    // Get indicator details
-    const indicatorIds = [...new Set(rows.map(x => x.indicatorId))];
-    const indicators = await this.indicatorRepo.find({
-      where: { id: In(indicatorIds) },
-      select: { id: true, code: true, name: true, parentId: true, sortOrder: true }
-    });
-    const indicatorMap = new Map(indicators.map(ind => [ind.id, ind]));
-    
     return {
       items: rows.map((x) => ({
         id: x.id,
         orgId: x.orgId,
-        orgName: orgMap.get(x.orgId)?.name,
-        orgCode: orgMap.get(x.orgId)?.code,
         indicatorId: x.indicatorId,
-        indicatorCode: indicatorMap.get(x.indicatorId)?.code,
-        indicatorName: indicatorMap.get(x.indicatorId)?.name,
-        parent_id: indicatorMap.get(x.indicatorId)?.parentId,
-        sort_order: indicatorMap.get(x.indicatorId)?.sortOrder,
         source: x.source,
       })),
     };
@@ -339,7 +326,125 @@ export class ReportCampaignService {
     await this.batchRepo.save(campaign);
     return { ok: true, status: campaign.status };
   }
+
+  // ── DefaultValues CRUD ────────────────────────────────────────────
+
+  async listDefaultValues(campaignId: string) {
+    const campaign = await this.batchRepo.findOne({ where: { id: campaignId } });
+    if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
+    const rows = await this.defaultValueRepo.find({
+      where: { campaignId },
+      order: { createdAt: 'ASC' },
+    });
+    return {
+      items: rows.map((x) => ({
+        id: x.id,
+        indicatorId: x.indicatorId,
+        attributeId: x.attributeId,
+        valueText: x.valueText,
+        valueNumber: x.valueNumber,
+      })),
+    };
+  }
+
+  async upsertDefaultValues(
+    campaignId: string,
+    dto: UpsertCampaignDefaultValuesDto,
+  ) {
+    const campaign = await this.batchRepo.findOne({ where: { id: campaignId } });
+    if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
+    if (campaign.status !== AssignmentBatchStatus.DRAFT) {
+      throw new ConflictException('CAMPAIGN_NOT_EDITABLE');
+    }
+
+    // Validate indicators belong to campaign's template
+    const indicatorIds = [...new Set(dto.items.map((x) => x.indicatorId))];
+    const indicators = await this.indicatorRepo.find({
+      where: { id: In(indicatorIds), formId: campaign.formId },
+      select: { id: true, type: true },
+    });
+    if (indicators.length !== indicatorIds.length) {
+      throw new BadRequestException('INVALID_INDICATORS');
+    }
+    if (indicators.some((ind) => ind.type === 'TITLE')) {
+      throw new BadRequestException('CANNOT_SET_DEFAULT_VALUE_FOR_TITLE_INDICATOR');
+    }
+
+    // Validate attributes belong to campaign's template
+    const attributeIds = [...new Set(dto.items.map((x) => x.attributeId))];
+    const attributes = await this.attributeRepo.find({
+      where: { id: In(attributeIds), formId: campaign.formId },
+      select: { id: true },
+    });
+    if (attributes.length !== attributeIds.length) {
+      throw new BadRequestException('INVALID_ATTRIBUTES');
+    }
+
+    // Validate value theo dataType (query cell_config cho từng ô)
+    for (const item of dto.items) {
+      const cellConfig = await this.dataSource.query<
+        { data_type: string | null }[]
+      >(
+        `SELECT data_type FROM form_template_cell_configs
+         WHERE template_id = $1 AND indicator_id = $2 AND attribute_id = $3
+         LIMIT 1`,
+        [campaign.formId, item.indicatorId, item.attributeId],
+      );
+      const dataType = cellConfig?.[0]?.data_type ?? null;
+      if (dataType === 'number' && item.valueNumber == null && !item.valueText) {
+        throw new BadRequestException(
+          `Ô (${item.indicatorId}, ${item.attributeId}) kiểu số nhưng không có giá trị number`,
+        );
+      }
+    }
+
+    // Upsert
+    for (const item of dto.items) {
+      const existing = await this.defaultValueRepo.findOne({
+        where: {
+          campaignId,
+          indicatorId: item.indicatorId,
+          attributeId: item.attributeId,
+        },
+      });
+      if (existing) {
+        existing.valueText = item.valueText ?? null;
+        existing.valueNumber =
+          item.valueNumber != null ? String(item.valueNumber) : null;
+        await this.defaultValueRepo.save(existing);
+        continue;
+      }
+      await this.defaultValueRepo.save(
+        this.defaultValueRepo.create({
+          campaignId,
+          indicatorId: item.indicatorId,
+          attributeId: item.attributeId,
+          valueText: item.valueText ?? null,
+          valueNumber:
+            item.valueNumber != null ? String(item.valueNumber) : null,
+        }),
+      );
+    }
+
+    return { ok: true };
+  }
+
+  async deleteDefaultValues(
+    campaignId: string,
+    dto: DeleteCampaignDefaultValuesDto,
+  ) {
+    const campaign = await this.batchRepo.findOne({ where: { id: campaignId } });
+    if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
+    if (campaign.status !== AssignmentBatchStatus.DRAFT) {
+      throw new ConflictException('CAMPAIGN_NOT_EDITABLE');
+    }
+    for (const item of dto.items) {
+      await this.defaultValueRepo.delete({
+        campaignId,
+        indicatorId: item.indicatorId,
+        attributeId: item.attributeId,
+      });
+    }
+    return { ok: true };
+  }
 }
-
-
-

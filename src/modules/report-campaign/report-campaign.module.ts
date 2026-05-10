@@ -8,6 +8,8 @@ import { FormAssignment } from '../report-campaign/assignment/entities/form-assi
 import { Form } from '../template-management/entities/form.entity';
 import { FormIndicator } from '../template-management/entities/form-indicator.entity';
 import { FormTemplateIndicatorOrgRule } from '../template-management/entities/form-template-indicator-org-rule.entity';
+import { FormAttribute } from '../template-management/entities/form-attribute.entity';
+import { ReportCampaignDefaultValue } from './entities/report-campaign-default-value.entity';
 import { Organization } from '../organization/entities/organization.entity';
 import { ReportCampaignController } from './report-campaign.controller';
 import { ReportCampaignService } from './report-campaign.service';
@@ -21,9 +23,11 @@ import { ReportAssignmentModule } from './assignment/assignment.module';
       AssignmentIndicatorScope,
       FormAssignment,
       Form,
+      FormAttribute,
       FormIndicator,
       FormTemplateIndicatorOrgRule,
       Organization,
+      ReportCampaignDefaultValue,
       Role,
       Permission,
     ]),
