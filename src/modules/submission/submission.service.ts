@@ -144,6 +144,28 @@ export class SubmissionService {
     if (!a) throw new NotFoundException('Không tìm thấy giao việc');
     this.assertOrgScope(user, a);
     const cells = await this.dataRepo.find({ where: { submissionId: id } });
+
+    let defaultValues: Array<{
+      indicatorId: string;
+      attributeId: string;
+      valueText: string | null;
+      valueNumber: number | null;
+    }> = [];
+    if (a.batchId) {
+      const rows = await this.dataSource.query(
+        `SELECT indicator_id, attribute_id, value_text, value_number
+         FROM report_campaign_default_values
+         WHERE campaign_id = $1`,
+        [a.batchId],
+      );
+      defaultValues = rows.map((r: any) => ({
+        indicatorId: r.indicator_id,
+        attributeId: r.attribute_id,
+        valueText: r.value_text,
+        valueNumber: r.value_number != null ? Number(r.value_number) : null,
+      }));
+    }
+
     return {
       id: s.id,
       code: s.code,
@@ -155,6 +177,7 @@ export class SubmissionService {
       completionPct: s.completionPct != null ? Number(s.completionPct) : null,
       submittedAt: s.submittedAt,
       approvedAt: s.approvedAt,
+      defaultValues,
       cells: cells.map((c) => ({
         indicatorId: c.indicatorId,
         attributeId: c.attributeId,
@@ -212,8 +235,30 @@ export class SubmissionService {
       code: string;
       message: string;
     }> = [];
+
+    const lockedCells = new Set<string>();
+    if (a.batchId) {
+      const dvRows = await this.dataSource.query<{ indicator_id: string; attribute_id: string }[]>(
+        `SELECT indicator_id, attribute_id
+         FROM report_campaign_default_values
+         WHERE campaign_id = $1`,
+        [a.batchId],
+      );
+      dvRows.forEach((r) => lockedCells.add(`${r.indicator_id}:${r.attribute_id}`));
+    }
+
     let saved = 0;
     for (const ch of dto.changes) {
+      if (lockedCells.has(`${ch.indicatorId}:${ch.attributeId}`)) {
+        validationErrors.push({
+          indicatorId: ch.indicatorId,
+          attributeId: ch.attributeId,
+          code: 'CELL_LOCKED_BY_DEFAULT_VALUE',
+          message: 'Ô này đã có giá trị mặc định từ đợt báo cáo, không được chỉnh sửa',
+        });
+        continue;
+      }
+
       if (!indIds.has(ch.indicatorId) || !attrIds.has(ch.attributeId)) {
         validationErrors.push({
           indicatorId: ch.indicatorId,

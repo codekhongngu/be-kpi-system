@@ -19,6 +19,10 @@ import { CreateReportCampaignDto } from './dto/create-report-campaign.dto';
 import { UpdateReportCampaignDto } from './dto/update-report-campaign.dto';
 import { UpsertReportCampaignScopesDto } from './dto/upsert-report-campaign-scopes.dto';
 import { ReportCampaignQueryDto } from './dto/report-campaign-query.dto';
+import {
+  UpsertCampaignDefaultValuesDto,
+  DeleteCampaignDefaultValuesDto,
+} from './dto/upsert-campaign-default-values.dto';
 
 @Controller('report-campaigns')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -93,6 +97,30 @@ export class ReportCampaignController {
   async close(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return await this.service.close(id, user?.id);
   }
+
+  // ── DefaultValues ─────────────────────────────────────────────────
+
+  @Get(':id/default-values')
+  @Permissions('campaigns.manage', 'assignments.manage')
+  async listDefaultValues(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.service.listDefaultValues(id);
+  }
+
+  @Post(':id/default-values')
+  @Permissions('campaigns.manage', 'assignments.manage')
+  async upsertDefaultValues(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpsertCampaignDefaultValuesDto,
+  ) {
+    return await this.service.upsertDefaultValues(id, dto);
+  }
+
+  @Delete(':id/default-values')
+  @Permissions('campaigns.manage', 'assignments.manage')
+  async deleteDefaultValues(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: DeleteCampaignDefaultValuesDto,
+  ) {
+    return await this.service.deleteDefaultValues(id, dto);
+  }
 }
-
-

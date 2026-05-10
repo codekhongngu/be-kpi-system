@@ -1544,7 +1544,7 @@ export class TemplateManagementService {
 
   async upsertTemplateScopes(formId: string, dto: UpsertTemplateScopesDto) {
     await this.ensureTemplateStructureEditable(formId);
-    await this.ensureForm(formId);
+    const form = await this.ensureForm(formId);
     const indicatorSet = new Set(
       (await this.indRepo.find({ where: { formId }, select: { id: true } })).map(
         (x) => x.id,
@@ -1563,6 +1563,30 @@ export class TemplateManagementService {
         throw new BadRequestException(`orgId không hợp lệ hoặc không active: ${item.orgId}`);
       }
     }
+
+    // Enforce templateType UNIQUE: cùng 1 indicator chỉ được gán cho 1 org
+    if (form.templateType === TemplateType.UNIQUE) {
+      const existingRules = await this.templateScopeRepo.find({
+        where: { templateId: formId, isEnabled: true },
+        select: { indicatorId: true, orgId: true },
+      });
+      // Tạo map: indicatorId → orgId hiện tại
+      const indicatorOrgMap = new Map<string, string>();
+      for (const rule of existingRules) {
+        indicatorOrgMap.set(rule.indicatorId, rule.orgId);
+      }
+      for (const item of dto.items) {
+        const currentOrgId = indicatorOrgMap.get(item.indicatorId);
+        if (currentOrgId && currentOrgId !== item.orgId) {
+          throw new ConflictException(
+            `UNIQUE_TEMPLATE_INDICATOR_CONFLICT: Chỉ tiêu ${item.indicatorId} đã được gán cho đơn vị khác`,
+          );
+        }
+        // Cập nhật map với item mới để validate nội bộ batch
+        indicatorOrgMap.set(item.indicatorId, item.orgId);
+      }
+    }
+
     await this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(FormTemplateIndicatorOrgRule);
       for (const item of dto.items) {
