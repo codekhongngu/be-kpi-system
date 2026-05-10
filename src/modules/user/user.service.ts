@@ -37,7 +37,7 @@ export class UserService {
   async create(
     createUserDto: CreateUserDto,
     _options?: { requireQldlRoleGroups?: boolean },
-  ): Promise<{ id: string }> {
+  ): Promise<{ id: string; username: string; password: string }> {
     if (!createUserDto.orgId) {
       throw new BadRequestException('orgId là bắt buộc');
     }
@@ -48,13 +48,7 @@ export class UserService {
     );
     await this.assertFkReferences(createUserDto.orgId);
 
-    const pwdInput = createUserDto.password?.trim();
-    let passwordPlain: string;
-    if (pwdInput) {
-      passwordPlain = pwdInput;
-    } else {
-      passwordPlain = this.generateStrongPassword();
-    }
+    const passwordPlain = createUserDto.password.trim();
     this.assertPasswordPolicy(passwordPlain);
 
     if (createUserDto.code) {
@@ -87,7 +81,7 @@ export class UserService {
       email: rest.email,
       fullName: rest.fullName ?? null,
       phone: rest.phone ?? null,
-      code: rest.code ?? null,
+      code: rest.code,
       orgId: normalizedOrgId,
       passwordHash,
       status,
@@ -99,7 +93,11 @@ export class UserService {
       await this.assignRoles(saved.id, { roleIds });
     }
 
-    return { id: saved.id };
+    return { 
+      id: saved.id,
+      username: saved.username,
+      password: passwordPlain
+    };
   }
 
   async findAll(query: UserQueryDto): Promise<{

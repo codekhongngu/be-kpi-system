@@ -21,12 +21,10 @@ export class CreateUserDto {
   @IsEmail({}, { message: 'Email không hợp lệ' })
   email: string;
 
-  /** Bỏ trống = hệ thống sinh mật khẩu mạnh (luồng admin QLDL). */
-  @IsOptional()
+  @IsNotEmpty({ message: 'Mật khẩu là bắt buộc' })
   @IsString()
   @MinLength(6, { message: 'Mật khẩu phải có ít nhất 6 ký tự' })
-  @Transform(({ value }) => (value === '' ? undefined : value))
-  password?: string;
+  password: string;
 
   @IsOptional()
   @IsString()
@@ -36,15 +34,13 @@ export class CreateUserDto {
   @IsString()
   phone?: string;
 
-  @IsOptional()
+  @IsNotEmpty({ message: 'Mã nhân sự là bắt buộc' })
   @IsString()
   @Transform(({ value }) => {
-    if (value === undefined || value === null) return undefined;
     if (typeof value !== 'string') return value;
-    const t = value.trim();
-    return t === '' ? undefined : t;
+    return value.trim();
   })
-  code?: string;
+  code: string;
 
   @IsOptional()
   @IsUUID()

@@ -30,7 +30,7 @@ export class UserController {
   @Post()
   @Permissions('users.manage')
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() createUserDto: CreateUserDto): Promise<{ id: string }> {
+  async create(@Body() createUserDto: CreateUserDto): Promise<{ id: string; username: string; password: string }> {
     return await this.userService.create(createUserDto);
   }
 

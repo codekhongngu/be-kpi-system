@@ -269,7 +269,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"user01\",\n  \"email\": \"user01@example.com\",\n  \"password\": \"Admin@123\",\n  \"fullName\": \"User 01\",\n  \"orgId\": \"{{orgId}}\",\n  \"roleIds\": [\"{{roleId}}\"]\n}"
+              "raw": "{\n  \"code\": \"NV001\",\n  \"username\": \"user01\",\n  \"email\": \"user01@example.com\",\n  \"password\": \"Admin@123\",\n  \"fullName\": \"User 01\",\n  \"orgId\": \"{{orgId}}\",\n  \"roleIds\": [\"{{roleId}}\"]\n}"
             },
             "url": "{{baseUrl}}/users"
           }
