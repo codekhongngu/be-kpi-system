@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayNotEmpty,
   IsArray,
@@ -22,6 +22,10 @@ export class CellChangeDto {
   valueText?: string | null;
 
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === null || value === undefined) return null;
+    return String(value);
+  })
   @IsString()
   valueNumeric?: string | null;
 }

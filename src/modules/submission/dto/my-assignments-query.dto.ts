@@ -10,4 +10,20 @@ export class MyAssignmentsQueryDto {
   @Type(() => Boolean)
   @IsBoolean()
   overdue?: boolean;
+
+  @IsOptional()
+  @IsString()
+  q?: string;
+
+  @IsOptional()
+  @IsString()
+  periodType?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  limit?: number;
 }

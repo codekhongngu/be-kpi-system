@@ -79,11 +79,26 @@ export class SubmissionService {
         's.completion_pct AS "completionPct"',
       ]);
 
-    if (query.status === 'DRAFT') {
-      qb.andWhere('(s.id IS NULL OR s.status = :st)', { st: 'DRAFT' });
+    if (query.status === 'UNOPENED' || query.status === 'NOT_STARTED') {
+      qb.andWhere('s.id IS NULL');
+    } else if (query.status === 'DRAFT') {
+      qb.andWhere('s.status = :st', { st: 'DRAFT' });
     } else if (query.status) {
-      qb.andWhere('s.status = :st', { st: query.status });
+      if (query.status === 'all') {
+        // no filter
+      } else {
+        qb.andWhere('s.status = :st', { st: query.status });
+      }
     }
+    
+    if (query.q) {
+      qb.andWhere('f.name ILIKE :q', { q: `%${query.q}%` });
+    }
+    
+    if (query.periodType) {
+      qb.andWhere('a.periodType = :pt', { pt: query.periodType });
+    }
+
     if (query.overdue === true) {
       qb.andWhere('a.deadlineTo < CURRENT_DATE');
       qb.andWhere('(s.id IS NULL OR s.status IN (:...open))', {
@@ -91,26 +106,45 @@ export class SubmissionService {
       });
     }
 
+    const page = query.page ?? 1;
+    const limit = Math.min(query.limit ?? 20, 200);
+    const skip = (page - 1) * limit;
+
+    const total = await qb.getCount();
+    
+    qb.orderBy('a.assigned_at', 'DESC');
+    qb.addOrderBy('s.created_at', 'DESC'); // Ensure latest submission is first
+    qb.offset(skip).limit(limit);
+
     const rows = await qb.getRawMany();
-    const items = rows.map((r) => ({
-      assignmentId: r.assignmentId,
-      deadlineTo: r.deadlineTo,
-      form: { id: r.formId, code: r.formCode, name: r.formName },
-      period: {
-        type: r.periodType,
-        code: r.periodCode,
-        name: r.periodName,
-      },
-      submission: r.submissionId
-        ? {
-            id: r.submissionId,
-            status: r.submissionStatus,
-            completionPct:
-              r.completionPct != null ? Number(r.completionPct) : null,
-          }
-        : null,
-    }));
-    return { items };
+    
+    // Deduplicate in JS: keep only the first (latest) submission per assignment
+    const uniqueMap = new Map();
+    for (const r of rows) {
+      if (!uniqueMap.has(r.assignmentId)) {
+        uniqueMap.set(r.assignmentId, {
+          assignmentId: r.assignmentId,
+          deadlineTo: r.deadlineTo,
+          form: { id: r.formId, code: r.formCode, name: r.formName },
+          period: {
+            type: r.periodType,
+            code: r.periodCode,
+            name: r.periodName,
+          },
+          submission: r.submissionId
+            ? {
+                id: r.submissionId,
+                status: r.submissionStatus,
+                completionPct:
+                  r.completionPct != null ? Number(r.completionPct) : null,
+              }
+            : null,
+        });
+      }
+    }
+    const items = Array.from(uniqueMap.values());
+    
+    return { items, total, page, limit };
   }
 
   async create(dto: CreateSubmissionDto, user: User) {
@@ -120,10 +154,16 @@ export class SubmissionService {
     if (!a) throw new NotFoundException('Không tìm thấy giao việc');
     if (a.isCancelled) throw new ConflictException('ASSIGNMENT_CANCELLED');
     this.assertOrgScope(user, a);
-    const exists = await this.submissionRepo.exist({
+
+    // Upsert pattern: return existing submission if it already exists
+    const existing = await this.submissionRepo.findOne({
       where: { assignmentId: a.id },
+      order: { createdAt: 'DESC' },
     });
-    if (exists) throw new ConflictException('SUBMISSION_ALREADY_EXISTS');
+    if (existing) {
+      return { id: existing.id, status: existing.status };
+    }
+
     const code = await this.generateSubmissionCode();
     const row = this.submissionRepo.create({
       code,
@@ -135,6 +175,33 @@ export class SubmissionService {
     return { id: saved.id, status: saved.status };
   }
 
+  async findOrCreateByAssignment(assignmentId: string, user: User) {
+    const a = await this.assignmentRepo.findOne({
+      where: { id: assignmentId },
+    });
+    if (!a) throw new NotFoundException('Không tìm thấy giao việc');
+    this.assertOrgScope(user, a);
+
+    let s = await this.submissionRepo.findOne({
+      where: { assignmentId },
+      order: { createdAt: 'DESC' },
+    });
+
+    if (!s) {
+      if (a.isCancelled) throw new ConflictException('ASSIGNMENT_CANCELLED');
+      const code = await this.generateSubmissionCode();
+      const row = this.submissionRepo.create({
+        code,
+        assignmentId: a.id,
+        status: 'DRAFT',
+        version: 1,
+      });
+      s = await this.submissionRepo.save(row);
+    }
+
+    return this.findOne(s.id, user);
+  }
+
   async findOne(id: string, user: User) {
     const s = await this.submissionRepo.findOne({ where: { id } });
     if (!s) throw new NotFoundException('Không tìm thấy bản nộp');
@@ -143,7 +210,10 @@ export class SubmissionService {
     });
     if (!a) throw new NotFoundException('Không tìm thấy giao việc');
     this.assertOrgScope(user, a);
-    const cells = await this.dataRepo.find({ where: { submissionId: id } });
+    const cells = await this.dataRepo.find({
+      where: { submissionId: id },
+      order: { indicatorId: 'ASC', attributeId: 'ASC' },
+    });
 
     let defaultValues: Array<{
       indicatorId: string;
@@ -155,7 +225,8 @@ export class SubmissionService {
       const rows = await this.dataSource.query(
         `SELECT indicator_id, attribute_id, value_text, value_number
          FROM report_campaign_default_values
-         WHERE campaign_id = $1`,
+         WHERE campaign_id = $1
+         ORDER BY indicator_id ASC, attribute_id ASC`,
         [a.batchId],
       );
       defaultValues = rows.map((r: any) => ({
@@ -182,7 +253,7 @@ export class SubmissionService {
         indicatorId: c.indicatorId,
         attributeId: c.attributeId,
         valueText: c.value,
-        valueNumeric: c.valueNumeric,
+        valueNumeric: c.valueNumeric != null ? Number(c.valueNumeric) : null,
         updatedBy: c.updatedBy,
         updatedAt: c.updatedAt.toISOString(),
       })),
@@ -209,7 +280,7 @@ export class SubmissionService {
         `
         SELECT indicator_id
         FROM report_campaign_indicator_org_scopes
-        WHERE batch_id = $1 AND org_id = $2
+        WHERE campaign_id = $1 AND org_id = $2
       `,
         [a.batchId, a.orgId],
       );
@@ -288,6 +359,14 @@ export class SubmissionService {
       await this.dataRepo.save(cell);
       saved++;
     }
+
+    // Calculate completion percentage
+    const filledCount = await this.dataRepo.count({ where: { submissionId: id } });
+    const totalEditable = indIds.size * attrIds.size - lockedCells.size;
+    s.completionPct = totalEditable > 0 
+      ? Math.min(100, (filledCount / totalEditable) * 100).toFixed(2)
+      : '100.00';
+
     s.version += 1;
     await this.submissionRepo.save(s);
     return { saved, version: s.version, validationErrors };
@@ -363,7 +442,28 @@ export class SubmissionService {
     );
     return rows.map((r) => r.id);
   }
-}
+  async cancelSubmit(submissionId: string, user: User) {
+    const s = await this.submissionRepo.findOne({
+      where: { id: submissionId },
+    });
+    if (!s) throw new NotFoundException('Không tìm thấy bản nộp');
+    const a = await this.assignmentRepo.findOne({
+      where: { id: s.assignmentId },
+    });
+    if (!a) throw new NotFoundException('Không tìm thấy giao việc');
+    this.assertOrgScope(user, a);
 
+    if (s.status !== 'PENDING' && s.status !== 'SUBMITTED') {
+      throw new ConflictException('CHỈ_ĐƯỢC_HỦY_NỘP_KHI_ĐANG_CHỜ_DUYỆT');
+    }
+
+    s.status = 'DRAFT';
+    s.submittedAt = null;
+    s.submittedBy = null;
+    await this.submissionRepo.save(s);
+
+    return { status: s.status };
+  }
+}
 
 

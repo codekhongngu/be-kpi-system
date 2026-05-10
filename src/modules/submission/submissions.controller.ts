@@ -40,6 +40,15 @@ export class SubmissionsController {
     return await this.submissionService.findOne(id, user);
   }
 
+  @Get('by-assignment/:assignmentId')
+  @Permissions('submissions.manage')
+  async getByAssignment(
+    @Param('assignmentId', ParseUUIDPipe) assignmentId: string,
+    @CurrentUser() user: User,
+  ) {
+    return await this.submissionService.findOrCreateByAssignment(assignmentId, user);
+  }
+
   @Patch(':id/cells')
   @Permissions('submissions.manage')
   async patchCells(
@@ -58,6 +67,15 @@ export class SubmissionsController {
     @CurrentUser() user: User,
   ) {
     return await this.submissionService.submit(id, dto, user);
+  }
+
+  @Post(':id/cancel-submit')
+  @Permissions('submissions.manage')
+  async cancelSubmit(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: User,
+  ) {
+    return await this.submissionService.cancelSubmit(id, user);
   }
 }
 
