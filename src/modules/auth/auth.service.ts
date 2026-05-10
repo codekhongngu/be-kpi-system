@@ -96,6 +96,7 @@ export class AuthService {
       {
         ...registerDto,
         status: UserStatus.ACTIVE,
+        code: registerDto.username, // Provide required code property defaulting to username
       },
       { requireQldlRoleGroups: false },
     );
