@@ -11,7 +11,7 @@ export class TemplateScopeItemDto {
 
 export class UpsertTemplateScopesDto {
   @IsArray()
-  @ArrayMinSize(1)
+  @ArrayMinSize(0)
   @ArrayMaxSize(5000)
   @ValidateNested({ each: true })
   @Type(() => TemplateScopeItemDto)

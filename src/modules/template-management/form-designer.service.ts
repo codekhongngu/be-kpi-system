@@ -406,7 +406,7 @@ export class TemplateManagementService {
       relations: { fieldCategoryRef: true },
     });
     if (!f) throw new NotFoundException('Không tìm thấy biểu mẫu');
-    const [attrs, inds, cellConfigs] = await Promise.all([
+    const [attrs, inds, cellConfigs, scopes] = await Promise.all([
       this.attrRepo.find({
         where: { formId: id },
         order: { sortOrder: 'ASC', name: 'ASC' },
@@ -419,6 +419,9 @@ export class TemplateManagementService {
         where: { formId: id },
         order: { createdAt: 'ASC' },
       }),
+      this.templateScopeRepo.find({
+        where: { templateId: id, isEnabled: true },
+      }),
     ]);
     return {
       ...this.toListItem(f),
@@ -426,6 +429,11 @@ export class TemplateManagementService {
       attributes: attrs.map((a) => this.mapAttribute(a)),
       indicators: inds.map((i) => this.mapIndicator(i)),
       cellConfigs: cellConfigs.map((c) => this.mapCellConfig(c)),
+      templateScopes: scopes.map((s) => ({
+        id: s.id,
+        orgId: s.orgId,
+        indicatorId: s.indicatorId,
+      })),
     };
   }
 
@@ -478,6 +486,25 @@ export class TemplateManagementService {
     if (f.templateStatus !== TemplateStatus.DRAFT) {
       throw new ConflictException('FORM_INVALID_STATUS_TRANSITION');
     }
+
+    const inputIndicators = await this.indRepo.find({
+      where: { formId: id, type: 'INPUT' },
+      select: ['id'],
+    });
+
+    if (inputIndicators.length > 0) {
+      const assignedScopes = await this.templateScopeRepo.find({
+        where: { templateId: id, isEnabled: true },
+        select: ['indicatorId'],
+      });
+      const assignedIndicatorIds = new Set(assignedScopes.map((s) => s.indicatorId));
+      for (const ind of inputIndicators) {
+        if (!assignedIndicatorIds.has(ind.id)) {
+          throw new ConflictException('ALL_INPUT_INDICATORS_MUST_BE_ASSIGNED');
+        }
+      }
+    }
+
     f.templateStatus = TemplateStatus.READY;
     await this.formRepo.save(f);
     return { ok: true, templateStatus: f.templateStatus };
@@ -1476,6 +1503,11 @@ export class TemplateManagementService {
 
     await this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(FormTemplateIndicatorOrgRule);
+      
+      // We perform a sync (replace) operation here. 
+      // First, we disable all existing rules for this form.
+      await repo.update({ templateId: formId }, { isEnabled: false });
+
       for (const item of dto.items) {
         const existing = await repo.findOne({
           where: {
