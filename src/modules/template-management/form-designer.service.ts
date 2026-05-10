@@ -42,8 +42,8 @@ import { DeleteFormCellConfigsDto } from './dto/delete-form-cell-configs.dto';
 import { UpsertTemplateScopesDto } from './dto/upsert-template-scope.dto';
 
 const DEFAULT_FORM_SYSTEM_ATTRIBUTES = [
-  { name: 'Tên chỉ tiêu', dataType: 'text', sortOrder: 0 },
-  { name: 'Đơn vị tính', dataType: 'text', sortOrder: 1 },
+  { name: 'Tên chỉ tiêu', sortOrder: 0 },
+  { name: 'Đơn vị tính', sortOrder: 1 },
 ];
 
 @Injectable()
@@ -100,13 +100,8 @@ export class TemplateManagementService {
         attrRepo.create({
           formId,
           name: def.name,
-          dataType: def.dataType,
-          isRequired: false,
-          isVisible: true,
-          isSystem: true,
-          isReadonly: true,
           sortOrder: def.sortOrder,
-          options: null,
+          isSystem: true,
         }),
       );
     }
@@ -246,14 +241,8 @@ export class TemplateManagementService {
       id: a.id,
       parentId: a.parentId,
       name: a.name,
-      dataType: a.dataType,
-      isRequired: a.isRequired,
-      isVisible: a.isVisible,
-      isReadonly: a.isReadonly,
-      isSystem: a.isSystem,
       sortOrder: a.sortOrder,
-      options: a.options,
-      validationRule: a.validationRule,
+      isSystem: a.isSystem,
     };
   }
 
@@ -266,16 +255,8 @@ export class TemplateManagementService {
       name: i.name,
       unit: i.unit,
       dataType: i.dataType,
-      isRequired: i.isRequired,
-      isReadonly: i.isReadonly,
-      isCalculated: i.isCalculated,
-      formula: i.formula,
-      groupName: i.groupName,
+      type: i.type,
       sortOrder: i.sortOrder,
-      minValue: i.minValue,
-      maxValue: i.maxValue,
-      validationRule: i.validationRule,
-      isActive: i.isActive,
     };
   }
 
@@ -301,14 +282,13 @@ export class TemplateManagementService {
     indicator: FormIndicator,
     attribute: FormAttribute,
   ): { dataType: 'text' | 'number'; required: boolean; readOnly: boolean; formula: string | null } {
-    const formula = indicator.formula?.trim() ? indicator.formula.trim() : null;
-    const readOnlyByNode = Boolean(indicator.isReadonly) || Boolean(attribute.isReadonly);
+    const readOnlyByNode = indicator.type === 'TITLE';
 
     return {
-      dataType: this.normalizeCellDataType(indicator.dataType ?? attribute.dataType ?? 'text'),
-      required: Boolean(indicator.isRequired) || Boolean(attribute.isRequired),
-      readOnly: formula ? true : readOnlyByNode,
-      formula,
+      dataType: this.normalizeCellDataType(indicator.dataType ?? 'text'),
+      required: false, // Defaulting to not required as field is gone
+      readOnly: readOnlyByNode,
+      formula: null,
     };
   }
 
@@ -603,14 +583,7 @@ export class TemplateManagementService {
           attrRepo.create({
             formId: saved.id,
             name: a.name,
-            dataType: a.dataType,
-            isRequired: a.isRequired,
-            isVisible: a.isVisible,
-            isReadonly: a.isReadonly,
-            isSystem: a.isSystem,
             sortOrder: a.sortOrder,
-            options: a.options,
-            validationRule: a.validationRule,
           }),
         );
         attrMap.set(a.id, newAttr.id);
@@ -636,14 +609,8 @@ export class TemplateManagementService {
             name: i.name,
             unit: i.unit,
             dataType: i.dataType,
-            isRequired: i.isRequired,
-            isCalculated: i.isCalculated,
-            formula: i.formula,
-            groupName: i.groupName,
+            type: i.type,
             sortOrder: i.sortOrder,
-            minValue: i.minValue,
-            maxValue: i.maxValue,
-            isActive: i.isActive,
             catalogIndicatorId: i.catalogIndicatorId,
           }),
         );
@@ -689,14 +656,7 @@ export class TemplateManagementService {
       formId,
       parentId: dto.parentId ?? null,
       name: dto.name.trim(),
-      dataType: dto.dataType ?? null,
-      isRequired: dto.isRequired ?? false,
-      isVisible: dto.isVisible ?? true,
-      isReadonly: dto.isReadonly ?? false,
-      isSystem: false,
       sortOrder: nextSort,
-      options: dto.options ?? null,
-      validationRule: dto.validationRule ?? null,
     });
     const saved = await this.attrRepo.save(a);
     return { id: saved.id };
@@ -721,12 +681,6 @@ export class TemplateManagementService {
       a.parentId = dto.parentId;
     }
     if (dto.name !== undefined) a.name = dto.name.trim();
-    if (dto.dataType !== undefined) a.dataType = dto.dataType;
-    if (dto.isRequired !== undefined) a.isRequired = dto.isRequired;
-    if (dto.isVisible !== undefined) a.isVisible = dto.isVisible;
-    if (dto.isReadonly !== undefined) a.isReadonly = dto.isReadonly;
-    if (dto.options !== undefined) a.options = dto.options;
-    if (dto.validationRule !== undefined) a.validationRule = dto.validationRule;
     await this.attrRepo.save(a);
     return { ok: true };
   }
@@ -787,16 +741,8 @@ export class TemplateManagementService {
       name: dto.name.trim(),
       unit: dto.unit ?? null,
       dataType: dto.dataType.trim(),
-      isRequired: dto.isRequired ?? true,
-      isReadonly: dto.isReadonly ?? false,
-      isCalculated: dto.isCalculated ?? false,
-      formula: dto.formula ?? null,
-      groupName: dto.groupName ?? null,
+      type: dto.type ?? 'INPUT',
       sortOrder: nextSort,
-      minValue: dto.minValue ?? null,
-      maxValue: dto.maxValue ?? null,
-      validationRule: dto.validationRule ?? null,
-      isActive: dto.isActive ?? true,
       catalogIndicatorId: dto.catalogIndicatorId ?? null,
     });
     const saved = await this.indRepo.save(i);
@@ -834,15 +780,7 @@ export class TemplateManagementService {
     if (dto.name !== undefined) i.name = dto.name.trim();
     if (dto.unit !== undefined) i.unit = dto.unit;
     if (dto.dataType !== undefined) i.dataType = dto.dataType.trim();
-    if (dto.isRequired !== undefined) i.isRequired = dto.isRequired;
-    if (dto.isReadonly !== undefined) i.isReadonly = dto.isReadonly;
-    if (dto.isCalculated !== undefined) i.isCalculated = dto.isCalculated;
-    if (dto.formula !== undefined) i.formula = dto.formula;
-    if (dto.groupName !== undefined) i.groupName = dto.groupName;
-    if (dto.minValue !== undefined) i.minValue = dto.minValue;
-    if (dto.maxValue !== undefined) i.maxValue = dto.maxValue;
-    if (dto.validationRule !== undefined) i.validationRule = dto.validationRule;
-    if (dto.isActive !== undefined) i.isActive = dto.isActive;
+    if (dto.type !== undefined) i.type = dto.type;
     if (dto.catalogIndicatorId !== undefined) {
       if (dto.catalogIndicatorId) {
         const c = await this.catalogRepo.findOne({
@@ -857,69 +795,7 @@ export class TemplateManagementService {
     return { ok: true };
   }
 
-  async validateIndicatorFormula(
-    formId: string,
-    dto: ValidateIndicatorFormulaDto,
-  ) {
-    await this.ensureForm(formId);
-    const formula = dto.formula?.trim() ?? '';
-    const errors: string[] = [];
-    const warnings: string[] = [];
-    const refs: string[] = [];
 
-    if (!formula) {
-      return { valid: false, errors: ['FORMULA_EMPTY'], warnings, refs };
-    }
-
-    if (!/^[A-Za-z0-9_+\-*/().\s]+$/.test(formula)) {
-      return { valid: false, errors: ['FORMULA_INVALID_SYNTAX'], warnings, refs };
-    }
-
-    let balance = 0;
-    for (const ch of formula) {
-      if (ch === '(') balance += 1;
-      if (ch === ')') balance -= 1;
-      if (balance < 0) {
-        return { valid: false, errors: ['FORMULA_INVALID_SYNTAX'], warnings, refs };
-      }
-    }
-    if (balance !== 0) {
-      return { valid: false, errors: ['FORMULA_INVALID_SYNTAX'], warnings, refs };
-    }
-
-    if (/\/\s*0+(\.0+)?(\D|$)/.test(formula)) {
-      warnings.push('FORMULA_DIV_BY_ZERO');
-    }
-
-    const allIndicators = await this.indRepo.find({ where: { formId } });
-    const codeSet = new Set(
-      allIndicators
-        .map((x) => x.code?.trim().toUpperCase())
-        .filter((x): x is string => Boolean(x)),
-    );
-
-    const refTokens = formula.match(/[A-Za-z_][A-Za-z0-9_]*/g) ?? [];
-    const uniqRefs = Array.from(new Set(refTokens.map((token) => token.toUpperCase())));
-    refs.push(...uniqRefs);
-
-    const missingRefs = uniqRefs.filter((ref) => !codeSet.has(ref));
-    if (missingRefs.length > 0) {
-      return {
-        valid: false,
-        errors: ['FORMULA_REFERENCE_NOT_FOUND'],
-        warnings,
-        refs,
-        missingRefs,
-      };
-    }
-
-    const currentCode = dto.code?.trim().toUpperCase();
-    if (currentCode && uniqRefs.includes(currentCode)) {
-      errors.push('FORMULA_CYCLE_DETECTED');
-    }
-
-    return { valid: errors.length === 0, errors, warnings, refs };
-  }
 
   async removeIndicator(formId: string, indicatorId: string) {
     await this.ensureTemplateStructureEditable(formId);
@@ -979,6 +855,10 @@ export class TemplateManagementService {
         });
 
         const indicator = indicators.find((x) => x.id === item.indicatorId)!;
+        if (indicator.type === 'TITLE') {
+          throw new BadRequestException('Không thể cấu hình thuộc tính cho chỉ tiêu tiêu đề');
+        }
+
         const attribute = attributes.find((x) => x.id === item.attributeId)!;
         const base = this.buildBaseCellConfig(indicator, attribute);
 
@@ -1081,19 +961,26 @@ export class TemplateManagementService {
         const key = `${indicator.id}:${attribute.id}`;
         const override = overrideMap.get(key);
         const base = this.buildBaseCellConfig(indicator, attribute);
-        const formula = override?.formula?.trim() ? override.formula.trim() : base.formula;
-        const readOnly = formula ? true : (override ? !override.isEditable : base.readOnly);
+        let formula = base.formula;
+        let readOnly = base.readOnly;
+        let dataType = base.dataType;
+        let required = base.required;
+
+        if (indicator.type !== 'TITLE' && override) {
+          formula = override.formula?.trim() ? override.formula.trim() : base.formula;
+          readOnly = formula ? true : !override.isEditable;
+          dataType = override.dataType ? this.normalizeCellDataType(override.dataType) : base.dataType;
+          required = override.isRequired ?? base.required;
+        }
 
         return {
           indicatorId: indicator.id,
           attributeId: attribute.id,
-          dataType: override?.dataType
-            ? this.normalizeCellDataType(override.dataType)
-            : base.dataType,
-          required: override?.isRequired ?? base.required,
+          dataType,
+          required,
           readOnly,
           formula,
-          hasOverride: Boolean(override),
+          hasOverride: indicator.type !== 'TITLE' && Boolean(override),
         };
       }),
     );

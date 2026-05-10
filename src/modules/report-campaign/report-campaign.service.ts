@@ -361,10 +361,13 @@ export class ReportCampaignService {
     const indicatorIds = [...new Set(dto.items.map((x) => x.indicatorId))];
     const indicators = await this.indicatorRepo.find({
       where: { id: In(indicatorIds), formId: campaign.formId },
-      select: { id: true },
+      select: { id: true, type: true },
     });
     if (indicators.length !== indicatorIds.length) {
       throw new BadRequestException('INVALID_INDICATORS');
+    }
+    if (indicators.some((ind) => ind.type === 'TITLE')) {
+      throw new BadRequestException('CANNOT_SET_DEFAULT_VALUE_FOR_TITLE_INDICATOR');
     }
 
     // Validate attributes belong to campaign's template

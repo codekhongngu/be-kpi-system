@@ -1,12 +1,11 @@
 import {
   IsBoolean,
-  IsIn,
   IsNotEmpty,
-  IsObject,
   IsOptional,
   IsString,
   Matches,
   MaxLength,
+  IsIn,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -51,41 +50,9 @@ export class CreateFormIndicatorDto {
   dataType: string;
 
   @IsOptional()
-  @IsBoolean()
-  isRequired?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  isReadonly?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  isCalculated?: boolean;
-
-  @IsOptional()
   @IsString()
-  formula?: string | null;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(255)
-  groupName?: string | null;
-
-  @IsOptional()
-  @IsString()
-  minValue?: string | null;
-
-  @IsOptional()
-  @IsString()
-  maxValue?: string | null;
-
-  @IsOptional()
-  @IsObject()
-  validationRule?: Record<string, unknown> | null;
-
-  @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
+  @IsIn(['INPUT', 'TITLE'])
+  type?: 'INPUT' | 'TITLE';
 
   @IsOptional()
   @IsString()

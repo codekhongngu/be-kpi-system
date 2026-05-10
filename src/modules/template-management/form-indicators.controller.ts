@@ -20,7 +20,7 @@ import { TemplateManagementService } from './form-designer.service';
 import { CreateFormIndicatorDto } from './dto/create-form-indicator.dto';
 import { PatchFormIndicatorDto } from './dto/patch-form-indicator.dto';
 import { ReorderIndicatorsDto } from './dto/reorder-indicators.dto';
-import { ValidateIndicatorFormulaDto } from './dto/validate-indicator-formula.dto';
+
 
 @Controller('forms/:formId/indicators')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -74,14 +74,7 @@ export class FormIndicatorsController {
     return await this.formDesigner.reorderIndicators(formId, dto.items);
   }
 
-  @Post('formula/validate')
-  @Permissions('forms.manage')
-  async validateFormula(
-    @Param('formId', ParseUUIDPipe) formId: string,
-    @Body() dto: ValidateIndicatorFormulaDto,
-  ) {
-    return await this.formDesigner.validateIndicatorFormula(formId, dto);
-  }
+
 }
 
 
