@@ -49,6 +49,15 @@ export class SubmissionsController {
     return await this.submissionService.findOrCreateByAssignment(assignmentId, user);
   }
 
+  @Get('history/:assignmentId')
+  @Permissions('submissions.manage')
+  async getHistory(
+    @Param('assignmentId', ParseUUIDPipe) assignmentId: string,
+    @CurrentUser() user: User,
+  ) {
+    return await this.submissionService.getSubmissionHistory(assignmentId, user);
+  }
+
   @Patch(':id/cells')
   @Permissions('submissions.manage')
   async patchCells(

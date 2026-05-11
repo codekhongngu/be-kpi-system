@@ -247,7 +247,8 @@ export class SubmissionService {
       rejectReason: s.rejectReason,
       completionPct: s.completionPct != null ? Number(s.completionPct) : null,
       submittedAt: s.submittedAt,
-      approvedAt: s.approvedAt,
+      departmentApprovedAt: s.departmentApprovedAt,
+      districtApprovedAt: s.districtApprovedAt,
       defaultValues,
       cells: cells.map((c) => ({
         indicatorId: c.indicatorId,
@@ -268,7 +269,7 @@ export class SubmissionService {
     });
     if (!a) throw new NotFoundException('Không tìm thấy giao việc');
     this.assertOrgScope(user, a);
-    if (!['DRAFT', 'REJECTED'].includes(s.status)) {
+    if (!['DRAFT', 'REJECTED_DEPARTMENT', 'REJECTED_DISTRICT'].includes(s.status)) {
       throw new ConflictException('SUBMISSION_NOT_EDITABLE');
     }
     if (s.version !== dto.clientVersion) {
@@ -380,35 +381,34 @@ export class SubmissionService {
     });
     if (!a) throw new NotFoundException('Không tìm thấy giao việc');
     this.assertOrgScope(user, a);
-    if (!['DRAFT', 'REJECTED'].includes(s.status)) {
+    if (!['DRAFT', 'REJECTED_DEPARTMENT', 'REJECTED_DISTRICT'].includes(s.status)) {
       throw new ConflictException('SUBMISSION_NOT_EDITABLE');
     }
-    s.status = 'PENDING';
+    s.status = 'PENDING_DEPARTMENT';
     s.note = dto.note?.trim() ?? null;
     s.submittedBy = user.id;
     s.submittedAt = new Date();
     s.version += 1;
     await this.submissionRepo.save(s);
 
-    // Auto notify approvers in the same org (RBAC QLDL: APPROVALS:WRITE)
-    const approverIds = await this.findApproverUserIds(a.orgId);
+    // Auto notify department approvers in same org (RBAC QLDL: APPROVALS:WRITE)
+    const approverIds = await this.findDepartmentApproverUserIds(a.orgId);
     if (approverIds.length) {
-      const title = 'Có báo cáo chờ duyệt';
+      const title = 'Báo cáo chờ duyệt cấp phòng ban';
       const body =
-        `Báo cáo đã được gửi và đang chờ duyệt. ` +
-        `submissionId=${s.id}, assignmentId=${a.id}.`;
+        `Báo cáo ${s.code} từ đơn vị ${a.orgId} đang chờ bạn duyệt.`;
       const rows = approverIds.map((uid) =>
         this.notificationRepo.create({
           userId: uid,
           aggregateType: 'notification',
-          type: 'SUBMISSION_PENDING_APPROVAL',
+          type: 'SUBMISSION_PENDING_DEPARTMENT',
           payload: {
             title,
             body,
             channel: 'IN_APP',
             isRead: false,
             refTable: 'report_submissions',
-            refId: null,
+            refId: s.id,
           },
           status: 'PENDING',
           retryCount: 0,
@@ -419,13 +419,13 @@ export class SubmissionService {
     }
 
     return {
-      status: s.status as 'PENDING',
+      status: s.status as 'PENDING_DEPARTMENT',
       submittedAt: s.submittedAt.toISOString(),
     };
   }
 
-  private async findApproverUserIds(orgId: string): Promise<string[]> {
-    // Nest RBAC (roles/permissions) — find users in org that have approvals permission.
+  private async findDepartmentApproverUserIds(orgId: string): Promise<string[]> {
+    // Find users with department approval permission in organization
     const rows = await this.dataSource.query<{ id: string }[]>(
       `
       SELECT DISTINCT u.id
@@ -436,11 +436,60 @@ export class SubmissionService {
       INNER JOIN permissions p ON p.id = rp.permission_id
       WHERE u.org_id = $1
         AND u.status = $2
-        AND p.code = 'approvals.manage'
+        AND p.code = 'approvals.department.manage'
       `,
       [orgId, UserStatus.ACTIVE],
     );
     return rows.map((r) => r.id);
+  }
+
+  private async findDistrictApproverUserIds(): Promise<string[]> {
+    // Find users with district approval permission (cross-organization)
+    const rows = await this.dataSource.query<{ id: string }[]>(
+      `
+      SELECT DISTINCT u.id
+      FROM users u
+      INNER JOIN user_roles ur ON ur.user_id = u.id
+      INNER JOIN roles r ON r.id = ur.role_id
+      INNER JOIN role_permissions rp ON rp.role_id = r.id
+      INNER JOIN permissions p ON p.id = rp.permission_id
+      WHERE u.status = $1
+        AND p.code = 'approvals.district.manage'
+      `,
+      [UserStatus.ACTIVE],
+    );
+    return rows.map((r) => r.id);
+  }
+
+  async getSubmissionHistory(assignmentId: string, user: User) {
+    const a = await this.assignmentRepo.findOne({
+      where: { id: assignmentId },
+    });
+    if (!a) throw new NotFoundException('Không tìm thấy giao việc');
+    this.assertOrgScope(user, a);
+
+    const history = await this.dataSource.query(
+      `
+      SELECT 
+        ah.id,
+        ah.submission_id,
+        ah.approval_level,
+        ah.action,
+        ah.user_id,
+        ah.created_at,
+        u.full_name as user_name,
+        s.code as submission_code,
+        s.status as submission_status
+      FROM approval_history ah
+      INNER JOIN users u ON u.id = ah.user_id
+      INNER JOIN report_submissions s ON s.id = ah.submission_id
+      WHERE s.assignment_id = $1
+      ORDER BY ah.created_at DESC
+      `,
+      [assignmentId]
+    );
+
+    return history;
   }
   async cancelSubmit(submissionId: string, user: User) {
     const s = await this.submissionRepo.findOne({
@@ -453,8 +502,8 @@ export class SubmissionService {
     if (!a) throw new NotFoundException('Không tìm thấy giao việc');
     this.assertOrgScope(user, a);
 
-    if (s.status !== 'PENDING' && s.status !== 'SUBMITTED') {
-      throw new ConflictException('CHỈ_ĐƯỢC_HỦY_NỘP_KHI_ĐANG_CHỜ_DUYỆT');
+    if (s.status !== 'PENDING_DEPARTMENT') {
+      throw new ConflictException('CHỈ_ĐƯỢC_HỦY_NỘP_KHI_ĐANG_CHỜ_DUYỆT_PHÒNG');
     }
 
     s.status = 'DRAFT';

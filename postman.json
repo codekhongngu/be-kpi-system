@@ -1026,7 +1026,38 @@
           "name": "Submit Submission",
           "request": {
             "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Submitted for approval\"\n}"
+            },
             "url": "{{baseUrl}}/submissions/{{submissionId}}/submit"
+          }
+        },
+        {
+          "name": "Cancel Submit",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/submissions/{{submissionId}}/cancel-submit"
+          }
+        },
+        {
+          "name": "Submission by Assignment",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/submissions/by-assignment/{{assignmentId}}"
+          }
+        },
+        {
+          "name": "Submission History",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/submissions/history/{{assignmentId}}"
           }
         },
         {
@@ -1068,6 +1099,95 @@
               "raw": "{\n  \"note\": \"Rejected\"\n}"
             },
             "url": "{{baseUrl}}/approvals/{{submissionId}}/reject"
+          }
+        },
+        {
+          "name": "Pending Department",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/approvals/pending/department"
+          }
+        },
+        {
+          "name": "Pending District",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/approvals/pending/district"
+          }
+        },
+        {
+          "name": "Approve Department",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{baseUrl}}/approvals/{{submissionId}}/approve-department"
+          }
+        },
+        {
+          "name": "Reject Department",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Rejected by department\"\n}"
+            },
+            "url": "{{baseUrl}}/approvals/{{submissionId}}/reject-department"
+          }
+        },
+        {
+          "name": "Approve District",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{baseUrl}}/approvals/{{submissionId}}/approve-district"
+          }
+        },
+        {
+          "name": "Reject District",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Rejected by district\"\n}"
+            },
+            "url": "{{baseUrl}}/approvals/{{submissionId}}/reject-district"
+          }
+        },
+        {
+          "name": "Approval History",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/approvals/history/{{submissionId}}"
           }
         }
       ]

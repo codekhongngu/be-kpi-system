@@ -95,6 +95,18 @@ export class RoleSeederService implements OnModuleInit {
         category: 'QLDL',
       },
       {
+        code: 'approvals.department.manage',
+        name: 'Duyệt báo cáo cấp phòng ban',
+        description: 'Duyệt/từ chối báo cáo cấp phòng ban',
+        category: 'QLDL',
+      },
+      {
+        code: 'approvals.district.manage',
+        name: 'Duyệt báo cáo cấp xã',
+        description: 'Duyệt/từ chối báo cáo cấp xã',
+        category: 'QLDL',
+      },
+      {
         code: 'summaries.manage',
         name: 'Tổng hợp báo cáo',
         description: 'Summaries + recompute',
@@ -267,6 +279,8 @@ export class RoleSeederService implements OnModuleInit {
         isSystem: false,
         permissionCodes: [
           'approvals.manage',
+          'approvals.department.manage',
+          'approvals.district.manage',
           'notifications.read',
           'reports.read',
           'reports.export',

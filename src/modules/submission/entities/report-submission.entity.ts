@@ -44,11 +44,17 @@ export class ReportSubmission {
   @Column({ name: 'submitted_at', type: 'timestamptz', nullable: true })
   submittedAt: Date | null;
 
-  @Column({ name: 'approved_by', type: 'uuid', nullable: true })
-  approvedBy: string | null;
+  @Column({ name: 'department_approved_by', type: 'uuid', nullable: true })
+  departmentApprovedBy: string | null;
 
-  @Column({ name: 'approved_at', type: 'timestamptz', nullable: true })
-  approvedAt: Date | null;
+  @Column({ name: 'department_approved_at', type: 'timestamptz', nullable: true })
+  departmentApprovedAt: Date | null;
+
+  @Column({ name: 'district_approved_by', type: 'uuid', nullable: true })
+  districtApprovedBy: string | null;
+
+  @Column({ name: 'district_approved_at', type: 'timestamptz', nullable: true })
+  districtApprovedAt: Date | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

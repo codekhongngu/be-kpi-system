@@ -148,7 +148,7 @@ export class SummaryAnalyticsQueryService {
       rejectReason: s.rejectReason,
       completionPct: s.completionPct != null ? Number(s.completionPct) : null,
       submittedAt: s.submittedAt,
-      approvedAt: s.approvedAt,
+      approvedAt: s.departmentApprovedAt || s.districtApprovedAt,
       deadlineTo: a.deadlineTo,
     };
   }

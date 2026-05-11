@@ -111,10 +111,27 @@ DRAFT → DISPATCHED → CLOSED
 
 ### 4.3 Submission
 
+**Current Implementation (1-level):**
 ```
 DRAFT → PENDING → APPROVED
                ↘ REJECTED → PENDING (resubmit)
 ```
+
+**Proposed 2-Level Approval Workflow:**
+```
+DRAFT → PENDING_DEPARTMENT → DEPARTMENT_APPROVED → PENDING_DISTRICT → DISTRICT_APPROVED
+               ↘ REJECTED_DEPARTMENT              ↘ REJECTED_DISTRICT
+```
+
+| Status                      | Ai có thể thực hiện                     | Mô tả                                    |
+| --------------------------- | --------------------------------------- | ---------------------------------------- |
+| `DRAFT`                     | Staff (Data Entry)                      | Nhập liệu, lưu nháp                      |
+| `PENDING_DEPARTMENT`        | Manager (Trưởng phòng)                  | Chờ trưởng phòng ban duyệt               |
+| `DEPARTMENT_APPROVED`       | Admin (Xã)                              | Đã duyệt phòng ban, chờ xã duyệt        |
+| `PENDING_DISTRICT`          | Admin (Xã)                              | Chờ cấp xã duyệt                        |
+| `DISTRICT_APPROVED`         | System                                  | Đã duyệt 2 cấp, sẵn sàng tổng hợp       |
+| `REJECTED_DEPARTMENT`       | Staff                                   | Bị trưởng phòng từ chối, cần sửa lại    |
+| `REJECTED_DISTRICT`         | Staff                                   | Bị cấp xã từ chối, cần sửa lại          |
 
 ---
 
@@ -309,14 +326,23 @@ erDiagram
 │  └─ Validate theo cell_config (dataType, isRequired…)
 │  └─ Lưu vào report_submission_cells
 │
-⑧ Submit → PENDING
-│  └─ Thông báo cho approver cùng org
-│
-⑨ Approve / Reject
-│  └─ APPROVED → dữ liệu hợp lệ
-│  └─ REJECTED → đơn vị sửa lại, resubmit
-│
-⑩ Tổng hợp (Summary/Analytics)
+⑧ Submit → PENDING_DEPARTMENT
+│  └─ Thông báo cho Manager (Trưởng phòng) cùng org
+
+⑨ Manager Approve / Reject (Cấp 1)
+│  └─ DEPARTMENT_APPROVED → chuyển lên cấp xã
+│  └─ REJECTED_DEPARTMENT → staff sửa lại, resubmit
+
+⑩ Admin District Review (Cấp 2)
+│  └─ Xem submissions đã duyệt phòng ban
+│  └─ PENDING_DISTRICT → chờ admin xã duyệt
+
+⑪ Admin District Approve / Reject
+│  └─ DISTRICT_APPROVED → dữ liệu hợp lệ 2 cấp
+│  └─ REJECTED_DISTRICT → staff sửa lại, resubmit từ đầu
+
+⑫ Tổng hợp (Summary/Analytics)
+│  └─ Chỉ tổng hợp các submission DISTRICT_APPROVED
 │  └─ Dữ liệu = defaultValues (campaign) + submission_cells (đơn vị nhập)
 │  └─ Lưu vào report_summaries (summary_data jsonb)
 │  └─ Materialized views cho dashboard KPI
@@ -375,3 +401,110 @@ erDiagram
 - Keyset pagination cho danh sách lớn
 - Async jobs cho dispatch bulk, aggregation, notifications
 - Materialized views cho KPI dashboard
+
+---
+
+## 12. Two-Level Approval Workflow
+
+### 12.1 Business Requirements
+
+Hệ thống cần hỗ trợ luồng phê duyệt 2 cấp:
+- **Cấp 1**: Manager (Trưởng phòng ban) duyệt báo cáo của đơn vị
+- **Cấp 2**: Admin (Cấp xã) duyệt báo cáo sau khi đã được phòng ban duyệt
+- **Tổng hợp**: Chỉ tổng hợp báo cáo đã được 2 cấp duyệt
+
+### 12.2 Database Schema Changes
+
+**Bảng `report_submissions` cần thêm các trường:**
+```sql
+ALTER TABLE report_submissions 
+ADD COLUMN department_approved_by uuid NULL REFERENCES users(id),
+ADD COLUMN department_approved_at timestamptz NULL,
+ADD COLUMN district_approved_by uuid NULL REFERENCES users(id), 
+ADD COLUMN district_approved_at timestamptz NULL;
+```
+
+**Indexes cho performance:**
+```sql
+CREATE INDEX "IDX_submissions_department_status" 
+ON report_submissions (status, department_approved_at) 
+WHERE status IN ('DEPARTMENT_APPROVED', 'PENDING_DISTRICT');
+
+CREATE INDEX "IDX_submissions_district_status"
+ON report_submissions (status, district_approved_at)
+WHERE status IN ('DISTRICT_APPROVED');
+```
+
+### 12.3 New Permissions
+
+| Permission Code | Name | Description | Category |
+| --------------- | ---- | ----------- | -------- |
+| `approvals.department.manage` | Duyệt báo cáo cấp phòng ban | Approve/Reject submissions at department level | QLDL |
+| `approvals.district.manage` | Duyệt báo cáo cấp xã | Approve/Reject submissions at district level | QLDL |
+| `summaries.district.manage` | Tổng hợp báo cáo cấp xã | Aggregate district-level reports | QLDL |
+
+### 12.4 Role Updates
+
+**Manager Role:**
+- Thêm `approvals.department.manage`
+- Giữ nguyên các permissions hiện tại
+
+**Admin Role (System Admin):**
+- Thêm `approvals.district.manage` 
+- Thêm `summaries.district.manage`
+- Giữ nguyên toàn quyền hiện tại
+
+### 12.5 API Endpoints Mới
+
+**Department Approval API:**
+```typescript
+POST /api/v1/submissions/:id/approve-department
+POST /api/v1/submissions/:id/reject-department
+GET /api/v1/submissions/pending-department
+```
+
+**District Approval API:**
+```typescript
+POST /api/v1/submissions/:id/approve-district
+POST /api/v1/submissions/:id/reject-district
+GET /api/v1/submissions/pending-district
+GET /api/v1/submissions/department-approved
+```
+
+### 12.6 Notification Flow
+
+**Khi submit báo cáo:**
+- Thông báo cho tất cả Managers trong cùng org có permission `approvals.department.manage`
+
+**Khi Manager duyệt:**
+- Nếu DEPARTMENT_APPROVED: Thông báo cho Admins có permission `approvals.district.manage`
+- Nếu REJECTED_DEPARTMENT: Thông báo cho staff đã submit
+
+**Khi Admin duyệt:**
+- Nếu DISTRICT_APPROVED: Thông báo cho staff đã submit
+- Nếu REJECTED_DISTRICT: Thông báo cho staff đã submit
+
+### 12.7 Business Rules
+
+1. **Sequential Approval**: Phải duyệt cấp phòng ban trước, mới có thể duyệt cấp xã
+2. **Rejection Flow**: Bị từ chối ở bất kỳ cấp nào đều quay về trạng thái DRAFT cho staff sửa lại
+3. **Audit Trail**: Lưu lại ai duyệt, thời gian duyệt ở từng cấp
+4. **Permission Scope**: Manager chỉ duyệt được submissions trong org của mình
+5. **Data Integrity**: Không thể sửa dữ liệu sau khi đã được duyệt ở bất kỳ cấp nào
+
+### 12.8 Implementation Priority
+
+**Phase 1 (Core):**
+- Database schema changes
+- Update submission state machine
+- Basic approval endpoints
+
+**Phase 2 (Integration):**
+- Notification system updates
+- Role/permission updates
+- Frontend integration
+
+**Phase 3 (Advanced):**
+- Bulk approval operations
+- Approval history tracking
+- Analytics dashboard updates

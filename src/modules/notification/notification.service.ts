@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Notification } from './entities/notification.entity';
 
 @Injectable()
@@ -8,6 +8,7 @@ export class NotificationService {
   constructor(
     @InjectRepository(Notification)
     private readonly repo: Repository<Notification>,
+    private readonly dataSource: DataSource,
   ) {}
 
   private mapPayload(n: Notification) {
@@ -41,19 +42,19 @@ export class NotificationService {
     return {
       items: items.map((n) => {
         const p = this.mapPayload(n);
-        return ({
-        id: n.id,
-        type: n.type,
-        title: p.title,
-        body: p.body,
-        channel: p.channel,
-        isRead: p.isRead,
-        refTable: p.refTable,
-        refId: p.refId,
-        status: n.status,
-        createdAt: n.createdAt,
-        sentAt: n.sentAt,
-      });
+        return {
+          id: n.id,
+          type: n.type,
+          title: p.title,
+          body: p.body,
+          channel: p.channel,
+          isRead: p.isRead,
+          refTable: p.refTable,
+          refId: p.refId,
+          status: n.status,
+          createdAt: n.createdAt,
+          sentAt: n.sentAt,
+        };
       }),
       meta: { page, limit: take, total },
     };

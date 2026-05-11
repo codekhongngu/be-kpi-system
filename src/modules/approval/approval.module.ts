@@ -5,6 +5,7 @@ import { FormAssignment } from '../report-campaign/assignment/entities/form-assi
 import { Notification } from '../notification/entities/notification.entity';
 import { ApprovalService } from './approval.service';
 import { ApprovalController } from './approval.controller';
+import { ApprovalsController } from './approvals.controller';
 import { Role } from '../role/entities/role.entity';
 import { Permission } from '../role/entities/permission.entity';
 
@@ -18,7 +19,7 @@ import { Permission } from '../role/entities/permission.entity';
       Permission,
     ]),
   ],
-  controllers: [ApprovalController],
+  controllers: [ApprovalController, ApprovalsController],
   providers: [ApprovalService],
 })
 export class ApprovalModule {}
