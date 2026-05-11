@@ -322,14 +322,22 @@ export class TemplateManagementService {
       });
     }
 
-    const statusRaw = query.status?.trim();
-    if (statusRaw) {
-      const normalized = statusRaw.toLowerCase();
-      if (!['active', 'inactive', '1', '0', 'true', 'false'].includes(normalized)) {
-        throw new BadRequestException(
-          'status không hợp lệ, chỉ nhận active/inactive/true/false/1/0',
-        );
+    const templateStatusRaw = query.template_status?.trim();
+    if (templateStatusRaw) {
+      const statuses = templateStatusRaw.split(',').map(s => s.trim().toUpperCase());
+      const validStatuses = Object.values(TemplateStatus);
+      
+      for (const status of statuses) {
+        if (!validStatuses.includes(status as TemplateStatus)) {
+          throw new BadRequestException(
+            `template_status không hợp lệ. Chỉ nhận: ${validStatuses.join(', ')}`,
+          );
+        }
       }
+      
+      qb.andWhere('f.templateStatus IN (:...templateStatuses)', { 
+        templateStatuses: statuses 
+      });
     }
 
     if (query.periodType) {

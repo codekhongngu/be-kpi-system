@@ -41,13 +41,8 @@ export class FormQueryDto {
   periodType?: PeriodType;
 
   @IsOptional()
-  @Type(() => Boolean)
-  @IsBoolean()
-  isActive?: boolean;
-
-  @IsOptional()
   @IsString()
-  status?: string;
+  template_status?: string;
 
   @IsOptional()
   @Type(() => Number)

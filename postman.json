@@ -524,7 +524,7 @@
           "name": "Forms - List",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/forms?q=kpi&search=kpi&fieldCategory=finance&category=finance&fieldCategoryId={{fieldCategoryId}}&period=2026-05&periodType=THANG&isActive=true&status=active&page=1&limit=20"
+            "url": "{{baseUrl}}/forms?q=kpi&search=kpi&fieldCategory=finance&category=finance&fieldCategoryId={{fieldCategoryId}}&period=2026-05&periodType=THANG&template_status=DRAFT,READY&page=1&limit=20"
           }
         },
         {
