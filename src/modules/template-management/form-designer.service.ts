@@ -42,8 +42,13 @@ import { DeleteFormCellConfigsDto } from './dto/delete-form-cell-configs.dto';
 import { UpsertTemplateScopesDto } from './dto/upsert-template-scope.dto';
 
 const DEFAULT_FORM_SYSTEM_ATTRIBUTES = [
+<<<<<<< Updated upstream
   { name: 'Tên chỉ tiêu', sortOrder: 0 },
   { name: 'Đơn vị tính', sortOrder: 1 },
+=======
+  { name: 'Tên chỉ tiêu', dataType: 'text', sortOrder: 0 },
+  { name: 'Đơn vị tính', dataType: 'text', sortOrder: 1 },
+>>>>>>> Stashed changes
 ];
 
 @Injectable()
@@ -100,6 +105,14 @@ export class TemplateManagementService {
         attrRepo.create({
           formId,
           name: def.name,
+<<<<<<< Updated upstream
+=======
+          dataType: def.dataType,
+          isRequired: false,
+          isVisible: true,
+          isSystem: true,
+          isReadonly: true,
+>>>>>>> Stashed changes
           sortOrder: def.sortOrder,
           isSystem: true,
         }),
@@ -618,7 +631,18 @@ export class TemplateManagementService {
           attrRepo.create({
             formId: saved.id,
             name: a.name,
+<<<<<<< Updated upstream
             sortOrder: a.sortOrder,
+=======
+            dataType: a.dataType,
+            isRequired: a.isRequired,
+            isVisible: a.isVisible,
+            isReadonly: a.isReadonly,
+            isSystem: a.isSystem,
+            sortOrder: a.sortOrder,
+            options: a.options,
+            validationRule: a.validationRule,
+>>>>>>> Stashed changes
           }),
         );
         attrMap.set(a.id, newAttr.id);
@@ -691,6 +715,14 @@ export class TemplateManagementService {
       formId,
       parentId: dto.parentId ?? null,
       name: dto.name.trim(),
+<<<<<<< Updated upstream
+=======
+      dataType: dto.dataType ?? null,
+      isRequired: dto.isRequired ?? false,
+      isVisible: dto.isVisible ?? true,
+      isReadonly: dto.isReadonly ?? false,
+      isSystem: false,
+>>>>>>> Stashed changes
       sortOrder: nextSort,
     });
     const saved = await this.attrRepo.save(a);

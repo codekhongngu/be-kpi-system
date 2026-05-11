@@ -36,6 +36,21 @@ export class FormAttribute {
   @Column({ type: 'varchar', length: 255 })
   name: string;
 
+<<<<<<< Updated upstream
+=======
+  @Column({ name: 'data_type', type: 'varchar', length: 20, nullable: true })
+  dataType: string | null;
+
+  @Column({ name: 'is_required', type: 'boolean', default: false })
+  isRequired: boolean;
+
+  @Column({ name: 'is_visible', type: 'boolean', default: true })
+  isVisible: boolean;
+
+  @Column({ name: 'is_readonly', type: 'boolean', default: false })
+  isReadonly: boolean;
+
+>>>>>>> Stashed changes
   @Column({ name: 'is_system', type: 'boolean', default: false })
   isSystem: boolean;
 

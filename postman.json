@@ -269,7 +269,11 @@
             ],
             "body": {
               "mode": "raw",
+<<<<<<< Updated upstream
               "raw": "{\n  \"code\": \"NV001\",\n  \"username\": \"user01\",\n  \"email\": \"user01@example.com\",\n  \"password\": \"Admin@123\",\n  \"fullName\": \"User 01\",\n  \"orgId\": \"{{orgId}}\",\n  \"roleIds\": [\"{{roleId}}\"]\n}"
+=======
+              "raw": "{\n  \"username\": \"user01\",\n  \"email\": \"user01@example.com\",\n  \"password\": \"Admin@123\",\n  \"fullName\": \"User 01\",\n  \"orgId\": \"{{orgId}}\",\n  \"roleIds\": [\"{{roleId}}\"]\n}"
+>>>>>>> Stashed changes
             },
             "url": "{{baseUrl}}/users"
           }
@@ -524,7 +528,11 @@
           "name": "Forms - List",
           "request": {
             "method": "GET",
+<<<<<<< Updated upstream
             "url": "{{baseUrl}}/forms?q=kpi&search=kpi&fieldCategory=finance&category=finance&fieldCategoryId={{fieldCategoryId}}&period=2026-05&periodType=THANG&template_status=DRAFT,READY&page=1&limit=20"
+=======
+            "url": "{{baseUrl}}/forms?q=kpi&search=kpi&fieldCategory=finance&category=finance&fieldCategoryId={{fieldCategoryId}}&period=2026-05&periodType=THANG&isActive=true&status=active&page=1&limit=20"
+>>>>>>> Stashed changes
           }
         },
         {
@@ -1026,6 +1034,7 @@
           "name": "Submit Submission",
           "request": {
             "method": "POST",
+<<<<<<< Updated upstream
             "header": [
               {
                 "key": "Content-Type",
@@ -1036,10 +1045,13 @@
               "mode": "raw",
               "raw": "{\n  \"note\": \"Submitted for approval\"\n}"
             },
+=======
+>>>>>>> Stashed changes
             "url": "{{baseUrl}}/submissions/{{submissionId}}/submit"
           }
         },
         {
+<<<<<<< Updated upstream
           "name": "Cancel Submit",
           "request": {
             "method": "POST",
@@ -1061,6 +1073,8 @@
           }
         },
         {
+=======
+>>>>>>> Stashed changes
           "name": "Pending Approvals",
           "request": {
             "method": "GET",
@@ -1100,6 +1114,7 @@
             },
             "url": "{{baseUrl}}/approvals/{{submissionId}}/reject"
           }
+<<<<<<< Updated upstream
         },
         {
           "name": "Pending Department",
@@ -1189,12 +1204,15 @@
             "method": "GET",
             "url": "{{baseUrl}}/approvals/history/{{submissionId}}"
           }
+=======
+>>>>>>> Stashed changes
         }
       ]
     },
     {
       "name": "Campaign & Assignment",
       "item": [
+<<<<<<< Updated upstream
         { "name": "Create Report Campaign", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"formId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"periodType\": \"THANG\",\n  \"periodCode\": \"2026-05\",\n  \"periodName\": \"Tháng 05/2026\",\n  \"deadlineFrom\": \"2026-05-01\",\n  \"deadlineTo\": \"2026-05-31\"\n}" }, "url": "{{baseUrl}}/report-campaigns" } },
         { "name": "Get Report Campaign", "request": { "method": "GET", "url": "{{baseUrl}}/report-campaigns/{{campaignId}}" } },
         { "name": "Campaign Scopes", "request": { "method": "GET", "url": "{{baseUrl}}/report-campaigns/{{campaignId}}/scopes" } },
@@ -1205,6 +1223,77 @@
         { "name": "List Assignments", "request": { "method": "GET", "url": "{{baseUrl}}/assignments" } },
         { "name": "Create Assignment Batch", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{}" }, "url": "{{baseUrl}}/assignments" } },
         { "name": "Cancel Assignment", "request": { "method": "POST", "url": "{{baseUrl}}/assignments/{{assignmentId}}/cancel" } }
+=======
+        {
+          "name": "Create Report Campaign",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{baseUrl}}/report-campaigns"
+          }
+        },
+        {
+          "name": "Get Report Campaign",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/report-campaigns/{{campaignId}}"
+          }
+        },
+        {
+          "name": "Campaign Scopes",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/report-campaigns/{{campaignId}}/scopes"
+          }
+        },
+        {
+          "name": "Confirm Dispatch",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/report-campaigns/{{campaignId}}/confirm-dispatch"
+          }
+        },
+        {
+          "name": "List Assignments",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/assignments"
+          }
+        },
+        {
+          "name": "Create Assignment Batch",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{baseUrl}}/assignments"
+          }
+        },
+        {
+          "name": "Cancel Assignment",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/assignments/{{assignmentId}}/cancel"
+          }
+        }
+>>>>>>> Stashed changes
       ]
     },
     {
