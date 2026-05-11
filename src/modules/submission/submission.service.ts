@@ -10,6 +10,7 @@ import { DataSource, Repository } from 'typeorm';
 import { randomBytes } from 'crypto';
 import { ReportSubmission } from './entities/report-submission.entity';
 import { ReportData } from './entities/report-data.entity';
+import { SubmissionFlowLog, SubmissionFlowEvent } from './entities/submission-flow-log.entity';
 import { FormAssignment } from '../report-campaign/assignment/entities/form-assignment.entity';
 import { FormIndicator } from '../template-management/entities/form-indicator.entity';
 import { FormAttribute } from '../template-management/entities/form-attribute.entity';
@@ -35,6 +36,8 @@ export class SubmissionService {
     private readonly attributeRepo: Repository<FormAttribute>,
     @InjectRepository(Notification)
     private readonly notificationRepo: Repository<Notification>,
+    @InjectRepository(SubmissionFlowLog)
+    private readonly flowLogRepo: Repository<SubmissionFlowLog>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -384,12 +387,23 @@ export class SubmissionService {
     if (!['DRAFT', 'REJECTED_DEPARTMENT', 'REJECTED_DISTRICT'].includes(s.status)) {
       throw new ConflictException('SUBMISSION_NOT_EDITABLE');
     }
+    const fromStatus = s.status;
     s.status = 'PENDING_DEPARTMENT';
     s.note = dto.note?.trim() ?? null;
     s.submittedBy = user.id;
     s.submittedAt = new Date();
     s.version += 1;
     await this.submissionRepo.save(s);
+
+    // Capture flow log
+    await this.captureFlowLog(
+      s.id,
+      SubmissionFlowEvent.SUBMIT,
+      user.id,
+      fromStatus,
+      s.status,
+      s.note,
+    );
 
     // Auto notify department approvers in same org (RBAC QLDL: APPROVALS:WRITE)
     const approverIds = await this.findDepartmentApproverUserIds(a.orgId);
@@ -471,20 +485,21 @@ export class SubmissionService {
     const history = await this.dataSource.query(
       `
       SELECT 
-        ah.id,
-        ah.submission_id,
-        ah.approval_level,
-        ah.action,
-        ah.user_id,
-        ah.created_at,
+        fl.id,
+        fl.submission_id,
+        fl.event,
+        fl.from_status,
+        fl.to_status,
+        fl.actor_id as user_id,
+        fl.note,
+        fl.created_at,
         u.full_name as user_name,
-        s.code as submission_code,
-        s.status as submission_status
-      FROM approval_history ah
-      INNER JOIN users u ON u.id = ah.user_id
-      INNER JOIN report_submissions s ON s.id = ah.submission_id
+        s.code as submission_code
+      FROM submission_flow_logs fl
+      INNER JOIN users u ON u.id = fl.actor_id
+      INNER JOIN report_submissions s ON s.id = fl.submission_id
       WHERE s.assignment_id = $1
-      ORDER BY ah.created_at DESC
+      ORDER BY fl.created_at DESC
       `,
       [assignmentId]
     );
@@ -512,6 +527,56 @@ export class SubmissionService {
     await this.submissionRepo.save(s);
 
     return { status: s.status };
+  }
+
+  async captureFlowLog(
+    submissionId: string,
+    event: SubmissionFlowEvent,
+    actorId: string,
+    fromStatus: string | null,
+    toStatus: string,
+    note?: string | null,
+  ) {
+    const cells = await this.dataRepo.find({
+      where: { submissionId },
+    });
+
+    const s = await this.submissionRepo.findOne({ where: { id: submissionId } });
+
+    const snapshot = {
+      cells: cells.map((c) => ({
+        indicatorId: c.indicatorId,
+        attributeId: c.attributeId,
+        value: c.value,
+        valueNumeric: c.valueNumeric,
+      })),
+      metadata: {
+        completionPct: s?.completionPct,
+        version: s?.version,
+      },
+    };
+
+    const log = this.flowLogRepo.create({
+      submissionId,
+      event,
+      fromStatus,
+      toStatus,
+      actorId,
+      note,
+      snapshot,
+    });
+
+    await this.flowLogRepo.save(log);
+  }
+
+  async getFlowLogDetails(id: string, user: User) {
+    const log = await this.flowLogRepo.findOne({
+      where: { id },
+    });
+    if (!log) throw new NotFoundException('Không tìm thấy bản ghi lịch sử');
+    
+    // Check permission (optional: check if user belongs to the org of the submission)
+    return log;
   }
 }
 

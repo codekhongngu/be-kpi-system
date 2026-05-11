@@ -42,13 +42,8 @@ import { DeleteFormCellConfigsDto } from './dto/delete-form-cell-configs.dto';
 import { UpsertTemplateScopesDto } from './dto/upsert-template-scope.dto';
 
 const DEFAULT_FORM_SYSTEM_ATTRIBUTES = [
-<<<<<<< Updated upstream
   { name: 'Tên chỉ tiêu', sortOrder: 0 },
   { name: 'Đơn vị tính', sortOrder: 1 },
-=======
-  { name: 'Tên chỉ tiêu', dataType: 'text', sortOrder: 0 },
-  { name: 'Đơn vị tính', dataType: 'text', sortOrder: 1 },
->>>>>>> Stashed changes
 ];
 
 @Injectable()
@@ -71,7 +66,7 @@ export class TemplateManagementService {
     @InjectRepository(AssignmentBatch)
     private readonly assignmentBatchRepo: Repository<AssignmentBatch>,
     private readonly dataSource: DataSource,
-  ) {}
+  ) { }
 
   private async hasCampaignOrAssignment(formId: string): Promise<boolean> {
     const campaignExists = await this.assignmentBatchRepo.exist({
@@ -105,14 +100,6 @@ export class TemplateManagementService {
         attrRepo.create({
           formId,
           name: def.name,
-<<<<<<< Updated upstream
-=======
-          dataType: def.dataType,
-          isRequired: false,
-          isVisible: true,
-          isSystem: true,
-          isReadonly: true,
->>>>>>> Stashed changes
           sortOrder: def.sortOrder,
           isSystem: true,
         }),
@@ -339,7 +326,7 @@ export class TemplateManagementService {
     if (templateStatusRaw) {
       const statuses = templateStatusRaw.split(',').map(s => s.trim().toUpperCase());
       const validStatuses = Object.values(TemplateStatus);
-      
+
       for (const status of statuses) {
         if (!validStatuses.includes(status as TemplateStatus)) {
           throw new BadRequestException(
@@ -347,9 +334,9 @@ export class TemplateManagementService {
           );
         }
       }
-      
-      qb.andWhere('f.templateStatus IN (:...templateStatuses)', { 
-        templateStatuses: statuses 
+
+      qb.andWhere('f.templateStatus IN (:...templateStatuses)', {
+        templateStatuses: statuses
       });
     }
 
@@ -363,27 +350,27 @@ export class TemplateManagementService {
       if (Object.values(PeriodType).includes(periodNormalized as PeriodType)) {
         qb.andWhere('f.periodType = :periodType', { periodType: periodNormalized });
       } else
-      if (/^\d{4}$/.test(period)) {
-        const year = Number(period);
-        qb.andWhere('EXTRACT(YEAR FROM f.createdAt) = :year', { year });
-      } else if (/^\d{4}-\d{2}$/.test(period)) {
-        const [y, m] = period.split('-').map(Number);
-        if (m < 1 || m > 12) {
-          throw new BadRequestException('period không hợp lệ (YYYY-MM)');
+        if (/^\d{4}$/.test(period)) {
+          const year = Number(period);
+          qb.andWhere('EXTRACT(YEAR FROM f.createdAt) = :year', { year });
+        } else if (/^\d{4}-\d{2}$/.test(period)) {
+          const [y, m] = period.split('-').map(Number);
+          if (m < 1 || m > 12) {
+            throw new BadRequestException('period không hợp lệ (YYYY-MM)');
+          }
+          const from = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0));
+          const to = new Date(Date.UTC(y, m, 1, 0, 0, 0));
+          qb.andWhere('f.createdAt >= :from AND f.createdAt < :to', { from, to });
+        } else if (/^\d{4}-\d{2}-\d{2}$/.test(period)) {
+          const [y, m, d] = period.split('-').map(Number);
+          const from = new Date(Date.UTC(y, m - 1, d, 0, 0, 0));
+          const to = new Date(Date.UTC(y, m - 1, d + 1, 0, 0, 0));
+          qb.andWhere('f.createdAt >= :from AND f.createdAt < :to', { from, to });
+        } else {
+          throw new BadRequestException(
+            'period không hợp lệ, dùng YYYY hoặc YYYY-MM hoặc YYYY-MM-DD',
+          );
         }
-        const from = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0));
-        const to = new Date(Date.UTC(y, m, 1, 0, 0, 0));
-        qb.andWhere('f.createdAt >= :from AND f.createdAt < :to', { from, to });
-      } else if (/^\d{4}-\d{2}-\d{2}$/.test(period)) {
-        const [y, m, d] = period.split('-').map(Number);
-        const from = new Date(Date.UTC(y, m - 1, d, 0, 0, 0));
-        const to = new Date(Date.UTC(y, m - 1, d + 1, 0, 0, 0));
-        qb.andWhere('f.createdAt >= :from AND f.createdAt < :to', { from, to });
-      } else {
-        throw new BadRequestException(
-          'period không hợp lệ, dùng YYYY hoặc YYYY-MM hoặc YYYY-MM-DD',
-        );
-      }
     }
 
     qb.orderBy('f.createdAt', 'DESC').skip(skip).take(limit);
@@ -631,18 +618,7 @@ export class TemplateManagementService {
           attrRepo.create({
             formId: saved.id,
             name: a.name,
-<<<<<<< Updated upstream
             sortOrder: a.sortOrder,
-=======
-            dataType: a.dataType,
-            isRequired: a.isRequired,
-            isVisible: a.isVisible,
-            isReadonly: a.isReadonly,
-            isSystem: a.isSystem,
-            sortOrder: a.sortOrder,
-            options: a.options,
-            validationRule: a.validationRule,
->>>>>>> Stashed changes
           }),
         );
         attrMap.set(a.id, newAttr.id);
@@ -715,14 +691,6 @@ export class TemplateManagementService {
       formId,
       parentId: dto.parentId ?? null,
       name: dto.name.trim(),
-<<<<<<< Updated upstream
-=======
-      dataType: dto.dataType ?? null,
-      isRequired: dto.isRequired ?? false,
-      isVisible: dto.isVisible ?? true,
-      isReadonly: dto.isReadonly ?? false,
-      isSystem: false,
->>>>>>> Stashed changes
       sortOrder: nextSort,
     });
     const saved = await this.attrRepo.save(a);
@@ -1543,7 +1511,7 @@ export class TemplateManagementService {
 
     await this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(FormTemplateIndicatorOrgRule);
-      
+
       // We perform a sync (replace) operation here. 
       // First, we disable all existing rules for this form.
       await repo.update({ templateId: formId }, { isEnabled: false });

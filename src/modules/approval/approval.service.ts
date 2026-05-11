@@ -11,6 +11,8 @@ import { FormAssignment } from '../report-campaign/assignment/entities/form-assi
 import { Notification } from '../notification/entities/notification.entity';
 import { User, UserStatus } from '../user/entities/user.entity';
 import { PendingApprovalsQueryDto } from './dto/pending-approvals-query.dto';
+import { SubmissionService } from '../submission/submission.service';
+import { SubmissionFlowEvent } from '../submission/entities/submission-flow-log.entity';
 
 @Injectable()
 export class ApprovalService {
@@ -21,6 +23,7 @@ export class ApprovalService {
     private readonly assignmentRepo: Repository<FormAssignment>,
     @InjectRepository(Notification)
     private readonly notificationRepo: Repository<Notification>,
+    private readonly submissionService: SubmissionService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -162,13 +165,20 @@ export class ApprovalService {
     // Check user has department approval permission
     await this.validateDepartmentApprovalPermission(user, s);
 
+    const fromStatus = s.status;
     s.status = 'DEPARTMENT_APPROVED';
     s.departmentApprovedBy = user.id;
     s.departmentApprovedAt = new Date();
     await this.submissionRepo.save(s);
 
-    // Record approval history
-    await this.recordApprovalHistory(s.id, 'DEPARTMENT', 'APPROVE', user.id);
+    // Record flow history
+    await this.submissionService.captureFlowLog(
+      s.id,
+      SubmissionFlowEvent.FORWARD,
+      user.id,
+      fromStatus,
+      s.status,
+    );
 
     // Notify district admins
     await this.notifyDistrictAdmins(submissionId);
@@ -197,14 +207,22 @@ export class ApprovalService {
     // Check user has department approval permission
     await this.validateDepartmentApprovalPermission(user, s);
 
+    const fromStatus = s.status;
     s.status = 'REJECTED_DEPARTMENT';
     s.rejectReason = reason;
     s.departmentApprovedBy = null;
     s.departmentApprovedAt = null;
     await this.submissionRepo.save(s);
 
-    // Record approval history
-    await this.recordApprovalHistory(s.id, 'DEPARTMENT', 'REJECT', user.id);
+    // Record flow history
+    await this.submissionService.captureFlowLog(
+      s.id,
+      SubmissionFlowEvent.REJECT,
+      user.id,
+      fromStatus,
+      s.status,
+      reason,
+    );
 
     // Notify submitter
     await this.notifySubmissionStatusChange(submissionId, 'REJECTED_DEPARTMENT', reason);
@@ -233,13 +251,20 @@ export class ApprovalService {
     // Check user has district approval permission
     await this.validateDistrictApprovalPermission(user, s);
 
+    const fromStatus = s.status;
     s.status = 'DISTRICT_APPROVED';
     s.districtApprovedBy = user.id;
     s.districtApprovedAt = new Date();
     await this.submissionRepo.save(s);
 
-    // Record approval history
-    await this.recordApprovalHistory(s.id, 'DISTRICT', 'APPROVE', user.id);
+    // Record flow history
+    await this.submissionService.captureFlowLog(
+      s.id,
+      SubmissionFlowEvent.APPROVE,
+      user.id,
+      fromStatus,
+      s.status,
+    );
 
     // Trigger summary generation
     await this.triggerSummaryGeneration(submissionId);
@@ -271,14 +296,22 @@ export class ApprovalService {
     // Check user has district approval permission
     await this.validateDistrictApprovalPermission(user, s);
 
+    const fromStatus = s.status;
     s.status = 'REJECTED_DISTRICT';
     s.rejectReason = reason;
     s.districtApprovedBy = null;
     s.districtApprovedAt = null;
     await this.submissionRepo.save(s);
 
-    // Record approval history
-    await this.recordApprovalHistory(s.id, 'DISTRICT', 'REJECT', user.id);
+    // Record flow history
+    await this.submissionService.captureFlowLog(
+      s.id,
+      SubmissionFlowEvent.REJECT,
+      user.id,
+      fromStatus,
+      s.status,
+      reason,
+    );
 
     // Notify submitter
     await this.notifySubmissionStatusChange(submissionId, 'REJECTED_DISTRICT', reason);
@@ -373,15 +406,6 @@ export class ApprovalService {
     if (hasPermission[0].count === 0) {
       throw new ForbiddenException('Không có quyền duyệt cấp xã');
     }
-  }
-
-  private async recordApprovalHistory(submissionId: string, level: 'DEPARTMENT' | 'DISTRICT', action: 'APPROVE' | 'REJECT', userId: string) {
-    await this.dataSource.query(
-      `INSERT INTO approval_history 
-       (submission_id, approval_level, action, user_id, created_at)
-       VALUES ($1, $2, $3, $4, NOW())`,
-      [submissionId, level, action, userId]
-    );
   }
 
   private async notifyDistrictAdmins(submissionId: string) {
@@ -519,20 +543,21 @@ export class ApprovalService {
     const history = await this.dataSource.query(
       `
       SELECT 
-        ah.id,
-        ah.submission_id,
-        ah.approval_level,
-        ah.action,
-        ah.user_id,
-        ah.created_at,
+        fl.id,
+        fl.submission_id,
+        fl.event,
+        fl.from_status,
+        fl.to_status,
+        fl.actor_id as user_id,
+        fl.note,
+        fl.created_at,
         u.full_name as user_name,
-        s.code as submission_code,
-        s.status as submission_status
-      FROM approval_history ah
-      INNER JOIN users u ON u.id = ah.user_id
-      INNER JOIN report_submissions s ON s.id = ah.submission_id
-      WHERE ah.submission_id = $1
-      ORDER BY ah.created_at DESC
+        s.code as submission_code
+      FROM submission_flow_logs fl
+      INNER JOIN users u ON u.id = fl.actor_id
+      INNER JOIN report_submissions s ON s.id = fl.submission_id
+      WHERE fl.submission_id = $1
+      ORDER BY fl.created_at DESC
       `,
       [submissionId]
     );

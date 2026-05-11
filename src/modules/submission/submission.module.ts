@@ -12,6 +12,8 @@ import { MyAssignmentsController } from './my-assignments.controller';
 import { Role } from '../role/entities/role.entity';
 import { Permission } from '../role/entities/permission.entity';
 
+import { SubmissionFlowLog } from './entities/submission-flow-log.entity';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -23,6 +25,7 @@ import { Permission } from '../role/entities/permission.entity';
       Notification,
       Role,
       Permission,
+      SubmissionFlowLog,
     ]),
   ],
   controllers: [SubmissionsController, MyAssignmentsController],

@@ -86,6 +86,15 @@ export class SubmissionsController {
   ) {
     return await this.submissionService.cancelSubmit(id, user);
   }
+
+  @Get('flow-logs/:id')
+  @Permissions('submissions.manage')
+  async getFlowLogDetails(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: User,
+  ) {
+    return await this.submissionService.getFlowLogDetails(id, user);
+  }
 }
 
 

@@ -9,6 +9,8 @@ import { ApprovalsController } from './approvals.controller';
 import { Role } from '../role/entities/role.entity';
 import { Permission } from '../role/entities/permission.entity';
 
+import { SubmissionModule } from '../submission/submission.module';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -18,6 +20,7 @@ import { Permission } from '../role/entities/permission.entity';
       Role,
       Permission,
     ]),
+    SubmissionModule,
   ],
   controllers: [ApprovalController, ApprovalsController],
   providers: [ApprovalService],
