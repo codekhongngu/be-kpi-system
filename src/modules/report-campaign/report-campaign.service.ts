@@ -25,6 +25,7 @@ import { FormTemplateIndicatorOrgRule } from '../template-management/entities/fo
 import { Organization } from '../organization/entities/organization.entity';
 import { ReportCampaignDefaultValue } from './entities/report-campaign-default-value.entity';
 import { FormAttribute } from '../template-management/entities/form-attribute.entity';
+import { ReportSubmission } from '../submission/entities/report-submission.entity';
 import { CreateReportCampaignDto } from './dto/create-report-campaign.dto';
 import { UpdateReportCampaignDto } from './dto/update-report-campaign.dto';
 import { UpsertReportCampaignScopesDto } from './dto/upsert-report-campaign-scopes.dto';
@@ -33,6 +34,29 @@ import {
   UpsertCampaignDefaultValuesDto,
   DeleteCampaignDefaultValuesDto,
 } from './dto/upsert-campaign-default-values.dto';
+import { normalizeSubmissionStatus } from '../submission/submission-status';
+
+type CampaignAssignmentRow = {
+  assignmentId: string;
+  batchId: string | null;
+  formId: string;
+  orgId: string;
+  orgName: string | null;
+  periodType: string;
+  periodCode: string;
+  periodName: string | null;
+  deadlineFrom: string;
+  deadlineTo: string;
+  assignedAt: Date | string | null;
+  assignedBy: string | null;
+  submissionId: string | null;
+  submissionStatus: string | null;
+  completionPct: string | number | null;
+  submittedAt: Date | string | null;
+  departmentApprovedAt: Date | string | null;
+  districtApprovedAt: Date | string | null;
+  submissionUpdatedAt: Date | string | null;
+};
 
 @Injectable()
 export class ReportCampaignService {
@@ -63,9 +87,11 @@ export class ReportCampaignService {
     const limit = Math.min(query.limit ?? 20, 200);
     const skip = (page - 1) * limit;
     const qb = this.batchRepo.createQueryBuilder('c');
-    if (query.formId) qb.andWhere('c.formId = :formId', { formId: query.formId });
+    if (query.formId)
+      qb.andWhere('c.formId = :formId', { formId: query.formId });
     if (query.status) qb.andWhere('c.status = :st', { st: query.status });
-    if (query.periodType) qb.andWhere('c.periodType = :pt', { pt: query.periodType });
+    if (query.periodType)
+      qb.andWhere('c.periodType = :pt', { pt: query.periodType });
     if (query.periodCode?.trim()) {
       qb.andWhere('c.periodCode = :pc', { pc: query.periodCode.trim() });
     }
@@ -78,7 +104,11 @@ export class ReportCampaignService {
     const form = await this.formRepo.findOne({ where: { id: dto.formId } });
     if (!form) throw new NotFoundException('FORM_NOT_FOUND');
     if (!form.isActive) throw new ConflictException('FORM_INACTIVE');
-    if (![TemplateStatus.READY, TemplateStatus.IN_USE].includes(form.templateStatus)) {
+    if (
+      ![TemplateStatus.READY, TemplateStatus.IN_USE].includes(
+        form.templateStatus,
+      )
+    ) {
       throw new ConflictException('FORM_NOT_READY_FOR_CAMPAIGN');
     }
 
@@ -130,18 +160,89 @@ export class ReportCampaignService {
   }
 
   async findOne(id: string) {
-    const campaign = await this.batchRepo.findOne({ 
+    const campaign = await this.batchRepo.findOne({
       where: { id },
-      relations: ['form']
+      relations: ['form'],
     });
     if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
-    
+
     const { form, ...campaignData } = campaign;
-    
+
     return {
       ...campaignData,
       templateCode: campaign.form?.code,
       templateName: campaign.form?.name,
+    };
+  }
+
+  async listAssignments(campaignId: string) {
+    const campaign = await this.batchRepo.findOne({
+      where: { id: campaignId },
+    });
+    if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
+
+    const rows = await this.assignmentRepo
+      .createQueryBuilder('a')
+      .innerJoin(Organization, 'o', 'o.id = a.orgId')
+      .leftJoin(ReportSubmission, 's', 's.assignmentId = a.id')
+      .where('a.batchId = :campaignId', { campaignId })
+      .andWhere('a.isCancelled = false')
+      .select([
+        'a.id AS "assignmentId"',
+        'a.batchId AS "batchId"',
+        'a.formId AS "formId"',
+        'a.orgId AS "orgId"',
+        'o.name AS "orgName"',
+        'a.periodType AS "periodType"',
+        'a.periodCode AS "periodCode"',
+        'a.periodName AS "periodName"',
+        'a.deadlineFrom AS "deadlineFrom"',
+        'a.deadlineTo AS "deadlineTo"',
+        'a.assignedAt AS "assignedAt"',
+        'a.assignedBy AS "assignedBy"',
+        's.id AS "submissionId"',
+        's.status AS "submissionStatus"',
+        's.completion_pct AS "completionPct"',
+        's.submitted_at AS "submittedAt"',
+        's.department_approved_at AS "departmentApprovedAt"',
+        's.district_approved_at AS "districtApprovedAt"',
+        's.updated_at AS "submissionUpdatedAt"',
+      ])
+      .orderBy('o.name', 'ASC')
+      .addOrderBy('a.assignedAt', 'ASC')
+      .getRawMany<CampaignAssignmentRow>();
+
+    return {
+      items: rows.map((row) => {
+        const submissionId = row.submissionId ?? null;
+        const submissionStatus = submissionId
+          ? normalizeSubmissionStatus(row.submissionStatus)
+          : 'NOT_STARTED';
+        return {
+          id: row.assignmentId,
+          batchId: row.batchId,
+          formId: row.formId,
+          orgId: row.orgId,
+          orgName: row.orgName ?? '',
+          periodType: row.periodType,
+          periodCode: row.periodCode,
+          periodName: row.periodName ?? null,
+          deadlineFrom: row.deadlineFrom,
+          deadlineTo: row.deadlineTo,
+          assignedAt: row.assignedAt ?? null,
+          assignedBy: row.assignedBy ?? null,
+          submissionId,
+          status: submissionStatus,
+          completionPct:
+            row.completionPct != null ? Number(row.completionPct) : null,
+          submittedAt: row.submittedAt ?? null,
+          approvedAt:
+            row.districtApprovedAt ?? row.departmentApprovedAt ?? null,
+          departmentApprovedAt: row.departmentApprovedAt ?? null,
+          districtApprovedAt: row.districtApprovedAt ?? null,
+          updatedAt: row.submissionUpdatedAt ?? row.assignedAt ?? null,
+        };
+      }),
     };
   }
 
@@ -151,9 +252,12 @@ export class ReportCampaignService {
     if (campaign.status !== AssignmentBatchStatus.DRAFT) {
       throw new ConflictException('CAMPAIGN_NOT_EDITABLE');
     }
-    if (dto.periodName !== undefined) campaign.periodName = dto.periodName?.trim() || null;
-    if (dto.deadlineFrom !== undefined) campaign.deadlineFrom = dto.deadlineFrom.slice(0, 10);
-    if (dto.deadlineTo !== undefined) campaign.deadlineTo = dto.deadlineTo.slice(0, 10);
+    if (dto.periodName !== undefined)
+      campaign.periodName = dto.periodName?.trim() || null;
+    if (dto.deadlineFrom !== undefined)
+      campaign.deadlineFrom = dto.deadlineFrom.slice(0, 10);
+    if (dto.deadlineTo !== undefined)
+      campaign.deadlineTo = dto.deadlineTo.slice(0, 10);
     if (campaign.deadlineTo < campaign.deadlineFrom) {
       throw new BadRequestException('DEADLINE_INVALID_RANGE');
     }
@@ -174,7 +278,9 @@ export class ReportCampaignService {
   }
 
   async upsertScopes(campaignId: string, dto: UpsertReportCampaignScopesDto) {
-    const campaign = await this.batchRepo.findOne({ where: { id: campaignId } });
+    const campaign = await this.batchRepo.findOne({
+      where: { id: campaignId },
+    });
     if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
     if (campaign.status !== AssignmentBatchStatus.DRAFT) {
       throw new ConflictException('CAMPAIGN_NOT_EDITABLE');
@@ -183,7 +289,10 @@ export class ReportCampaignService {
     const orgIds = [...new Set(dto.items.map((x) => x.orgId))];
     const indicatorIds = [...new Set(dto.items.map((x) => x.indicatorId))];
 
-    const orgs = await this.orgRepo.find({ where: { id: In(orgIds) }, select: { id: true, isActive: true } });
+    const orgs = await this.orgRepo.find({
+      where: { id: In(orgIds) },
+      select: { id: true, isActive: true },
+    });
     if (orgs.length !== orgIds.length || orgs.some((x) => !x.isActive)) {
       throw new BadRequestException('INVALID_ORGS');
     }
@@ -196,7 +305,9 @@ export class ReportCampaignService {
       throw new BadRequestException('INVALID_INDICATORS');
     }
 
-    const form = await this.formRepo.findOne({ where: { id: campaign.formId } });
+    const form = await this.formRepo.findOne({
+      where: { id: campaign.formId },
+    });
     if (!form) throw new NotFoundException('FORM_NOT_FOUND');
 
     if (form.templateType === TemplateType.UNIQUE) {
@@ -211,7 +322,11 @@ export class ReportCampaignService {
 
     for (const item of dto.items) {
       const existing = await this.scopeRepo.findOne({
-        where: { batchId: campaignId, orgId: item.orgId, indicatorId: item.indicatorId },
+        where: {
+          batchId: campaignId,
+          orgId: item.orgId,
+          indicatorId: item.indicatorId,
+        },
       });
       if (existing) continue;
       await this.scopeRepo.save(
@@ -228,7 +343,9 @@ export class ReportCampaignService {
   }
 
   async deleteScopes(campaignId: string, dto: UpsertReportCampaignScopesDto) {
-    const campaign = await this.batchRepo.findOne({ where: { id: campaignId } });
+    const campaign = await this.batchRepo.findOne({
+      where: { id: campaignId },
+    });
     if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
     if (campaign.status !== AssignmentBatchStatus.DRAFT) {
       throw new ConflictException('CAMPAIGN_NOT_EDITABLE');
@@ -265,7 +382,8 @@ export class ReportCampaignService {
       }
 
       const scopes = await scopeRepo.find({ where: { batchId: campaignId } });
-      if (scopes.length === 0) throw new BadRequestException('CAMPAIGN_SCOPE_EMPTY');
+      if (scopes.length === 0)
+        throw new BadRequestException('CAMPAIGN_SCOPE_EMPTY');
 
       const orgIds = [...new Set(scopes.map((x) => x.orgId))];
       for (const orgId of orgIds) {
@@ -300,7 +418,9 @@ export class ReportCampaignService {
   }
 
   async cancel(campaignId: string, _userId: string | undefined) {
-    const campaign = await this.batchRepo.findOne({ where: { id: campaignId } });
+    const campaign = await this.batchRepo.findOne({
+      where: { id: campaignId },
+    });
     if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
     if (campaign.status === AssignmentBatchStatus.CANCELLED) {
       return { ok: true, status: campaign.status };
@@ -314,7 +434,9 @@ export class ReportCampaignService {
   }
 
   async close(campaignId: string, _userId: string | undefined) {
-    const campaign = await this.batchRepo.findOne({ where: { id: campaignId } });
+    const campaign = await this.batchRepo.findOne({
+      where: { id: campaignId },
+    });
     if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
     if (campaign.status === AssignmentBatchStatus.CLOSED) {
       return { ok: true, status: campaign.status };
@@ -330,7 +452,9 @@ export class ReportCampaignService {
   // ── DefaultValues CRUD ────────────────────────────────────────────
 
   async listDefaultValues(campaignId: string) {
-    const campaign = await this.batchRepo.findOne({ where: { id: campaignId } });
+    const campaign = await this.batchRepo.findOne({
+      where: { id: campaignId },
+    });
     if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
     const rows = await this.defaultValueRepo.find({
       where: { campaignId },
@@ -351,7 +475,9 @@ export class ReportCampaignService {
     campaignId: string,
     dto: UpsertCampaignDefaultValuesDto,
   ) {
-    const campaign = await this.batchRepo.findOne({ where: { id: campaignId } });
+    const campaign = await this.batchRepo.findOne({
+      where: { id: campaignId },
+    });
     if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
     if (campaign.status !== AssignmentBatchStatus.DRAFT) {
       throw new ConflictException('CAMPAIGN_NOT_EDITABLE');
@@ -367,7 +493,9 @@ export class ReportCampaignService {
       throw new BadRequestException('INVALID_INDICATORS');
     }
     if (indicators.some((ind) => ind.type === 'TITLE')) {
-      throw new BadRequestException('CANNOT_SET_DEFAULT_VALUE_FOR_TITLE_INDICATOR');
+      throw new BadRequestException(
+        'CANNOT_SET_DEFAULT_VALUE_FOR_TITLE_INDICATOR',
+      );
     }
 
     // Validate attributes belong to campaign's template
@@ -391,7 +519,11 @@ export class ReportCampaignService {
         [campaign.formId, item.indicatorId, item.attributeId],
       );
       const dataType = cellConfig?.[0]?.data_type ?? null;
-      if (dataType === 'number' && item.valueNumber == null && !item.valueText) {
+      if (
+        dataType === 'number' &&
+        item.valueNumber == null &&
+        !item.valueText
+      ) {
         throw new BadRequestException(
           `Ô (${item.indicatorId}, ${item.attributeId}) kiểu số nhưng không có giá trị number`,
         );
@@ -433,7 +565,9 @@ export class ReportCampaignService {
     campaignId: string,
     dto: DeleteCampaignDefaultValuesDto,
   ) {
-    const campaign = await this.batchRepo.findOne({ where: { id: campaignId } });
+    const campaign = await this.batchRepo.findOne({
+      where: { id: campaignId },
+    });
     if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
     if (campaign.status !== AssignmentBatchStatus.DRAFT) {
       throw new ConflictException('CAMPAIGN_NOT_EDITABLE');

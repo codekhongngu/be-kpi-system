@@ -37,7 +37,10 @@ export class ReportCampaignController {
 
   @Post()
   @Permissions('campaigns.manage', 'assignments.manage')
-  async create(@Body() dto: CreateReportCampaignDto, @CurrentUser() user: User) {
+  async create(
+    @Body() dto: CreateReportCampaignDto,
+    @CurrentUser() user: User,
+  ) {
     return await this.service.create(dto, user?.id);
   }
 
@@ -45,6 +48,12 @@ export class ReportCampaignController {
   @Permissions('campaigns.manage', 'assignments.manage')
   async detail(@Param('id', ParseUUIDPipe) id: string) {
     return await this.service.findOne(id);
+  }
+
+  @Get(':id/assignments')
+  @Permissions('campaigns.manage', 'assignments.manage')
+  async listAssignments(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.service.listAssignments(id);
   }
 
   @Patch(':id')
@@ -82,19 +91,28 @@ export class ReportCampaignController {
 
   @Post(':id/confirm-dispatch')
   @Permissions('campaigns.dispatch', 'assignments.manage')
-  async confirmDispatch(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+  async confirmDispatch(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: User,
+  ) {
     return await this.service.confirmDispatch(id, user?.id);
   }
 
   @Post(':id/cancel')
   @Permissions('campaigns.manage', 'assignments.manage')
-  async cancel(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+  async cancel(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: User,
+  ) {
     return await this.service.cancel(id, user?.id);
   }
 
   @Post(':id/close')
   @Permissions('campaigns.manage', 'assignments.manage')
-  async close(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+  async close(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: User,
+  ) {
     return await this.service.close(id, user?.id);
   }
 
