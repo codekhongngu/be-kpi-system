@@ -4,7 +4,6 @@ import { ReportSubmission } from '../submission/entities/report-submission.entit
 import { FormAssignment } from '../report-campaign/assignment/entities/form-assignment.entity';
 import { Notification } from '../notification/entities/notification.entity';
 import { ApprovalService } from './approval.service';
-import { ApprovalController } from './approval.controller';
 import { ApprovalsController } from './approvals.controller';
 import { Role } from '../role/entities/role.entity';
 import { Permission } from '../role/entities/permission.entity';
@@ -22,7 +21,7 @@ import { SubmissionModule } from '../submission/submission.module';
     ]),
     SubmissionModule,
   ],
-  controllers: [ApprovalController, ApprovalsController],
+  controllers: [ApprovalsController],
   providers: [ApprovalService],
 })
 export class ApprovalModule {}

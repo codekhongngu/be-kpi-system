@@ -36,17 +36,17 @@ export class SummaryAnalyticsAnalyticsService {
     const submitted = await qbS
       .clone()
       .andWhere('s.status IN (:...sub)', {
-        sub: ['PENDING', 'APPROVED', 'REJECTED'],
+        sub: ['PENDING_DEPARTMENT', 'DEPARTMENT_APPROVED', 'DISTRICT_APPROVED', 'REJECTED_DEPARTMENT', 'REJECTED_DISTRICT'],
       })
       .getCount();
     const approved = await qbS
       .clone()
-      .andWhere('s.status = :st', { st: 'APPROVED' })
+      .andWhere('s.status = :st', { st: 'DISTRICT_APPROVED' })
       .getCount();
     const overdue = await qbS
       .clone()
       .andWhere('a.deadline_to < CURRENT_DATE')
-      .andWhere('s.status IN (:...open)', { open: ['DRAFT', 'REJECTED'] })
+      .andWhere('s.status IN (:...open)', { open: ['DRAFT', 'REJECTED_DEPARTMENT', 'REJECTED_DISTRICT'] })
       .getCount();
 
     return { assigned, submitted, approved, overdue };

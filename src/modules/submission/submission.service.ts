@@ -20,6 +20,10 @@ import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { PatchCellsDto } from './dto/patch-cells.dto';
 import { SubmitSubmissionDto } from './dto/submit-submission.dto';
 import { MyAssignmentsQueryDto } from './dto/my-assignments-query.dto';
+import {
+  isSubmissionEditableStatus,
+  normalizeSubmissionStatus,
+} from './submission-status';
 
 @Injectable()
 export class SubmissionService {
@@ -82,15 +86,16 @@ export class SubmissionService {
         's.completion_pct AS "completionPct"',
       ]);
 
-    if (query.status === 'UNOPENED' || query.status === 'NOT_STARTED') {
+    const normalizedStatus = normalizeSubmissionStatus(query.status)
+    if (normalizedStatus === 'UNOPENED' || normalizedStatus === 'NOT_STARTED') {
       qb.andWhere('s.id IS NULL');
-    } else if (query.status === 'DRAFT') {
+    } else if (normalizedStatus === 'DRAFT') {
       qb.andWhere('s.status = :st', { st: 'DRAFT' });
-    } else if (query.status) {
-      if (query.status === 'all') {
+    } else if (normalizedStatus) {
+      if (normalizedStatus === 'all') {
         // no filter
       } else {
-        qb.andWhere('s.status = :st', { st: query.status });
+        qb.andWhere('s.status = :st', { st: normalizedStatus });
       }
     }
     
@@ -105,7 +110,7 @@ export class SubmissionService {
     if (query.overdue === true) {
       qb.andWhere('a.deadlineTo < CURRENT_DATE');
       qb.andWhere('(s.id IS NULL OR s.status IN (:...open))', {
-        open: ['DRAFT', 'REJECTED'],
+        open: ['DRAFT', 'REJECTED_DEPARTMENT', 'REJECTED_DISTRICT'],
       });
     }
 
@@ -137,7 +142,7 @@ export class SubmissionService {
           submission: r.submissionId
             ? {
                 id: r.submissionId,
-                status: r.submissionStatus,
+                status: normalizeSubmissionStatus(r.submissionStatus),
                 completionPct:
                   r.completionPct != null ? Number(r.completionPct) : null,
               }
@@ -244,7 +249,7 @@ export class SubmissionService {
       id: s.id,
       code: s.code,
       assignmentId: s.assignmentId,
-      status: s.status,
+      status: normalizeSubmissionStatus(s.status),
       version: s.version,
       note: s.note,
       rejectReason: s.rejectReason,
@@ -272,7 +277,7 @@ export class SubmissionService {
     });
     if (!a) throw new NotFoundException('Không tìm thấy giao việc');
     this.assertOrgScope(user, a);
-    if (!['DRAFT', 'REJECTED_DEPARTMENT', 'REJECTED_DISTRICT'].includes(s.status)) {
+    if (!isSubmissionEditableStatus(s.status)) {
       throw new ConflictException('SUBMISSION_NOT_EDITABLE');
     }
     if (s.version !== dto.clientVersion) {
@@ -384,7 +389,7 @@ export class SubmissionService {
     });
     if (!a) throw new NotFoundException('Không tìm thấy giao việc');
     this.assertOrgScope(user, a);
-    if (!['DRAFT', 'REJECTED_DEPARTMENT', 'REJECTED_DISTRICT'].includes(s.status)) {
+    if (!isSubmissionEditableStatus(s.status)) {
       throw new ConflictException('SUBMISSION_NOT_EDITABLE');
     }
     const fromStatus = s.status;
@@ -504,7 +509,12 @@ export class SubmissionService {
       [assignmentId]
     );
 
-    return history;
+    return history.map((row: any) => ({
+      ...row,
+      from_status: normalizeSubmissionStatus(row.from_status),
+      to_status: normalizeSubmissionStatus(row.to_status),
+      submission_status: normalizeSubmissionStatus(row.submission_status),
+    }));
   }
   async cancelSubmit(submissionId: string, user: User) {
     const s = await this.submissionRepo.findOne({
@@ -517,7 +527,7 @@ export class SubmissionService {
     if (!a) throw new NotFoundException('Không tìm thấy giao việc');
     this.assertOrgScope(user, a);
 
-    if (s.status !== 'PENDING_DEPARTMENT') {
+    if (normalizeSubmissionStatus(s.status) !== 'PENDING_DEPARTMENT') {
       throw new ConflictException('CHỈ_ĐƯỢC_HỦY_NỘP_KHI_ĐANG_CHỜ_DUYỆT_PHÒNG');
     }
 

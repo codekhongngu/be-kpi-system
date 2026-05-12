@@ -33,17 +33,26 @@ export class ApprovalService {
     }
   }
 
-  async listPending(user: User, query: PendingApprovalsQueryDto) {
+  async listPending(
+    user: User,
+    query: PendingApprovalsQueryDto,
+    level: 'department' | 'district' | 'all' = 'department',
+  ) {
     const page = query.page ?? 1;
     const limit = Math.min(query.limit ?? 20, 200);
     const skip = (page - 1) * limit;
+
+    const pendingStatuses =
+      level === 'district'
+        ? ['DEPARTMENT_APPROVED', 'APPROVED']
+        : ['PENDING_DEPARTMENT', 'PENDING', 'SUBMITTED'];
 
     const qb = this.submissionRepo
       .createQueryBuilder('s')
       .innerJoin(FormAssignment, 'a', 'a.id = s.assignment_id')
       .innerJoin('organizations', 'o', 'o.id = a.org_id')
       .innerJoin('form_templates', 'f', 'f.id = a.template_id')
-      .where('s.status = :st', { st: 'PENDING_DEPARTMENT' });
+      .where('s.status IN (:...statuses)', { statuses: pendingStatuses });
 
     if (user.orgId) {
       qb.andWhere('a.org_id = :orgId', { orgId: user.orgId });
@@ -77,7 +86,7 @@ export class ApprovalService {
     const countQb = this.submissionRepo
       .createQueryBuilder('s')
       .innerJoin(FormAssignment, 'a', 'a.id = s.assignment_id')
-      .where('s.status = :st', { st: 'PENDING_DEPARTMENT' });
+      .where('s.status IN (:...statuses)', { statuses: pendingStatuses });
     if (user.orgId)
       countQb.andWhere('a.org_id = :orgId', { orgId: user.orgId });
     if (query.orgId)
@@ -533,10 +542,21 @@ export class ApprovalService {
     console.log(`Triggering summary generation for submission ${submissionId}`);
   }
 
-  private findDistrictApproverUserIds(): string[] {
-    // This is a synchronous method to avoid top-level await
-    // In a real implementation, this would be async and called from another async method
-    return [];
+  private async findDistrictApproverUserIds(): Promise<string[]> {
+    const rows = await this.dataSource.query<{ id: string }[]>(
+      `
+      SELECT DISTINCT u.id
+      FROM users u
+      INNER JOIN user_roles ur ON ur.user_id = u.id
+      INNER JOIN roles r ON r.id = ur.role_id
+      INNER JOIN role_permissions rp ON rp.role_id = r.id
+      INNER JOIN permissions p ON p.id = rp.permission_id
+      WHERE u.status = $1
+        AND p.code = 'approvals.district.manage'
+      `,
+      [UserStatus.ACTIVE],
+    );
+    return rows.map((r) => r.id);
   }
 
   async getApprovalHistory(submissionId: string, user: User) {

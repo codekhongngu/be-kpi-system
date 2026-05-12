@@ -125,7 +125,7 @@ export class SummaryAnalyticsSummaryService {
          INNER JOIN report_submissions sub ON sub.id = c.submission_id
          INNER JOIN report_assignments a ON a.id = sub.assignment_id
          INNER JOIN organization_closure oc ON oc.descendant_id = a.org_id
-         WHERE a.batch_id = $1 AND oc.ancestor_id = $2 AND sub.status = 'APPROVED'`,
+         WHERE a.batch_id = $1 AND oc.ancestor_id = $2 AND sub.status IN ('DISTRICT_APPROVED', 'APPROVED')`,
         [campaignId, s.orgId],
       );
     }

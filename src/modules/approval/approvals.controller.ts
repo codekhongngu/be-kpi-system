@@ -20,24 +20,16 @@ import { ApprovalService } from './approval.service';
 export class ApprovalsController {
   constructor(private readonly approvalService: ApprovalService) {}
 
-  @Get('pending')
-  @Permissions('approvals.manage')
-  async listPending(@CurrentUser() user: User) {
-    return await this.approvalService.listPending(user, {});
-  }
-
   @Get('pending/department')
   @Permissions('approvals.department.manage')
   async listPendingDepartment(@CurrentUser() user: User) {
-    // Filter for department level pending submissions
-    return await this.approvalService.listPending(user, {});
+    return await this.approvalService.listPending(user, {}, 'department');
   }
 
   @Get('pending/district')
   @Permissions('approvals.district.manage')
   async listPendingDistrict(@CurrentUser() user: User) {
-    // Filter for district level pending submissions
-    return await this.approvalService.listPending(user, {});
+    return await this.approvalService.listPending(user, {}, 'district');
   }
 
   @Post(':id/approve-department')
