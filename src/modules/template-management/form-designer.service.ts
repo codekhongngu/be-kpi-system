@@ -40,6 +40,14 @@ import { PeriodType } from '../../common/period-type';
 import { UpsertFormCellConfigsDto } from './dto/upsert-form-cell-configs.dto';
 import { DeleteFormCellConfigsDto } from './dto/delete-form-cell-configs.dto';
 import { UpsertTemplateScopesDto } from './dto/upsert-template-scope.dto';
+import { 
+  ImportIndicatorsAttributesDto, 
+  ExcelIndicatorRow, 
+  ExcelAttributeRow, 
+  IndicatorMapping, 
+  AttributeMapping, 
+  ImportResult 
+} from './dto/import-indicators-attributes.dto';
 
 const DEFAULT_FORM_SYSTEM_ATTRIBUTES = [
   { name: 'Tên chỉ tiêu', sortOrder: 0 },
@@ -678,10 +686,12 @@ export class TemplateManagementService {
     return { items: rows.map((a) => this.mapAttribute(a)) };
   }
 
-  async createAttribute(formId: string, dto: CreateFormAttributeDto) {
+  async createAttribute(formId: string, dto: CreateFormAttributeDto, skipParentValidation = false) {
     await this.ensureTemplateStructureEditable(formId);
     await this.ensureForm(formId);
-    await this.ensureAttributeParent(formId, dto.parentId ?? null);
+    if (!skipParentValidation) {
+      await this.ensureAttributeParent(formId, dto.parentId ?? null);
+    }
     const nextSort = await this.nextSortOrder(
       this.attrRepo,
       formId,
@@ -746,10 +756,12 @@ export class TemplateManagementService {
     return { items: rows.map((i) => this.mapIndicator(i)) };
   }
 
-  async createIndicator(formId: string, dto: CreateFormIndicatorDto) {
+  async createIndicator(formId: string, dto: CreateFormIndicatorDto, skipParentValidation = false) {
     await this.ensureTemplateStructureEditable(formId);
     await this.ensureForm(formId);
-    await this.ensureIndicatorParent(formId, dto.parentId ?? null);
+    if (!skipParentValidation) {
+      await this.ensureIndicatorParent(formId, dto.parentId ?? null);
+    }
     const code = dto.code.trim();
     const dup = await this.indRepo
       .createQueryBuilder('ind')
@@ -1568,6 +1580,212 @@ export class TemplateManagementService {
       );
     }
     return row;
+  }
+
+  async importIndicatorsFromExcel(templateId: string, fileBuffer: Buffer): Promise<ImportResult> {
+    try {
+      // Check if xlsx library is available
+      const xlsx = require('xlsx');
+      
+      // Read Excel file
+      const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
+      
+      // Parse indicators from Sheet1
+      const indicatorSheet = workbook.Sheets['Sheet1'];
+      const indicatorData = xlsx.utils.sheet_to_json(indicatorSheet) as ExcelIndicatorRow[];
+      
+      // Parse attributes from Sheet2
+      const attributeSheet = workbook.Sheets['Sheet2'];
+      const attributeData = xlsx.utils.sheet_to_json(attributeSheet) as ExcelAttributeRow[];
+      
+      const result: ImportResult = {
+        success: true,
+        message: 'Import thành công',
+        indicatorsCreated: 0,
+        attributesCreated: 0,
+        indicatorMappings: [],
+        attributeMappings: [],
+        errors: []
+      };
+
+      // Validate template exists
+      await this.ensureForm(templateId);
+
+      // Step 1: Create indicators without parent relationships (batch processing)
+      const indicatorMappings: IndicatorMapping[] = [];
+      const parentChildRelationships: Array<{ childId: string; parentId: string }> = [];
+      
+      // Process in batches of 50 to avoid timeout/memory issues
+      const batchSize = 50;
+      for (let i = 0; i < indicatorData.length; i += batchSize) {
+        const batch = indicatorData.slice(i, i + batchSize);
+        console.log(`Processing indicators batch ${Math.floor(i/batchSize) + 1}: ${batch.length} indicators`);
+        
+        for (const indicator of batch) {
+          try {
+            const createDto: CreateFormIndicatorDto = {
+              name: indicator.name,
+              code: indicator.code,
+              unit: indicator.unit || '',
+              dataType: indicator.dataType as 'number' | 'text',
+              type: indicator.type as 'INPUT' | 'TITLE',
+              displayIndex: indicator.displayIndex ? indicator.displayIndex.toString() : null,
+              parentId: null // Will be set later
+            };
+
+            // Create indicator with skipParentValidation to avoid validation issues during import
+            const createdIndicator = await this.createIndicator(templateId, createDto, true);
+            
+            // Store mapping
+            const mapping: IndicatorMapping = {
+              excelId: indicator.id,
+              apiId: createdIndicator.id
+            };
+            indicatorMappings.push(mapping);
+            result.indicatorMappings.push(mapping);
+            result.indicatorsCreated++;
+
+            // Store parent-child relationship if exists
+            if (indicator.parentId && indicator.parentId !== undefined && indicator.parentId !== null) {
+              parentChildRelationships.push({
+                childId: indicator.id,
+                parentId: indicator.parentId
+              });
+            }
+          } catch (error) {
+            result.errors?.push(`Lỗi tạo chỉ tiêu ${indicator.name}: ${error.message}`);
+          }
+        }
+        
+        // Add small delay between batches to prevent overwhelming
+        if (i + batchSize < indicatorData.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+
+      // Step 2: Update indicators with parent relationships
+      for (const relationship of parentChildRelationships) {
+        try {
+          const childMapping = indicatorMappings.find(m => m.excelId === relationship.childId);
+          const parentMapping = indicatorMappings.find(m => m.excelId === relationship.parentId);
+          
+          if (childMapping && parentMapping) {
+            // Validate that parent exists in database
+            const parentExists = await this.indRepo.findOne({ 
+              where: { id: parentMapping.apiId, formId: templateId } 
+            });
+            
+            if (!parentExists) {
+              result.errors?.push(`Parent indicator không tồn tại trong database: ${relationship.parentId}`);
+              continue;
+            }
+            
+            const updateDto: PatchFormIndicatorDto = {
+              parentId: parentMapping.apiId
+            };
+            
+            await this.patchIndicator(templateId, childMapping.apiId, updateDto);
+          } else {
+            if (!childMapping) {
+              result.errors?.push(`Không tìm thấy mapping cho child indicator: ${relationship.childId}`);
+            }
+            if (!parentMapping) {
+              result.errors?.push(`Không tìm thấy mapping cho parent indicator: ${relationship.parentId}`);
+            }
+          }
+        } catch (error) {
+          result.errors?.push(`Lỗi cập nhật quan hệ cha-con cho chỉ tiêu ${relationship.childId}: ${error.message}`);
+        }
+      }
+
+      // Step 3: Create attributes
+      const attributeMappings: AttributeMapping[] = [];
+      const attributeParentChildRelationships: Array<{ childId: string; parentId: string }> = [];
+
+      for (const attribute of attributeData) {
+        try {
+          const createDto: CreateFormAttributeDto = {
+            name: attribute.name,
+            parentId: null // Will be set later
+          };
+
+          // Create attribute with skipParentValidation to avoid validation issues during import
+          const createdAttribute = await this.createAttribute(templateId, createDto, true);
+          
+          // Store mapping
+          const mapping: AttributeMapping = {
+            excelId: attribute.id,
+            apiId: createdAttribute.id
+          };
+          attributeMappings.push(mapping);
+          result.attributeMappings.push(mapping);
+          result.attributesCreated++;
+
+          // Store parent-child relationship if exists
+          if (attribute.parentId) {
+            attributeParentChildRelationships.push({
+              childId: attribute.id,
+              parentId: attribute.parentId
+            });
+          }
+        } catch (error) {
+          result.errors?.push(`Lỗi tạo thuộc tính ${attribute.name}: ${error.message}`);
+        }
+      }
+
+      // Step 4: Update attributes with parent relationships
+      for (const relationship of attributeParentChildRelationships) {
+        try {
+          const childMapping = attributeMappings.find(m => m.excelId === relationship.childId);
+          const parentMapping = attributeMappings.find(m => m.excelId === relationship.parentId);
+          
+          if (childMapping && parentMapping) {
+            // Validate that parent exists in database
+            const parentExists = await this.attrRepo.findOne({ 
+              where: { id: parentMapping.apiId, formId: templateId } 
+            });
+            
+            if (!parentExists) {
+              result.errors?.push(`Parent attribute không tồn tại trong database: ${relationship.parentId}`);
+              continue;
+            }
+            
+            const updateDto: PatchFormAttributeDto = {
+              parentId: parentMapping.apiId
+            };
+            
+            await this.patchAttribute(templateId, childMapping.apiId, updateDto);
+          } else {
+            if (!childMapping) {
+              result.errors?.push(`Không tìm thấy mapping cho child attribute: ${relationship.childId}`);
+            }
+            if (!parentMapping) {
+              result.errors?.push(`Không tìm thấy mapping cho parent attribute: ${relationship.parentId}`);
+            }
+          }
+        } catch (error) {
+          result.errors?.push(`Lỗi cập nhật quan hệ cha-con cho thuộc tính ${relationship.childId}: ${error.message}`);
+        }
+      }
+
+      // Set success status based on errors
+      if (result.errors && result.errors.length > 0) {
+        result.success = false;
+        result.message = 'Import hoàn thành với một số lỗi';
+      }
+
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        message: `Lỗi xử lý file Excel: ${error.message}`,
+        indicatorsCreated: 0,
+        attributesCreated: 0,
+        indicatorMappings: [],
+        attributeMappings: [],
+        errors: [error.message]
+      };
+    }
   }
 
   private async ensureForm(id: string): Promise<Form> {

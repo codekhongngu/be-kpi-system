@@ -269,11 +269,7 @@
             ],
             "body": {
               "mode": "raw",
-<<<<<<< Updated upstream
-              "raw": "{\n  \"code\": \"NV001\",\n  \"username\": \"user01\",\n  \"email\": \"user01@example.com\",\n  \"password\": \"Admin@123\",\n  \"fullName\": \"User 01\",\n  \"orgId\": \"{{orgId}}\",\n  \"roleIds\": [\"{{roleId}}\"]\n}"
-=======
               "raw": "{\n  \"username\": \"user01\",\n  \"email\": \"user01@example.com\",\n  \"password\": \"Admin@123\",\n  \"fullName\": \"User 01\",\n  \"orgId\": \"{{orgId}}\",\n  \"roleIds\": [\"{{roleId}}\"]\n}"
->>>>>>> Stashed changes
             },
             "url": "{{baseUrl}}/users"
           }
@@ -528,11 +524,7 @@
           "name": "Forms - List",
           "request": {
             "method": "GET",
-<<<<<<< Updated upstream
-            "url": "{{baseUrl}}/forms?q=kpi&search=kpi&fieldCategory=finance&category=finance&fieldCategoryId={{fieldCategoryId}}&period=2026-05&periodType=THANG&template_status=DRAFT,READY&page=1&limit=20"
-=======
             "url": "{{baseUrl}}/forms?q=kpi&search=kpi&fieldCategory=finance&category=finance&fieldCategoryId={{fieldCategoryId}}&period=2026-05&periodType=THANG&isActive=true&status=active&page=1&limit=20"
->>>>>>> Stashed changes
           }
         },
         {
@@ -547,7 +539,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"code\": \"FM-2026-Q2\",\n  \"name\": \"Bi?u m?u KPI qu? 2\",\n  \"fieldCategoryId\": \"{{fieldCategoryId}}\",\n  \"description\": \"Bi?u m?u m?u cho k? ho?ch KPI\",\n  \"periodType\": \"THANG\",\n  \"templateType\": \"AGGREGATE\",\n  \"isActive\": true\n}"
+              "raw": "{\n  \"code\": \"FM-2026-Q2\",\n  \"name\": \"Biểu mẫu KPI quý 2\",\n  \"fieldCategoryId\": \"{{fieldCategoryId}}\",\n  \"description\": \"Biểu mẫu mẫu cho kế hoạch KPI\",\n  \"periodType\": \"THANG\",\n  \"templateType\": \"AGGREGATE\",\n  \"isActive\": true\n}"
             },
             "url": "{{baseUrl}}/forms"
           }
@@ -571,7 +563,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Bi?u m?u KPI qu? 2 - c?p nh?t\",\n  \"fieldCategoryId\": \"{{fieldCategoryId}}\",\n  \"description\": \"C?p nh?t m? t? bi?u m?u\",\n  \"periodType\": \"THANG\",\n  \"templateType\": \"UNIQUE\",\n  \"isActive\": true\n}"
+              "raw": "{\n  \"name\": \"Biểu mẫu KPI quý 2 - cập nhật\",\n  \"fieldCategoryId\": \"{{fieldCategoryId}}\",\n  \"description\": \"Cập nhật mẫu từ biểu mẫu\",\n  \"periodType\": \"THANG\",\n  \"templateType\": \"UNIQUE\",\n  \"isActive\": true\n}"
             },
             "url": "{{baseUrl}}/forms/{{formId}}"
           }
@@ -616,7 +608,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"code\": \"FM-2026-Q2-COPY\",\n  \"name\": \"B?n sao bi?u m?u KPI qu? 2\",\n  \"fieldCategoryId\": \"{{fieldCategoryId}}\",\n  \"parentFormId\": \"{{formId}}\"\n}"
+              "raw": "{\n  \"code\": \"FM-2026-Q2-COPY\",\n  \"name\": \"Bản sao biểu mẫu KPI quý 2\",\n  \"fieldCategoryId\": \"{{fieldCategoryId}}\",\n  \"parentFormId\": \"{{formId}}\"\n}"
             },
             "url": "{{baseUrl}}/forms/{{formId}}/copy"
           }
@@ -664,7 +656,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"parentId\": null,\n  \"displayIndex\": \"1.1\",\n  \"code\": \"DT01\",\n  \"name\": \"Doanh thu\",\n  \"unit\": \"VND\",\n  \"dataType\": \"number\",\n  \"isRequired\": true,\n  \"isReadonly\": false,\n  \"isCalculated\": false,\n  \"formula\": null,\n  \"groupName\": \"K?t qu? kinh doanh\",\n  \"minValue\": \"0\",\n  \"maxValue\": null,\n  \"validationRule\": {\n    \"min\": 0,\n    \"max\": 1000000000\n  },\n  \"isActive\": true,\n  \"catalogIndicatorId\": \"{{catalogIndicatorId}}\"\n}"
+              "raw": "{\n  \"parentId\": null,\n  \"displayIndex\": \"1.1\",\n  \"code\": \"DT01\",\n  \"name\": \"Doanh thu\",\n  \"unit\": \"VND\",\n  \"dataType\": \"number\",\n  \"isRequired\": true,\n  \"isReadonly\": false,\n  \"isCalculated\": false,\n  \"formula\": null,\n  \"groupName\": \"Kết quả kinh doanh\",\n  \"minValue\": \"0\",\n  \"maxValue\": null,\n  \"validationRule\": {\n    \"min\": 0,\n    \"max\": 1000000000\n  },\n  \"isActive\": true,\n  \"catalogIndicatorId\": \"{{catalogIndicatorId}}\"\n}"
             },
             "url": "{{baseUrl}}/forms/{{formId}}/indicators"
           }
@@ -681,7 +673,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"parentId\": \"{{indicatorId2}}\",\n  \"displayIndex\": \"1.2\",\n  \"code\": \"DT01-UPDATED\",\n  \"name\": \"Doanh thu c?p nh?t\",\n  \"unit\": \"VND\",\n  \"dataType\": \"number\",\n  \"isRequired\": true,\n  \"isReadonly\": true,\n  \"isCalculated\": false,\n  \"formula\": \"SUM(A1:A10)\",\n  \"groupName\": \"K?t qu? kinh doanh\",\n  \"minValue\": \"0\",\n  \"maxValue\": null,\n  \"validationRule\": {\n    \"precision\": 2\n  },\n  \"isActive\": true,\n  \"catalogIndicatorId\": \"{{catalogIndicatorId}}\"\n}"
+              "raw": "{\n  \"parentId\": \"{{indicatorId2}}\",\n  \"displayIndex\": \"1.2\",\n  \"code\": \"DT01-UPDATED\",\n  \"name\": \"Doanh thu cập nhật\",\n  \"unit\": \"VND\",\n  \"dataType\": \"number\",\n  \"isRequired\": true,\n  \"isReadonly\": true,\n  \"isCalculated\": false,\n  \"formula\": \"SUM(A1:A10)\",\n  \"groupName\": \"Kết quả kinh doanh\",\n  \"minValue\": \"0\",\n  \"maxValue\": null,\n  \"validationRule\": {\n    \"precision\": 2\n  },\n  \"isActive\": true,\n  \"catalogIndicatorId\": \"{{catalogIndicatorId}}\"\n}"
             },
             "url": "{{baseUrl}}/forms/{{formId}}/indicators/{{indicatorId}}"
           }
@@ -746,7 +738,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"parentId\": null,\n  \"name\": \"??n v? t?nh\",\n  \"dataType\": \"text\",\n  \"isRequired\": false,\n  \"isVisible\": true,\n  \"isReadonly\": false,\n  \"isSystem\": false,\n  \"options\": {\n    \"maxLength\": 50,\n    \"placeholder\": \"Nh?p ??n v?\"\n  },\n  \"validationRule\": {\n    \"requiredWhen\": \"isCalculated=false\"\n  }\n}"
+              "raw": "{\n  \"parentId\": null,\n  \"name\": \"Đơn vị tính\",\n  \"dataType\": \"text\",\n  \"isRequired\": false,\n  \"isVisible\": true,\n  \"isReadonly\": false,\n  \"isSystem\": false,\n  \"options\": {\n    \"maxLength\": 50,\n    \"placeholder\": \"Nhập đơn vị\"\n  },\n  \"validationRule\": {\n    \"requiredWhen\": \"isCalculated=false\"\n  }\n}"
             },
             "url": "{{baseUrl}}/forms/{{formId}}/attributes"
           }
@@ -763,7 +755,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"parentId\": \"{{attrId2}}\",\n  \"name\": \"??n v? t?nh - c?p nh?t\",\n  \"dataType\": \"text\",\n  \"isRequired\": true,\n  \"isVisible\": true,\n  \"isReadonly\": true,\n  \"options\": {\n    \"maxLength\": 100\n  },\n  \"validationRule\": {\n    \"allowEmpty\": false\n  }\n}"
+              "raw": "{\n  \"parentId\": \"{{attrId2}}\",\n  \"name\": \"Đơn vị tính - cập nhật\",\n  \"dataType\": \"text\",\n  \"isRequired\": true,\n  \"isVisible\": true,\n  \"isReadonly\": true,\n  \"options\": {\n    \"maxLength\": 100\n  },\n  \"validationRule\": {\n    \"allowEmpty\": false\n  }\n}"
             },
             "url": "{{baseUrl}}/forms/{{formId}}/attributes/{{attrId}}"
           }
@@ -900,7 +892,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"code\": \"finance_kpi\",\n  \"name\": \"Finance KPI\",\n  \"description\": \"Nh?m ch? ti?u t?i ch?nh\",\n  \"sortOrder\": 1,\n  \"isActive\": true\n}"
+              "raw": "{\n  \"code\": \"finance_kpi\",\n  \"name\": \"Finance KPI\",\n  \"description\": \"Nhóm chỉ tiêu tài chính\",\n  \"sortOrder\": 1,\n  \"isActive\": true\n}"
             },
             "url": "{{baseUrl}}/field-categories"
           }
@@ -917,7 +909,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"code\": \"finance_kpi_v2\",\n  \"name\": \"Finance KPI v2\",\n  \"description\": \"Nh?m ch? ti?u t?i ch?nh - c?p nh?t\",\n  \"sortOrder\": 2,\n  \"isActive\": true\n}"
+              "raw": "{\n  \"code\": \"finance_kpi_v2\",\n  \"name\": \"Finance KPI v2\",\n  \"description\": \"Nhóm chỉ tiêu tài chính - cập nhật\",\n  \"sortOrder\": 2,\n  \"isActive\": true\n}"
             },
             "url": "{{baseUrl}}/field-categories/{{fieldCategoryId}}"
           }
@@ -965,7 +957,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"code\": \"DOANH_THU_UPDATE\",\n  \"name\": \"Doanh thu c?p nh?t\",\n  \"unit\": \"VND\",\n  \"dataType\": \"number\"\n}"
+              "raw": "{\n  \"code\": \"DOANH_THU_UPDATE\",\n  \"name\": \"Doanh thu cập nhật\",\n  \"unit\": \"VND\",\n  \"dataType\": \"number\"\n}"
             },
             "url": "{{baseUrl}}/indicator-catalog/{{catalogIndicatorId}}"
           }
@@ -975,6 +967,54 @@
           "request": {
             "method": "DELETE",
             "url": "{{baseUrl}}/indicator-catalog/{{catalogIndicatorId}}"
+          }
+        },
+        {
+          "name": "Forms - Import Excel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "Chọn file Excel (.xlsx hoặc .xls)"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/forms/{{formId}}/import/indicators-attributes"
+          }
+        },
+        {
+          "name": "Forms - Upload Excel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "Chọn file Excel (.xlsx hoặc .xls)"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/forms/{{formId}}/import/excel"
           }
         }
       ]
@@ -986,7 +1026,7 @@
           "name": "My Assignments",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/my/assignments"
+            "url": "{{baseUrl}}/my-assignments"
           }
         },
         {
@@ -1034,7 +1074,6 @@
           "name": "Submit Submission",
           "request": {
             "method": "POST",
-<<<<<<< Updated upstream
             "header": [
               {
                 "key": "Content-Type",
@@ -1045,13 +1084,10 @@
               "mode": "raw",
               "raw": "{\n  \"note\": \"Submitted for approval\"\n}"
             },
-=======
->>>>>>> Stashed changes
             "url": "{{baseUrl}}/submissions/{{submissionId}}/submit"
           }
         },
         {
-<<<<<<< Updated upstream
           "name": "Cancel Submit",
           "request": {
             "method": "POST",
@@ -1073,8 +1109,6 @@
           }
         },
         {
-=======
->>>>>>> Stashed changes
           "name": "Pending Approvals",
           "request": {
             "method": "GET",
@@ -1114,116 +1148,12 @@
             },
             "url": "{{baseUrl}}/approvals/{{submissionId}}/reject"
           }
-<<<<<<< Updated upstream
-        },
-        {
-          "name": "Pending Department",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/approvals/pending/department"
-          }
-        },
-        {
-          "name": "Pending District",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/approvals/pending/district"
-          }
-        },
-        {
-          "name": "Approve Department",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{}"
-            },
-            "url": "{{baseUrl}}/approvals/{{submissionId}}/approve-department"
-          }
-        },
-        {
-          "name": "Reject Department",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reason\": \"Rejected by department\"\n}"
-            },
-            "url": "{{baseUrl}}/approvals/{{submissionId}}/reject-department"
-          }
-        },
-        {
-          "name": "Approve District",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{}"
-            },
-            "url": "{{baseUrl}}/approvals/{{submissionId}}/approve-district"
-          }
-        },
-        {
-          "name": "Reject District",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reason\": \"Rejected by district\"\n}"
-            },
-            "url": "{{baseUrl}}/approvals/{{submissionId}}/reject-district"
-          }
-        },
-        {
-          "name": "Approval History",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/approvals/history/{{submissionId}}"
-          }
-=======
->>>>>>> Stashed changes
         }
       ]
     },
     {
       "name": "Campaign & Assignment",
       "item": [
-<<<<<<< Updated upstream
-        { "name": "Create Report Campaign", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"formId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"periodType\": \"THANG\",\n  \"periodCode\": \"2026-05\",\n  \"periodName\": \"Tháng 05/2026\",\n  \"deadlineFrom\": \"2026-05-01\",\n  \"deadlineTo\": \"2026-05-31\"\n}" }, "url": "{{baseUrl}}/report-campaigns" } },
-        { "name": "Get Report Campaign", "request": { "method": "GET", "url": "{{baseUrl}}/report-campaigns/{{campaignId}}" } },
-        { "name": "Campaign Scopes", "request": { "method": "GET", "url": "{{baseUrl}}/report-campaigns/{{campaignId}}/scopes" } },
-        { "name": "Campaign Default Values - List", "request": { "method": "GET", "url": "{{baseUrl}}/report-campaigns/{{campaignId}}/default-values" } },
-        { "name": "Campaign Default Values - Upsert", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"items\": [\n    {\n      \"indicatorId\": \"{{indicatorId}}\",\n      \"attributeId\": \"{{attrId}}\",\n      \"valueText\": null,\n      \"valueNumber\": 100\n    }\n  ]\n}" }, "url": "{{baseUrl}}/report-campaigns/{{campaignId}}/default-values" } },
-        { "name": "Campaign Default Values - Delete", "request": { "method": "DELETE", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"items\": [\n    {\n      \"indicatorId\": \"{{indicatorId}}\",\n      \"attributeId\": \"{{attrId}}\"\n    }\n  ]\n}" }, "url": "{{baseUrl}}/report-campaigns/{{campaignId}}/default-values" } },
-        { "name": "Confirm Dispatch", "request": { "method": "POST", "url": "{{baseUrl}}/report-campaigns/{{campaignId}}/confirm-dispatch" } },
-        { "name": "List Assignments", "request": { "method": "GET", "url": "{{baseUrl}}/assignments" } },
-        { "name": "Create Assignment Batch", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{}" }, "url": "{{baseUrl}}/assignments" } },
-        { "name": "Cancel Assignment", "request": { "method": "POST", "url": "{{baseUrl}}/assignments/{{assignmentId}}/cancel" } }
-=======
         {
           "name": "Create Report Campaign",
           "request": {
@@ -1293,7 +1223,6 @@
             "url": "{{baseUrl}}/assignments/{{assignmentId}}/cancel"
           }
         }
->>>>>>> Stashed changes
       ]
     },
     {

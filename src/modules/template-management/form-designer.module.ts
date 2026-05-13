@@ -17,6 +17,7 @@ import { Role } from '../role/entities/role.entity';
 import { Permission } from '../role/entities/permission.entity';
 import { FormTemplateIndicatorOrgRule } from './entities/form-template-indicator-org-rule.entity';
 import { TemplateScopeController } from './template-scope.controller';
+import { ImportController } from './import.controller';
 import { AssignmentBatch } from '../report-campaign/assignment/entities/assignment-batch.entity';
 
 @Module({
@@ -42,6 +43,7 @@ import { AssignmentBatch } from '../report-campaign/assignment/entities/assignme
     IndicatorCatalogController,
     FieldCategoriesController,
     TemplateScopeController,
+    ImportController,
   ],
   providers: [TemplateManagementService],
   exports: [TemplateManagementService],
