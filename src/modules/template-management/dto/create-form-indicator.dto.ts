@@ -6,6 +6,8 @@ import {
   Matches,
   MaxLength,
   IsIn,
+  IsInt,
+  Min,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -17,6 +19,11 @@ export class CreateFormIndicatorDto {
   @IsString()
   @Matches(UUID_REGEX, { message: 'parentId phải là định dạng UUID' })
   parentId?: string | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  sortOrder?: number;
 
   @IsOptional()
   @IsString()
@@ -31,12 +38,12 @@ export class CreateFormIndicatorDto {
     if (typeof value !== 'string') return value;
     return value.trim();
   })
-  code: string;
+  code!: string;
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(500)
-  name: string;
+  name!: string;
 
   @IsOptional()
   @IsString()
@@ -47,7 +54,7 @@ export class CreateFormIndicatorDto {
   @IsNotEmpty()
   @MaxLength(20)
   @IsIn(['number', 'text'])
-  dataType: string;
+  dataType!: string;
 
   @IsOptional()
   @IsString()

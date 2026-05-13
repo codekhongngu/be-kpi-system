@@ -789,7 +789,10 @@ export class TemplateManagementService {
       unit: dto.unit ?? null,
       dataType: dto.dataType.trim(),
       type: dto.type ?? 'INPUT',
-      sortOrder: nextSort,
+      sortOrder:
+        dto.sortOrder !== undefined && dto.sortOrder !== null
+          ? dto.sortOrder
+          : nextSort,
       catalogIndicatorId: dto.catalogIndicatorId ?? null,
     });
     const saved = await this.indRepo.save(i);
@@ -1590,13 +1593,21 @@ export class TemplateManagementService {
       // Read Excel file
       const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
       
-      // Parse indicators from Sheet1
-      const indicatorSheet = workbook.Sheets['Sheet1'];
-      const indicatorData = xlsx.utils.sheet_to_json(indicatorSheet) as ExcelIndicatorRow[];
+      // Parse indicators from Chỉ tiêu / Sheet1
+      const indicatorSheet = workbook.Sheets['Chỉ tiêu'] ?? workbook.Sheets['Sheet1'];
+      if (!indicatorSheet) {
+        throw new BadRequestException('Không tìm thấy sheet Chỉ tiêu hoặc Sheet1 trong file Excel');
+      }
+      const indicatorRaw = xlsx.utils.sheet_to_json(indicatorSheet, { defval: null });
+      const indicatorData = this.normalizeIndicatorRows(indicatorRaw);
       
-      // Parse attributes from Sheet2
-      const attributeSheet = workbook.Sheets['Sheet2'];
-      const attributeData = xlsx.utils.sheet_to_json(attributeSheet) as ExcelAttributeRow[];
+      // Parse attributes from Thuộc tính / Sheet2
+      const attributeSheet = workbook.Sheets['Thuộc tính'] ?? workbook.Sheets['Sheet2'];
+      if (!attributeSheet) {
+        throw new BadRequestException('Không tìm thấy sheet Thuộc tính hoặc Sheet2 trong file Excel');
+      }
+      const attributeRaw = xlsx.utils.sheet_to_json(attributeSheet, { defval: null });
+      const attributeData = this.normalizeAttributeRows(attributeRaw);
       
       const result: ImportResult = {
         success: true,
@@ -1613,7 +1624,7 @@ export class TemplateManagementService {
 
       // Step 1: Create indicators without parent relationships (batch processing)
       const indicatorMappings: IndicatorMapping[] = [];
-      const parentChildRelationships: Array<{ childId: string; parentId: string }> = [];
+      const parentChildRelationships: Array<{ childCode: string; parentCode: string }> = [];
       
       // Process in batches of 50 to avoid timeout/memory issues
       const batchSize = 50;
@@ -1629,30 +1640,31 @@ export class TemplateManagementService {
               unit: indicator.unit || '',
               dataType: indicator.dataType as 'number' | 'text',
               type: indicator.type as 'INPUT' | 'TITLE',
-              displayIndex: indicator.displayIndex ? indicator.displayIndex.toString() : null,
+              sortOrder: indicator.sortOrder,
               parentId: null // Will be set later
             };
 
             // Create indicator with skipParentValidation to avoid validation issues during import
             const createdIndicator = await this.createIndicator(templateId, createDto, true);
             
-            // Store mapping
+            // Store mapping with code for parent-child identification
             const mapping: IndicatorMapping = {
               excelId: indicator.id,
+              code: indicator.code,
               apiId: createdIndicator.id
             };
             indicatorMappings.push(mapping);
             result.indicatorMappings.push(mapping);
             result.indicatorsCreated++;
 
-            // Store parent-child relationship if exists
-            if (indicator.parentId && indicator.parentId !== undefined && indicator.parentId !== null) {
+            // Store parent-child relationship if exists (using codeParentId)
+            if (indicator.codeParentId && indicator.codeParentId !== undefined && indicator.codeParentId !== null) {
               parentChildRelationships.push({
-                childId: indicator.id,
-                parentId: indicator.parentId
+                childCode: indicator.code,
+                parentCode: indicator.codeParentId
               });
             }
-          } catch (error) {
+          } catch (error: any) {
             result.errors?.push(`Lỗi tạo chỉ tiêu ${indicator.name}: ${error.message}`);
           }
         }
@@ -1666,8 +1678,8 @@ export class TemplateManagementService {
       // Step 2: Update indicators with parent relationships
       for (const relationship of parentChildRelationships) {
         try {
-          const childMapping = indicatorMappings.find(m => m.excelId === relationship.childId);
-          const parentMapping = indicatorMappings.find(m => m.excelId === relationship.parentId);
+          const childMapping = indicatorMappings.find(m => m.code === relationship.childCode);
+          const parentMapping = indicatorMappings.find(m => m.code === relationship.parentCode);
           
           if (childMapping && parentMapping) {
             // Validate that parent exists in database
@@ -1676,7 +1688,7 @@ export class TemplateManagementService {
             });
             
             if (!parentExists) {
-              result.errors?.push(`Parent indicator không tồn tại trong database: ${relationship.parentId}`);
+              result.errors?.push(`Parent indicator không tồn tại trong database: ${relationship.parentCode}`);
               continue;
             }
             
@@ -1687,14 +1699,14 @@ export class TemplateManagementService {
             await this.patchIndicator(templateId, childMapping.apiId, updateDto);
           } else {
             if (!childMapping) {
-              result.errors?.push(`Không tìm thấy mapping cho child indicator: ${relationship.childId}`);
+              result.errors?.push(`Không tìm thấy chỉ tiêu với code: ${relationship.childCode}`);
             }
             if (!parentMapping) {
-              result.errors?.push(`Không tìm thấy mapping cho parent indicator: ${relationship.parentId}`);
+              result.errors?.push(`Không tìm thấy chỉ tiêu cha với code: ${relationship.parentCode}`);
             }
           }
-        } catch (error) {
-          result.errors?.push(`Lỗi cập nhật quan hệ cha-con cho chỉ tiêu ${relationship.childId}: ${error.message}`);
+        } catch (error: any) {
+          result.errors?.push(`Lỗi cập nhật quan hệ cha-con cho chỉ tiêu ${relationship.childCode}: ${error.message}`);
         }
       }
 
@@ -1728,7 +1740,7 @@ export class TemplateManagementService {
               parentId: attribute.parentId
             });
           }
-        } catch (error) {
+        } catch (error: any) {
           result.errors?.push(`Lỗi tạo thuộc tính ${attribute.name}: ${error.message}`);
         }
       }
@@ -1763,7 +1775,7 @@ export class TemplateManagementService {
               result.errors?.push(`Không tìm thấy mapping cho parent attribute: ${relationship.parentId}`);
             }
           }
-        } catch (error) {
+        } catch (error: any) {
           result.errors?.push(`Lỗi cập nhật quan hệ cha-con cho thuộc tính ${relationship.childId}: ${error.message}`);
         }
       }
@@ -1775,7 +1787,7 @@ export class TemplateManagementService {
       }
 
       return result;
-    } catch (error) {
+    } catch (error: any) {
       return {
         success: false,
         message: `Lỗi xử lý file Excel: ${error.message}`,
@@ -1788,13 +1800,40 @@ export class TemplateManagementService {
     }
   }
 
+  private normalizeIndicatorRows(rows: any[]): ExcelIndicatorRow[] {
+    return rows.map((row, index) => ({
+      id: row['Mã chỉ tiêu'] ?? row['Mã định danh'] ?? row['id'] ?? `row-${index}`,
+      code: row['Mã chỉ tiêu'] ?? row['Mã định danh'] ?? row['code'] ?? row['Code'] ?? '',
+      codeParentId: row['Mã chỉ tiêu cha'] ?? row['Mã định danh cha'] ?? row['codeParentId'] ?? row['parentCode'] ?? null,
+      name: row['Tên chỉ tiêu'] ?? row['name'] ?? '',
+      unit: row['Đơn vị tính'] ?? row['unit'] ?? '',
+      dataType: row['Kiểu dữ liệu'] ?? row['dataType'] ?? '',
+      type: row['Loại chỉ tiêu'] ?? row['type'] ?? '',
+      sortOrder: Number(row['Thứ tự'] ?? row['sortOrder'] ?? 0),
+    }));
+  }
+
+  private normalizeAttributeRows(rows: any[]): ExcelAttributeRow[] {
+    return rows.map((row, index) => ({
+      id: row['Mã định danh'] ?? row['id'] ?? `row-${index}`,
+      parentId: row['Mã định danh cha'] ?? row['parentId'] ?? null,
+      name: row['Tên thuộc tính'] ?? row['name'] ?? '',
+      sortOrder: Number(row['Thứ tự'] ?? row['sortOrder'] ?? 0),
+      isSystem:
+        row['Là hệ thống'] === true ||
+        row['Là hệ thống'] === 'true' ||
+        row['Là hệ thống'] === '1' ||
+        row['Là hệ thống'] === 1 ||
+        row['isSystem'] === true ||
+        row['isSystem'] === 'true' ||
+        row['isSystem'] === '1' ||
+        row['isSystem'] === 1,
+    }));
+  }
+
   private async ensureForm(id: string): Promise<Form> {
     const f = await this.formRepo.findOne({ where: { id } });
     if (!f) throw new NotFoundException('Không tìm thấy biểu mẫu');
     return f;
   }
 }
-
-
-
-

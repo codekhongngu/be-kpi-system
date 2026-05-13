@@ -4,7 +4,7 @@ import { ParseFilePipe } from '@nestjs/common';
 
 export class ImportIndicatorsAttributesDto {
   @IsUUID()
-  templateId: string;
+  templateId!: string;
 
   @Transform(({ value }) => {
     if (value && value.buffer) {
@@ -12,14 +12,13 @@ export class ImportIndicatorsAttributesDto {
     }
     return value;
   })
-  file: Buffer;
+  file!: Buffer;
 }
 
 export interface ExcelIndicatorRow {
   id: string;
-  parentId?: string;
-  displayIndex: string;
   code: string;
+  codeParentId?: string;
   name: string;
   unit?: string;
   dataType: string;
@@ -37,6 +36,7 @@ export interface ExcelAttributeRow {
 
 export interface IndicatorMapping {
   excelId: string;
+  code: string;
   apiId: string;
 }
 
@@ -46,11 +46,11 @@ export interface AttributeMapping {
 }
 
 export class ImportResult {
-  success: boolean;
-  message: string;
-  indicatorsCreated: number;
-  attributesCreated: number;
-  indicatorMappings: IndicatorMapping[];
-  attributeMappings: AttributeMapping[];
+  success!: boolean;
+  message!: string;
+  indicatorsCreated!: number;
+  attributesCreated!: number;
+  indicatorMappings!: IndicatorMapping[];
+  attributeMappings!: AttributeMapping[];
   errors?: string[];
 }
