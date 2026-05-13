@@ -12,7 +12,8 @@ export class CreateDefaultRolesAndPermissions1745230800004 implements MigrationI
       ['audit.read', 'Xem nhật ký kiểm toán', 'Tra cứu audit logs', 'admin'],
       ['orgs.manage', 'Quản lý đơn vị hành chính', 'CRUD + lock/unlock', 'qldl'],
       ['periods.manage', 'Quản lý kỳ báo cáo', 'CRUD kỳ báo cáo', 'qldl'],
-      ['forms.manage', 'Thiết kế biểu mẫu', 'Field categories + forms + attributes + indicators', 'qldl'],
+      ['forms.manage', 'Thiết kế biểu mẫu', 'Forms + attributes + indicators', 'qldl'],
+      ['field-categories.manage', 'Quản lý danh mục trường', 'CRUD danh mục trường biểu mẫu', 'qldl'],
       ['assignments.manage', 'Giao / hủy giao báo cáo', 'Quản trị assignments', 'qldl'],
       ['submissions.manage', 'Nhập liệu / gửi báo cáo', 'Tạo submission + lưu cells + submit', 'qldl'],
       ['approvals.manage', 'Duyệt báo cáo', 'Approve/Reject', 'qldl'],
@@ -77,7 +78,7 @@ export class CreateDefaultRolesAndPermissions1745230800004 implements MigrationI
     const rolePermissions = {
       'SYSTEM_ADMIN': [
         'users.manage', 'users.export', 'roles.manage', 'audit.read', 'orgs.manage',
-        'periods.manage', 'forms.manage', 'assignments.manage', 'submissions.manage',
+        'periods.manage', 'forms.manage', 'field-categories.manage', 'assignments.manage', 'submissions.manage',
         'approvals.manage', 'approvals.department.manage', 'approvals.district.manage',
         'summaries.manage', 'analytics.read', 'analytics.export', 'monitoring.read',
         'monitoring.manage', 'notifications.read', 'reports.read', 'reports.export',
@@ -135,7 +136,7 @@ export class CreateDefaultRolesAndPermissions1745230800004 implements MigrationI
         'summaries.manage', 'analytics.read', 'analytics.export', 'monitoring.read',
         'monitoring.manage', 'notifications.read', 'reports.read', 'reports.export',
         'dashboard.read', 'files.upload', 'files.read', 'files.delete', 'import-jobs.read',
-        'campaigns.manage', 'campaigns.dispatch'
+        'campaigns.manage', 'campaigns.dispatch', 'field-categories.manage'
       )
     `);
   }
