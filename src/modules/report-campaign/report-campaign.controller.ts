@@ -56,6 +56,21 @@ export class ReportCampaignController {
     return await this.service.listAssignments(id);
   }
 
+  @Get(':id/summary-readiness')
+  @Permissions('campaigns.manage', 'assignments.manage')
+  async summaryReadiness(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.service.getSummaryReadiness(id);
+  }
+
+  @Get(':id/assignments/:assignmentId/admin-view')
+  @Permissions('campaigns.manage', 'assignments.manage')
+  async assignmentAdminView(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('assignmentId', ParseUUIDPipe) assignmentId: string,
+  ) {
+    return await this.service.getAssignmentAdminView(id, assignmentId);
+  }
+
   @Patch(':id')
   @Permissions('campaigns.manage', 'assignments.manage')
   async patch(

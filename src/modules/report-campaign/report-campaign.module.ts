@@ -11,6 +11,7 @@ import { FormTemplateIndicatorOrgRule } from '../template-management/entities/fo
 import { FormAttribute } from '../template-management/entities/form-attribute.entity';
 import { ReportCampaignDefaultValue } from './entities/report-campaign-default-value.entity';
 import { Organization } from '../organization/entities/organization.entity';
+import { ReportSubmission } from '../submission/entities/report-submission.entity';
 import { ReportCampaignController } from './report-campaign.controller';
 import { ReportCampaignService } from './report-campaign.service';
 import { ReportAssignmentModule } from './assignment/assignment.module';
@@ -28,6 +29,7 @@ import { ReportAssignmentModule } from './assignment/assignment.module';
       FormTemplateIndicatorOrgRule,
       Organization,
       ReportCampaignDefaultValue,
+      ReportSubmission,
       Role,
       Permission,
     ]),
@@ -37,6 +39,3 @@ import { ReportAssignmentModule } from './assignment/assignment.module';
   exports: [ReportCampaignService],
 })
 export class ReportCampaignModule {}
-
-
-
