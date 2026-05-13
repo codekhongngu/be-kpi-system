@@ -11,7 +11,7 @@ export class RoleSeederService implements OnModuleInit {
     private readonly roleRepository: Repository<Role>,
     @InjectRepository(Permission)
     private readonly permissionRepository: Repository<Permission>,
-  ) {}
+  ) { }
 
   async onModuleInit() {
     // Chỉ chạy seeder trong môi trường development hoặc khi cần
@@ -104,12 +104,6 @@ export class RoleSeederService implements OnModuleInit {
         code: 'approvals.district.manage',
         name: 'Duyệt báo cáo cấp xã',
         description: 'Duyệt/từ chối báo cáo cấp xã',
-        category: 'QLDL',
-      },
-      {
-        code: 'summaries.manage',
-        name: 'Tổng hợp báo cáo',
-        description: 'Summaries + recompute',
         category: 'QLDL',
       },
       {

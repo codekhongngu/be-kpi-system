@@ -58,6 +58,15 @@ type CampaignAssignmentRow = {
   submissionUpdatedAt: Date | string | null;
 };
 
+type CampaignAssignmentReadiness = {
+  id: string;
+  orgId: string;
+  orgName: string;
+  submissionId: string | null;
+  status: string;
+  updatedAt: string | null;
+};
+
 @Injectable()
 export class ReportCampaignService {
   constructor(
@@ -79,6 +88,8 @@ export class ReportCampaignService {
     private readonly defaultValueRepo: Repository<ReportCampaignDefaultValue>,
     @InjectRepository(FormAttribute)
     private readonly attributeRepo: Repository<FormAttribute>,
+    @InjectRepository(ReportSubmission)
+    private readonly submissionRepo: Repository<ReportSubmission>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -167,11 +178,13 @@ export class ReportCampaignService {
     if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
 
     const { form, ...campaignData } = campaign;
+    const templateCode = form?.code;
+    const templateName = form?.name;
 
     return {
       ...campaignData,
-      templateCode: campaign.form?.code,
-      templateName: campaign.form?.name,
+      templateCode,
+      templateName,
     };
   }
 
@@ -246,6 +259,124 @@ export class ReportCampaignService {
     };
   }
 
+  async getSummaryReadiness(campaignId: string) {
+    const campaign = await this.batchRepo.findOne({
+      where: { id: campaignId },
+    });
+    if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
+
+    const assignments = await this.listAssignments(campaignId);
+    const items = assignments.items.map((item) => ({
+      id: item.id,
+      orgId: item.orgId,
+      orgName: item.orgName,
+      submissionId: item.submissionId ?? null,
+      status: item.status,
+      updatedAt: item.updatedAt ? new Date(item.updatedAt).toISOString() : null,
+    })) satisfies CampaignAssignmentReadiness[];
+
+    const readyItems = items.filter(
+      (item) => item.status === 'DISTRICT_APPROVED',
+    );
+    const blockedItems = items.filter(
+      (item) => item.status !== 'DISTRICT_APPROVED',
+    );
+
+    return {
+      campaignId: campaign.id,
+      totalAssignments: items.length,
+      readyAssignments: readyItems.length,
+      blockedAssignments: blockedItems,
+      canAggregate: items.length > 0 && blockedItems.length === 0,
+      campaignStatus: campaign.status,
+    };
+  }
+
+  async getAssignmentAdminView(campaignId: string, assignmentId: string) {
+    const campaign = await this.batchRepo.findOne({
+      where: { id: campaignId },
+    });
+    if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
+
+    const assignment = await this.assignmentRepo.findOne({
+      where: { id: assignmentId, batchId: campaignId, isCancelled: false },
+    });
+    if (!assignment) throw new NotFoundException('ASSIGNMENT_NOT_FOUND');
+
+    const submission = await this.submissionRepo.findOne({
+      where: { assignmentId: assignment.id },
+    });
+    if (!submission) throw new NotFoundException('SUBMISSION_NOT_FOUND');
+
+    const cells = (await this.dataSource.query(
+      `SELECT indicator_id, attribute_id, value_text, value_number, updated_by, updated_at
+       FROM report_submission_cells
+       WHERE submission_id = $1
+       ORDER BY indicator_id ASC, attribute_id ASC`,
+      [submission.id],
+    )) as unknown as Array<{
+      indicator_id: string;
+      attribute_id: string;
+      value_text: string | null;
+      value_number: string | number | null;
+      updated_by: string | null;
+      updated_at: Date | string;
+    }>;
+
+    let defaultValues: Array<{
+      indicatorId: string;
+      attributeId: string;
+      valueText: string | null;
+      valueNumber: number | null;
+    }> = [];
+    if (assignment.batchId) {
+      const rows = (await this.dataSource.query(
+        `SELECT indicator_id, attribute_id, value_text, value_number
+         FROM report_campaign_default_values
+         WHERE campaign_id = $1
+         ORDER BY indicator_id ASC, attribute_id ASC`,
+        [assignment.batchId],
+      )) as unknown as Array<{
+        indicator_id: string;
+        attribute_id: string;
+        value_text: string | null;
+        value_number: string | number | null;
+      }>;
+      defaultValues = rows.map((r) => ({
+        indicatorId: r.indicator_id,
+        attributeId: r.attribute_id,
+        valueText: r.value_text,
+        valueNumber: r.value_number != null ? Number(r.value_number) : null,
+      }));
+    }
+
+    return {
+      id: submission.id,
+      code: submission.code,
+      assignmentId: submission.assignmentId,
+      status: normalizeSubmissionStatus(submission.status),
+      version: submission.version,
+      note: submission.note,
+      rejectReason: submission.rejectReason,
+      completionPct:
+        submission.completionPct != null
+          ? Number(submission.completionPct)
+          : null,
+      submittedAt: submission.submittedAt
+        ? submission.submittedAt.toISOString()
+        : null,
+      defaultValues,
+      cells: cells.map((c) => ({
+        indicatorId: c.indicator_id,
+        attributeId: c.attribute_id,
+        valueText: c.value_text,
+        valueNumeric: c.value_number != null ? Number(c.value_number) : null,
+        updatedBy: c.updated_by,
+        updatedAt: new Date(c.updated_at).toISOString(),
+      })),
+    };
+  }
+
   async patch(id: string, dto: UpdateReportCampaignDto) {
     const campaign = await this.batchRepo.findOne({ where: { id } });
     if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
@@ -266,12 +397,32 @@ export class ReportCampaignService {
   }
 
   async listScopes(campaignId: string) {
-    const rows = await this.scopeRepo.find({ where: { batchId: campaignId } });
+    const rows = await this.scopeRepo
+      .createQueryBuilder('s')
+      .innerJoin(Organization, 'o', 'o.id = s.orgId')
+      .innerJoin(FormIndicator, 'i', 'i.id = s.indicatorId')
+      .where('s.batchId = :campaignId', { campaignId })
+      .select([
+        's.id AS "id"',
+        's.orgId AS "orgId"',
+        'o.code AS "orgCode"',
+        'o.name AS "orgName"',
+        's.indicatorId AS "indicatorId"',
+        'i.code AS "indicatorCode"',
+        'i.name AS "indicatorName"',
+        's.source AS "source"',
+      ])
+      .getRawMany();
+
     return {
       items: rows.map((x) => ({
         id: x.id,
         orgId: x.orgId,
+        orgCode: x.orgCode,
+        orgName: x.orgName,
         indicatorId: x.indicatorId,
+        indicatorCode: x.indicatorCode,
+        indicatorName: x.indicatorName,
         source: x.source,
       })),
     };
@@ -418,6 +569,7 @@ export class ReportCampaignService {
   }
 
   async cancel(campaignId: string, _userId: string | undefined) {
+    void _userId;
     const campaign = await this.batchRepo.findOne({
       where: { id: campaignId },
     });
@@ -434,6 +586,7 @@ export class ReportCampaignService {
   }
 
   async close(campaignId: string, _userId: string | undefined) {
+    void _userId;
     const campaign = await this.batchRepo.findOne({
       where: { id: campaignId },
     });

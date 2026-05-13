@@ -1,9 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { ReportSummary } from './entities/report-summary.entity';
 import { CreateSummaryDto } from './dto/create-summary.dto';
 import { SummaryQueryDto } from './dto/summary-query.dto';
+
+type SummaryMergeValue = {
+  valueText: string | null;
+  valueNumber: number | null;
+};
 
 @Injectable()
 export class SummaryAnalyticsSummaryService {
@@ -53,6 +62,18 @@ export class SummaryAnalyticsSummaryService {
   }
 
   async create(dto: CreateSummaryDto, userId: string | undefined) {
+    const campaigns = (await this.dataSource.query(
+      `SELECT id FROM report_campaigns WHERE template_id = $1 AND period_type = $2 AND period_code = $3 LIMIT 1`,
+      [dto.formId, dto.periodType, dto.periodCode],
+    )) as unknown as Array<{ id: string }>;
+    const campaignId = campaigns[0]?.id;
+    if (campaignId) {
+      const readiness = await this.getCampaignReadiness(campaignId);
+      if (!readiness.canAggregate) {
+        throw new ConflictException('CAMPAIGN_NOT_READY_FOR_SUMMARY');
+      }
+    }
+
     const row = this.summaryRepo.create({
       formId: dto.formId,
       periodType: dto.periodType,
@@ -100,45 +121,74 @@ export class SummaryAnalyticsSummaryService {
     const s = await this.summaryRepo.findOne({ where: { id } });
     if (!s) throw new NotFoundException('Khong tim thay ban tong hop');
 
-    let defaultValues: any[] = [];
-    let submissionCells: any[] = [];
+    let defaultValues: Array<{
+      indicator_id: string;
+      attribute_id: string;
+      value_text: string | null;
+      value_number: string | number | null;
+    }> = [];
+    let submissionCells: Array<{
+      indicator_id: string;
+      attribute_id: string;
+      value: string | null;
+      value_numeric: string | number | null;
+    }> = [];
 
-    // Find campaignId
-    const campaigns = await this.dataSource.query(
+    const campaigns = (await this.dataSource.query(
       `SELECT id FROM report_campaigns WHERE template_id = $1 AND period_type = $2 AND period_code = $3 LIMIT 1`,
       [s.formId, s.periodType, s.periodCode],
-    );
+    )) as unknown as Array<{ id: string }>;
     const campaignId = campaigns[0]?.id;
 
     if (campaignId) {
-      defaultValues = await this.dataSource.query(
+      const readiness = await this.getCampaignReadiness(campaignId);
+      if (!readiness.canAggregate) {
+        throw new ConflictException('CAMPAIGN_NOT_READY_FOR_SUMMARY');
+      }
+
+      defaultValues = (await this.dataSource.query(
         `SELECT indicator_id, attribute_id, value_text, value_number
          FROM report_campaign_default_values
          WHERE campaign_id = $1`,
         [campaignId],
-      );
+      )) as unknown as Array<{
+        indicator_id: string;
+        attribute_id: string;
+        value_text: string | null;
+        value_number: string | number | null;
+      }>;
 
       // Fetch approved submission cells within the org tree
-      submissionCells = await this.dataSource.query(
+      submissionCells = (await this.dataSource.query(
         `SELECT c.indicator_id, c.attribute_id, c.value, c.value_numeric
          FROM report_submission_cells c
          INNER JOIN report_submissions sub ON sub.id = c.submission_id
          INNER JOIN report_assignments a ON a.id = sub.assignment_id
-         INNER JOIN organization_closure oc ON oc.descendant_id = a.org_id
-         WHERE a.batch_id = $1 AND oc.ancestor_id = $2 AND sub.status IN ('DISTRICT_APPROVED', 'APPROVED')`,
-        [campaignId, s.orgId],
-      );
+         WHERE a.batch_id = $1 AND a.is_cancelled = false AND sub.status IN ('DISTRICT_APPROVED', 'APPROVED')`,
+        [campaignId],
+      )) as unknown as Array<{
+        indicator_id: string;
+        attribute_id: string;
+        value: string | null;
+        value_numeric: string | number | null;
+      }>;
     }
 
-    const mergedData = new Map<string, any>();
+    const mergedData = new Map<string, SummaryMergeValue>();
 
     // 1. Dùng giá trị từ đơn vị (submission_cells) - Cộng dồn nếu là số
     for (const cell of submissionCells) {
       const key = `${cell.indicator_id}:${cell.attribute_id}`;
-      const existing = mergedData.get(key) || { valueText: null, valueNumber: 0 };
+      const existing = mergedData.get(key) || {
+        valueText: null,
+        valueNumber: 0,
+      };
+      const existingValueNumber = existing.valueNumber ?? 0;
       mergedData.set(key, {
         valueText: cell.value ?? existing.valueText,
-        valueNumber: existing.valueNumber + (cell.value_numeric ? Number(cell.value_numeric) : 0),
+        valueNumber:
+          existingValueNumber +
+          (cell.value_numeric != null ? Number(cell.value_numeric) : 0),
       });
     }
 
@@ -151,7 +201,7 @@ export class SummaryAnalyticsSummaryService {
       });
     }
 
-    const indicators: Record<string, any> = {};
+    const indicators: Record<string, SummaryMergeValue> = {};
     for (const [key, val] of mergedData.entries()) {
       indicators[key] = val;
     }
@@ -163,5 +213,50 @@ export class SummaryAnalyticsSummaryService {
     };
     await this.summaryRepo.save(s);
     return { ok: true as const };
+  }
+
+  private async getCampaignReadiness(campaignId: string) {
+    const rows = (await this.dataSource.query(
+      `SELECT a.id AS "assignmentId",
+              a.org_id AS "orgId",
+              o.name AS "orgName",
+              s.id AS "submissionId",
+              s.status AS "status",
+              s.updated_at AS "updatedAt"
+       FROM report_assignments a
+       INNER JOIN organizations o ON o.id = a.org_id
+       LEFT JOIN report_submissions s ON s.assignment_id = a.id
+       WHERE a.batch_id = $1
+         AND a.is_cancelled = false
+       ORDER BY o.name ASC`,
+      [campaignId],
+    )) as unknown as Array<{
+      assignmentId: string;
+      orgId: string;
+      orgName: string;
+      submissionId: string | null;
+      status: string | null;
+      updatedAt: string | Date | null;
+    }>;
+
+    const items = rows.map((row) => ({
+      assignmentId: row.assignmentId,
+      orgId: row.orgId,
+      orgName: row.orgName ?? '',
+      submissionId: row.submissionId ?? null,
+      status: row.status ?? 'NOT_STARTED',
+      updatedAt: row.updatedAt ?? null,
+    }));
+
+    const blockedItems = items.filter(
+      (item) => item.status !== 'DISTRICT_APPROVED',
+    );
+
+    return {
+      totalAssignments: items.length,
+      readyAssignments: items.length - blockedItems.length,
+      blockedItems,
+      canAggregate: items.length > 0 && blockedItems.length === 0,
+    };
   }
 }
