@@ -204,12 +204,22 @@ export class UserService {
   }
 
   async findOneDetail(id: string): Promise<UserDetail> {
-    const user = await this.findOne(id);
+    const user = await this.findOne(id, true);
     return this.toUserDetail(user);
   }
 
   async getMeResponse(userId: string): Promise<MeResponse> {
-    const user = await this.findOne(userId);
+    const user = await this.findOne(userId, true);
+
+    // Trích xuất danh sách mã vai trò (role codes)
+    const roles = user.roles?.map((r) => r.code) ?? [];
+
+    // Trích xuất danh sách mã quyền hạn (permission codes) duy nhất
+    const permissions = new Set<string>();
+    user.roles?.forEach((role) => {
+      role.permissions?.forEach((perm) => permissions.add(perm.code));
+    });
+
     return {
       id: user.id,
       code: user.code ?? '',
@@ -220,6 +230,8 @@ export class UserService {
       avatarUrl: user.avatarUrl ?? null,
       orgId: user.orgId,
       roleIds: user.roles?.map((r) => r.id) ?? [],
+      roles: roles,
+      permissions: Array.from(permissions),
       language: user.language ?? 'vi',
       timezone: user.timezone ?? 'Asia/Ho_Chi_Minh',
       notifyChannel: this.normalizeNotifyChannel(user.notifyChannel),
@@ -547,5 +559,3 @@ export class UserService {
     return `Aa1!${randomBytes(16).toString('base64url')}`;
   }
 }
-
-
