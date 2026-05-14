@@ -62,6 +62,18 @@ export class ReportCampaignController {
     return await this.service.getSummaryReadiness(id);
   }
 
+  @Get(':id/summary-preview')
+  //@Permissions('reports.view')
+  async summaryPreview(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.service.getSummaryPreview(id);
+  }
+
+  @Post(':id/summary/recompute')
+  @Permissions('campaigns.dispatch', 'assignments.manage')
+  async recomputeSummary(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.service.recomputeSummary(id);
+  }
+
   @Get(':id/assignments/:assignmentId/admin-view')
   //@Permissions('reports.view')
   async assignmentAdminView(

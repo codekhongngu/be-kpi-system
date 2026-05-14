@@ -13,6 +13,7 @@ import { User, UserStatus } from '../user/entities/user.entity';
 import { PendingApprovalsQueryDto } from './dto/pending-approvals-query.dto';
 import { SubmissionService } from '../submission/submission.service';
 import { SubmissionFlowEvent } from '../submission/entities/submission-flow-log.entity';
+import { ReportCampaignService } from '../report-campaign/report-campaign.service';
 
 @Injectable()
 export class ApprovalService {
@@ -24,6 +25,7 @@ export class ApprovalService {
     @InjectRepository(Notification)
     private readonly notificationRepo: Repository<Notification>,
     private readonly submissionService: SubmissionService,
+    private readonly reportCampaignService: ReportCampaignService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -276,7 +278,9 @@ export class ApprovalService {
     );
 
     // Trigger summary generation
-    await this.triggerSummaryGeneration(submissionId);
+    if (a.batchId) {
+      await this.triggerSummaryGeneration(a.batchId);
+    }
 
     // Notify submitter
     await this.notifySubmissionStatusChange(submissionId, 'DISTRICT_APPROVED');
@@ -536,10 +540,8 @@ export class ApprovalService {
     return bodyMap[status] || `Trạng thái báo cáo ${details.code} đã thay đổi thành ${status}.`;
   }
 
-  private async triggerSummaryGeneration(submissionId: string) {
-    // This would trigger the summary generation for the assignment
-    // Implementation depends on your summary service
-    console.log(`Triggering summary generation for submission ${submissionId}`);
+  private async triggerSummaryGeneration(campaignId: string) {
+    await this.reportCampaignService.recomputeSummary(campaignId);
   }
 
   private async findDistrictApproverUserIds(): Promise<string[]> {

@@ -67,6 +67,24 @@ type CampaignAssignmentReadiness = {
   updatedAt: string | null;
 };
 
+type CampaignSummaryPreview = {
+  id: string;
+  formId: string;
+  periodType: string;
+  periodCode: string | null;
+  periodName: string | null;
+  periodFrom: string;
+  periodTo: string;
+  orgId: string;
+  status: string;
+  totalUnits: number | null;
+  submittedUnits: number | null;
+  approvedUnits: number | null;
+  summaryData: Record<string, unknown>;
+  summarizedAt: string;
+  createdAt: string;
+};
+
 @Injectable()
 export class ReportCampaignService {
   constructor(
@@ -292,6 +310,14 @@ export class ReportCampaignService {
     };
   }
 
+  async getSummaryPreview(campaignId: string) {
+    return await this.buildSummaryPreview(campaignId);
+  }
+
+  async recomputeSummary(campaignId: string) {
+    return await this.buildSummaryPreview(campaignId);
+  }
+
   async getAssignmentAdminView(campaignId: string, assignmentId: string) {
     const campaign = await this.batchRepo.findOne({
       where: { id: campaignId },
@@ -374,6 +400,107 @@ export class ReportCampaignService {
         updatedBy: c.updated_by,
         updatedAt: new Date(c.updated_at).toISOString(),
       })),
+    };
+  }
+
+  private async buildSummaryPreview(
+    campaignId: string,
+  ): Promise<CampaignSummaryPreview> {
+    const campaign = await this.batchRepo.findOne({
+      where: { id: campaignId },
+    });
+    if (!campaign) throw new NotFoundException('CAMPAIGN_NOT_FOUND');
+
+    const assignments = await this.listAssignments(campaignId);
+    const approvedAssignments = assignments.items.filter(
+      (item) => item.status === 'DISTRICT_APPROVED',
+    );
+    const approvedDetails = await Promise.all(
+      approvedAssignments.map((assignment) =>
+        this.getAssignmentAdminView(campaignId, assignment.id),
+      ),
+    );
+
+    const defaultValueRows = await this.defaultValueRepo.find({
+      where: { campaignId },
+      order: { indicatorId: 'ASC', attributeId: 'ASC' },
+    });
+
+    const mergedData = new Map<
+      string,
+      { valueText: string | null; valueNumber: number | null }
+    >();
+
+    for (const detail of approvedDetails) {
+      for (const cell of detail.cells) {
+        const key = `${cell.indicatorId}:${cell.attributeId}`;
+        const existing = mergedData.get(key) ?? {
+          valueText: null,
+          valueNumber: null,
+        };
+        const nextValueNumber =
+          cell.valueNumeric === null || cell.valueNumeric === undefined
+            ? null
+            : Number(cell.valueNumeric);
+
+        mergedData.set(key, {
+          valueText: cell.valueText ?? existing.valueText,
+          valueNumber:
+            existing.valueNumber != null || nextValueNumber != null
+              ? (existing.valueNumber ?? 0) + (nextValueNumber ?? 0)
+              : null,
+        });
+      }
+    }
+
+    for (const row of defaultValueRows) {
+      const key = `${row.indicatorId}:${row.attributeId}`;
+      mergedData.set(key, {
+        valueText: row.valueText,
+        valueNumber:
+          row.valueNumber === null || row.valueNumber === undefined
+            ? null
+            : Number(row.valueNumber),
+      });
+    }
+
+    const indicators: Record<
+      string,
+      { valueText: string | null; valueNumber: number | null }
+    > = {};
+    for (const [key, value] of mergedData.entries()) {
+      indicators[key] = value;
+    }
+
+    const recomputedAt = new Date().toISOString();
+    const summaryData: Record<string, unknown> = {
+      indicators,
+      recomputedAt,
+      source: 'campaign-preview',
+      approvedAssignmentIds: approvedAssignments.map((item) => item.id),
+    };
+
+    const summaryOrgId =
+      approvedAssignments[0]?.orgId ??
+      assignments.items[0]?.orgId ??
+      campaign.formId;
+
+    return {
+      id: campaign.id,
+      formId: campaign.formId,
+      periodType: campaign.periodType,
+      periodCode: campaign.periodCode,
+      periodName: campaign.periodName,
+      periodFrom: campaign.deadlineFrom,
+      periodTo: campaign.deadlineTo,
+      orgId: summaryOrgId,
+      status: approvedAssignments.length > 0 ? 'FINAL' : 'DRAFT',
+      totalUnits: assignments.items.length,
+      submittedUnits: assignments.items.filter((item) => item.submissionId).length,
+      approvedUnits: approvedAssignments.length,
+      summaryData,
+      summarizedAt: recomputedAt,
+      createdAt: campaign.createdAt.toISOString(),
     };
   }
 

@@ -9,6 +9,7 @@ import { Role } from '../role/entities/role.entity';
 import { Permission } from '../role/entities/permission.entity';
 
 import { SubmissionModule } from '../submission/submission.module';
+import { ReportCampaignModule } from '../report-campaign/report-campaign.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { SubmissionModule } from '../submission/submission.module';
       Permission,
     ]),
     SubmissionModule,
+    ReportCampaignModule,
   ],
   controllers: [ApprovalsController],
   providers: [ApprovalService],
