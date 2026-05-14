@@ -2,6 +2,7 @@
 
 > Tài liệu phân tích tổng hợp hệ thống, bao gồm kiến trúc hiện tại và các thay đổi nghiệp vụ đã thống nhất.
 > Cập nhật: 2026-05-09
+> Canonical docs: `docs/canonical/README.md`
 
 ---
 

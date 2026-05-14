@@ -2,6 +2,7 @@
 
 > Tài liệu mô tả chi tiết chuỗi quan hệ giữa các bảng trong hệ thống,
 > từ thiết kế biểu mẫu đến tổng hợp dữ liệu.
+> Canonical docs: `docs/canonical/README.md`
 
 ---
 
