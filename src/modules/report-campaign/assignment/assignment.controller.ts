@@ -22,7 +22,7 @@ import { ConfigureAssignmentIndicatorScopesDto } from './dto/configure-assignmen
 @Controller('assignments')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class ReportAssignmentController {
-  constructor(private readonly assignmentService: ReportAssignmentService) {}
+  constructor(private readonly assignmentService: ReportAssignmentService) { }
 
   @Get()
   @Permissions('assignments.manage')
