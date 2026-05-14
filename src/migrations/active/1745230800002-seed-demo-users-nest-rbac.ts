@@ -200,7 +200,7 @@ export class SeedDemoUsersNestRbac1745230800002 implements MigrationInterface {
         username: 'system_admin',
         email: 'system_admin@localhost.local',
         fullName: 'System Admin (seed)',
-        code: 'DEMO_SYSTEM_ADMIN',
+        code: 'SYSTEM_ADMIN',
         roleCode: 'SYSTEM_ADMIN',
       },
       {
@@ -208,7 +208,7 @@ export class SeedDemoUsersNestRbac1745230800002 implements MigrationInterface {
         username: 'data_manager',
         email: 'data_manager@localhost.local',
         fullName: 'Data Manager (seed)',
-        code: 'DEMO_DATA_MANAGER',
+        code: 'DATA_MANAGER',
         roleCode: 'DATA_MANAGER',
       },
       {
@@ -216,7 +216,7 @@ export class SeedDemoUsersNestRbac1745230800002 implements MigrationInterface {
         username: 'data_entry',
         email: 'data_entry@localhost.local',
         fullName: 'Data Entry (seed)',
-        code: 'DEMO_DATA_ENTRY',
+        code: 'DATA_ENTRY',
         roleCode: 'DATA_ENTRY',
       },
       {
@@ -224,7 +224,7 @@ export class SeedDemoUsersNestRbac1745230800002 implements MigrationInterface {
         username: 'approver',
         email: 'approver@localhost.local',
         fullName: 'Approver (seed)',
-        code: 'DEMO_APPROVER',
+        code: 'APPROVER',
         roleCode: 'APPROVER',
       },
     ];
