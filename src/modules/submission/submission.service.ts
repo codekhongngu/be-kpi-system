@@ -262,7 +262,7 @@ export class SubmissionService {
         indicatorId: c.indicatorId,
         attributeId: c.attributeId,
         valueText: c.value,
-        valueNumeric: c.valueNumeric != null ? Number(c.valueNumeric) : null,
+        valueNumber: c.valueNumber != null ? Number(c.valueNumber) : null,
         updatedBy: c.updatedBy,
         updatedAt: c.updatedAt.toISOString(),
       })),
@@ -363,7 +363,7 @@ export class SubmissionService {
         });
       }
       cell.value = ch.valueText ?? null;
-      cell.valueNumeric = ch.valueNumeric ?? null;
+      cell.valueNumber = ch.valueNumber ?? null;
       cell.updatedBy = user.id;
       await this.dataRepo.save(cell);
       saved++;
@@ -558,7 +558,7 @@ export class SubmissionService {
         indicatorId: c.indicatorId,
         attributeId: c.attributeId,
         value: c.value,
-        valueNumeric: c.valueNumeric,
+        valueNumber: c.valueNumber,
       })),
       metadata: {
         completionPct: s?.completionPct,

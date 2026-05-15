@@ -23,7 +23,7 @@ export class ReportData {
   value: string | null;
 
   @Column({ name: 'value_number', type: 'numeric', nullable: true })
-  valueNumeric: string | null;
+  valueNumber: string | number | null;
 
   @Column({ name: 'updated_by', type: 'uuid', nullable: true })
   updatedBy: string | null;

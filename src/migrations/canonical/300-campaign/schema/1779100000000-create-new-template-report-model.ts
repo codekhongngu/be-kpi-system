@@ -186,7 +186,7 @@ export class CreateNewTemplateReportModel1779100000000
         "indicator_id" uuid NOT NULL REFERENCES "form_template_indicators"("id") ON DELETE RESTRICT,
         "attribute_id" uuid NOT NULL REFERENCES "form_template_attributes"("id") ON DELETE RESTRICT,
         "value" text NULL,
-        "value_numeric" numeric NULL,
+        "value_number" numeric NULL,
         "updated_by" uuid NULL REFERENCES "users"("id") ON DELETE SET NULL,
         "updated_at" timestamptz NOT NULL DEFAULT now(),
         CONSTRAINT "UQ_report_submission_cells" UNIQUE ("submission_id", "indicator_id", "attribute_id")

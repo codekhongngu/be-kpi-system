@@ -3,6 +3,7 @@ import {
   ArrayNotEmpty,
   IsArray,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
@@ -23,11 +24,11 @@ export class CellChangeDto {
 
   @IsOptional()
   @Transform(({ value }) => {
-    if (value === null || value === undefined) return null;
-    return String(value);
+    if (value === null || value === undefined || value === '') return null;
+    return Number(value);
   })
-  @IsString()
-  valueNumeric?: string | null;
+  @IsNumber()
+  valueNumber?: number | null;
 }
 
 export class PatchCellsDto {

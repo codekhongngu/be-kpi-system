@@ -89,7 +89,7 @@ export class AddSubmissionTables1778408028085 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "form_template_indicators" DROP COLUMN "validation_rule"`);
         await queryRunner.query(`ALTER TABLE "form_template_indicators" DROP COLUMN "is_active"`);
         await queryRunner.query(`ALTER TABLE "report_submission_cells" DROP COLUMN "value"`);
-        await queryRunner.query(`ALTER TABLE "report_submission_cells" DROP COLUMN "value_numeric"`);
+        await queryRunner.query(`ALTER TABLE "report_submission_cells" DROP COLUMN "value_number"`);
         await queryRunner.query(`ALTER TABLE "report_assignments" DROP COLUMN "status"`);
         await queryRunner.query(`ALTER TABLE "report_campaign_indicator_org_scopes" DROP COLUMN "updated_at"`);
         await queryRunner.query(`ALTER TABLE "report_campaigns" DROP COLUMN "updated_at"`);
@@ -337,7 +337,7 @@ export class AddSubmissionTables1778408028085 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "report_campaigns" ADD "updated_at" TIMESTAMP WITH TIME ZONE`);
         await queryRunner.query(`ALTER TABLE "report_campaign_indicator_org_scopes" ADD "updated_at" TIMESTAMP WITH TIME ZONE`);
         await queryRunner.query(`ALTER TABLE "report_assignments" ADD "status" character varying(20) NOT NULL DEFAULT 'ASSIGNED'`);
-        await queryRunner.query(`ALTER TABLE "report_submission_cells" ADD "value_numeric" numeric`);
+        await queryRunner.query(`ALTER TABLE "report_submission_cells" ADD "value_number" numeric`);
         await queryRunner.query(`ALTER TABLE "report_submission_cells" ADD "value" text`);
         await queryRunner.query(`ALTER TABLE "form_template_indicators" ADD "is_active" boolean NOT NULL DEFAULT true`);
         await queryRunner.query(`ALTER TABLE "form_template_indicators" ADD "validation_rule" jsonb`);

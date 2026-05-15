@@ -396,7 +396,7 @@ export class ReportCampaignService {
         indicatorId: c.indicator_id,
         attributeId: c.attribute_id,
         valueText: c.value_text,
-        valueNumeric: c.value_number != null ? Number(c.value_number) : null,
+        valueNumber: c.value_number != null ? Number(c.value_number) : null,
         updatedBy: c.updated_by,
         updatedAt: new Date(c.updated_at).toISOString(),
       })),
@@ -439,9 +439,9 @@ export class ReportCampaignService {
           valueNumber: null,
         };
         const nextValueNumber =
-          cell.valueNumeric === null || cell.valueNumeric === undefined
+          cell.valueNumber === null || cell.valueNumber === undefined
             ? null
-            : Number(cell.valueNumeric);
+            : Number(cell.valueNumber);
 
         mergedData.set(key, {
           valueText: cell.valueText ?? existing.valueText,

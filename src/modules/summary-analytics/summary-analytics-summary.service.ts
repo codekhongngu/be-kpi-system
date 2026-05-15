@@ -131,7 +131,7 @@ export class SummaryAnalyticsSummaryService {
       indicator_id: string;
       attribute_id: string;
       value: string | null;
-      value_numeric: string | number | null;
+      value_number: string | number | null;
     }> = [];
 
     const campaigns = (await this.dataSource.query(
@@ -160,7 +160,7 @@ export class SummaryAnalyticsSummaryService {
 
       // Fetch approved submission cells within the org tree
       submissionCells = (await this.dataSource.query(
-        `SELECT c.indicator_id, c.attribute_id, c.value, c.value_numeric
+        `SELECT c.indicator_id, c.attribute_id, c.value, c.value_number
          FROM report_submission_cells c
          INNER JOIN report_submissions sub ON sub.id = c.submission_id
          INNER JOIN report_assignments a ON a.id = sub.assignment_id
@@ -170,7 +170,7 @@ export class SummaryAnalyticsSummaryService {
         indicator_id: string;
         attribute_id: string;
         value: string | null;
-        value_numeric: string | number | null;
+        value_number: string | number | null;
       }>;
     }
 
@@ -188,7 +188,7 @@ export class SummaryAnalyticsSummaryService {
         valueText: cell.value ?? existing.valueText,
         valueNumber:
           existingValueNumber +
-          (cell.value_numeric != null ? Number(cell.value_numeric) : 0),
+          (cell.value_number != null ? Number(cell.value_number) : 0),
       });
     }
 

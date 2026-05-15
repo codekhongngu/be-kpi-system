@@ -222,7 +222,7 @@ export class QLDLSchemaFromDocumentation1745230800000 implements MigrationInterf
         "indicator_id" uuid NOT NULL REFERENCES "form_indicators"("id") ON DELETE RESTRICT,
         "attribute_id" uuid NOT NULL REFERENCES "form_attributes"("id") ON DELETE RESTRICT,
         "value" text NULL,
-        "value_numeric" numeric NULL,
+        "value_number" numeric NULL,
         "updated_by" uuid NULL REFERENCES "users"("id") ON DELETE SET NULL,
         "updated_at" timestamptz NOT NULL DEFAULT now(),
         CONSTRAINT "UQ_report_data_submission_indicator_attribute" UNIQUE ("submission_id", "indicator_id", "attribute_id")
