@@ -970,7 +970,7 @@
           }
         },
         {
-          "name": "Forms - Import Excel",
+          "name": "Forms - Import indicators (sheet Chỉ tiêu)",
           "request": {
             "method": "POST",
             "header": [
@@ -986,15 +986,15 @@
                   "key": "file",
                   "type": "file",
                   "src": "",
-                  "description": "Chọn file Excel (.xlsx hoặc .xls)"
+                  "description": "Excel .xlsx/.xls — sheet \"Chỉ tiêu\" hoặc Sheet1"
                 }
               ]
             },
-            "url": "{{baseUrl}}/forms/{{formId}}/import/indicators-attributes"
+            "url": "{{baseUrl}}/forms/{{formId}}/import/indicators"
           }
         },
         {
-          "name": "Forms - Upload Excel",
+          "name": "Forms - Import attributes (sheet Thuộc tính)",
           "request": {
             "method": "POST",
             "header": [
@@ -1010,7 +1010,31 @@
                   "key": "file",
                   "type": "file",
                   "src": "",
-                  "description": "Chọn file Excel (.xlsx hoặc .xls)"
+                  "description": "Excel .xlsx/.xls — sheet \"Thuộc tính\" hoặc Sheet2"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/forms/{{formId}}/import/attributes"
+          }
+        },
+        {
+          "name": "Forms - Upload Excel (chỉ tiêu + thuộc tính)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "Excel đầy đủ: sheet Chỉ tiêu/Sheet1 và Thuộc tính/Sheet2"
                 }
               ]
             },

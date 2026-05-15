@@ -40,13 +40,12 @@ import { PeriodType } from '../../common/period-type';
 import { UpsertFormCellConfigsDto } from './dto/upsert-form-cell-configs.dto';
 import { DeleteFormCellConfigsDto } from './dto/delete-form-cell-configs.dto';
 import { UpsertTemplateScopesDto } from './dto/upsert-template-scope.dto';
-import { 
-  ImportIndicatorsAttributesDto, 
-  ExcelIndicatorRow, 
-  ExcelAttributeRow, 
-  IndicatorMapping, 
-  AttributeMapping, 
-  ImportResult 
+import {
+  ExcelIndicatorRow,
+  ExcelAttributeRow,
+  IndicatorMapping,
+  AttributeMapping,
+  ImportResult,
 } from './dto/import-indicators-attributes.dto';
 
 const DEFAULT_FORM_SYSTEM_ATTRIBUTES = [
@@ -1585,30 +1584,25 @@ export class TemplateManagementService {
     return row;
   }
 
-  async importIndicatorsFromExcel(templateId: string, fileBuffer: Buffer): Promise<ImportResult> {
+  async importIndicatorsOnlyFromExcel(
+    templateId: string,
+    fileBuffer: Buffer,
+  ): Promise<ImportResult> {
     try {
-      // Check if xlsx library is available
       const xlsx = require('xlsx');
-      
-      // Read Excel file
       const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
-      
-      // Parse indicators from Chỉ tiêu / Sheet1
-      const indicatorSheet = workbook.Sheets['Chỉ tiêu'] ?? workbook.Sheets['Sheet1'];
+      const indicatorSheet =
+        workbook.Sheets['Chỉ tiêu'] ?? workbook.Sheets['Sheet1'];
       if (!indicatorSheet) {
-        throw new BadRequestException('Không tìm thấy sheet Chỉ tiêu hoặc Sheet1 trong file Excel');
+        throw new BadRequestException(
+          'Không tìm thấy sheet Chỉ tiêu hoặc Sheet1 trong file Excel',
+        );
       }
-      const indicatorRaw = xlsx.utils.sheet_to_json(indicatorSheet, { defval: null });
+      const indicatorRaw = xlsx.utils.sheet_to_json(indicatorSheet, {
+        defval: null,
+      });
       const indicatorData = this.normalizeIndicatorRows(indicatorRaw);
-      
-      // Parse attributes from Thuộc tính / Sheet2
-      const attributeSheet = workbook.Sheets['Thuộc tính'] ?? workbook.Sheets['Sheet2'];
-      if (!attributeSheet) {
-        throw new BadRequestException('Không tìm thấy sheet Thuộc tính hoặc Sheet2 trong file Excel');
-      }
-      const attributeRaw = xlsx.utils.sheet_to_json(attributeSheet, { defval: null });
-      const attributeData = this.normalizeAttributeRows(attributeRaw);
-      
+
       const result: ImportResult = {
         success: true,
         message: 'Import thành công',
@@ -1616,22 +1610,24 @@ export class TemplateManagementService {
         attributesCreated: 0,
         indicatorMappings: [],
         attributeMappings: [],
-        errors: []
+        errors: [],
       };
 
-      // Validate template exists
       await this.ensureForm(templateId);
 
-      // Step 1: Create indicators without parent relationships (batch processing)
       const indicatorMappings: IndicatorMapping[] = [];
-      const parentChildRelationships: Array<{ childCode: string; parentCode: string }> = [];
-      
-      // Process in batches of 50 to avoid timeout/memory issues
+      const parentChildRelationships: Array<{
+        childCode: string;
+        parentCode: string;
+      }> = [];
+
       const batchSize = 50;
       for (let i = 0; i < indicatorData.length; i += batchSize) {
         const batch = indicatorData.slice(i, i + batchSize);
-        console.log(`Processing indicators batch ${Math.floor(i/batchSize) + 1}: ${batch.length} indicators`);
-        
+        console.log(
+          `Processing indicators batch ${Math.floor(i / batchSize) + 1}: ${batch.length} indicators`,
+        );
+
         for (const indicator of batch) {
           try {
             const createDto: CreateFormIndicatorDto = {
@@ -1641,146 +1637,94 @@ export class TemplateManagementService {
               dataType: indicator.dataType as 'number' | 'text',
               type: indicator.type as 'INPUT' | 'TITLE',
               sortOrder: indicator.sortOrder,
-              parentId: null // Will be set later
+              parentId: null,
             };
 
-            // Create indicator with skipParentValidation to avoid validation issues during import
-            const createdIndicator = await this.createIndicator(templateId, createDto, true);
-            
-            // Store mapping with code for parent-child identification
+            const createdIndicator = await this.createIndicator(
+              templateId,
+              createDto,
+              true,
+            );
+
             const mapping: IndicatorMapping = {
               excelId: indicator.id,
               code: indicator.code,
-              apiId: createdIndicator.id
+              apiId: createdIndicator.id,
             };
             indicatorMappings.push(mapping);
             result.indicatorMappings.push(mapping);
             result.indicatorsCreated++;
 
-            // Store parent-child relationship if exists (using codeParentId)
-            if (indicator.codeParentId && indicator.codeParentId !== undefined && indicator.codeParentId !== null) {
+            if (
+              indicator.codeParentId !== undefined &&
+              indicator.codeParentId !== null
+            ) {
               parentChildRelationships.push({
                 childCode: indicator.code,
-                parentCode: indicator.codeParentId
+                parentCode: indicator.codeParentId,
               });
             }
           } catch (error: any) {
-            result.errors?.push(`Lỗi tạo chỉ tiêu ${indicator.name}: ${error.message}`);
+            result.errors?.push(
+              `Lỗi tạo chỉ tiêu ${indicator.name}: ${error.message}`,
+            );
           }
         }
-        
-        // Add small delay between batches to prevent overwhelming
+
         if (i + batchSize < indicatorData.length) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
       }
 
-      // Step 2: Update indicators with parent relationships
       for (const relationship of parentChildRelationships) {
         try {
-          const childMapping = indicatorMappings.find(m => m.code === relationship.childCode);
-          const parentMapping = indicatorMappings.find(m => m.code === relationship.parentCode);
-          
+          const childMapping = indicatorMappings.find(
+            (m) => m.code === relationship.childCode,
+          );
+          const parentMapping = indicatorMappings.find(
+            (m) => m.code === relationship.parentCode,
+          );
+
           if (childMapping && parentMapping) {
-            // Validate that parent exists in database
-            const parentExists = await this.indRepo.findOne({ 
-              where: { id: parentMapping.apiId, formId: templateId } 
+            const parentExists = await this.indRepo.findOne({
+              where: { id: parentMapping.apiId, formId: templateId },
             });
-            
+
             if (!parentExists) {
-              result.errors?.push(`Parent indicator không tồn tại trong database: ${relationship.parentCode}`);
+              result.errors?.push(
+                `Parent indicator không tồn tại trong database: ${relationship.parentCode}`,
+              );
               continue;
             }
-            
+
             const updateDto: PatchFormIndicatorDto = {
-              parentId: parentMapping.apiId
+              parentId: parentMapping.apiId,
             };
-            
-            await this.patchIndicator(templateId, childMapping.apiId, updateDto);
+
+            await this.patchIndicator(
+              templateId,
+              childMapping.apiId,
+              updateDto,
+            );
           } else {
             if (!childMapping) {
-              result.errors?.push(`Không tìm thấy chỉ tiêu với code: ${relationship.childCode}`);
+              result.errors?.push(
+                `Không tìm thấy chỉ tiêu với code: ${relationship.childCode}`,
+              );
             }
             if (!parentMapping) {
-              result.errors?.push(`Không tìm thấy chỉ tiêu cha với code: ${relationship.parentCode}`);
+              result.errors?.push(
+                `Không tìm thấy chỉ tiêu cha với code: ${relationship.parentCode}`,
+              );
             }
           }
         } catch (error: any) {
-          result.errors?.push(`Lỗi cập nhật quan hệ cha-con cho chỉ tiêu ${relationship.childCode}: ${error.message}`);
+          result.errors?.push(
+            `Lỗi cập nhật quan hệ cha-con cho chỉ tiêu ${relationship.childCode}: ${error.message}`,
+          );
         }
       }
 
-      // Step 3: Create attributes
-      const attributeMappings: AttributeMapping[] = [];
-      const attributeParentChildRelationships: Array<{ childId: string; parentId: string }> = [];
-
-      for (const attribute of attributeData) {
-        try {
-          const createDto: CreateFormAttributeDto = {
-            name: attribute.name,
-            parentId: null // Will be set later
-          };
-
-          // Create attribute with skipParentValidation to avoid validation issues during import
-          const createdAttribute = await this.createAttribute(templateId, createDto, true);
-          
-          // Store mapping
-          const mapping: AttributeMapping = {
-            excelId: attribute.id,
-            apiId: createdAttribute.id
-          };
-          attributeMappings.push(mapping);
-          result.attributeMappings.push(mapping);
-          result.attributesCreated++;
-
-          // Store parent-child relationship if exists
-          if (attribute.parentId) {
-            attributeParentChildRelationships.push({
-              childId: attribute.id,
-              parentId: attribute.parentId
-            });
-          }
-        } catch (error: any) {
-          result.errors?.push(`Lỗi tạo thuộc tính ${attribute.name}: ${error.message}`);
-        }
-      }
-
-      // Step 4: Update attributes with parent relationships
-      for (const relationship of attributeParentChildRelationships) {
-        try {
-          const childMapping = attributeMappings.find(m => m.excelId === relationship.childId);
-          const parentMapping = attributeMappings.find(m => m.excelId === relationship.parentId);
-          
-          if (childMapping && parentMapping) {
-            // Validate that parent exists in database
-            const parentExists = await this.attrRepo.findOne({ 
-              where: { id: parentMapping.apiId, formId: templateId } 
-            });
-            
-            if (!parentExists) {
-              result.errors?.push(`Parent attribute không tồn tại trong database: ${relationship.parentId}`);
-              continue;
-            }
-            
-            const updateDto: PatchFormAttributeDto = {
-              parentId: parentMapping.apiId
-            };
-            
-            await this.patchAttribute(templateId, childMapping.apiId, updateDto);
-          } else {
-            if (!childMapping) {
-              result.errors?.push(`Không tìm thấy mapping cho child attribute: ${relationship.childId}`);
-            }
-            if (!parentMapping) {
-              result.errors?.push(`Không tìm thấy mapping cho parent attribute: ${relationship.parentId}`);
-            }
-          }
-        } catch (error: any) {
-          result.errors?.push(`Lỗi cập nhật quan hệ cha-con cho thuộc tính ${relationship.childId}: ${error.message}`);
-        }
-      }
-
-      // Set success status based on errors
       if (result.errors && result.errors.length > 0) {
         result.success = false;
         result.message = 'Import hoàn thành với một số lỗi';
@@ -1795,9 +1739,176 @@ export class TemplateManagementService {
         attributesCreated: 0,
         indicatorMappings: [],
         attributeMappings: [],
-        errors: [error.message]
+        errors: [error.message],
       };
     }
+  }
+
+  async importAttributesOnlyFromExcel(
+    templateId: string,
+    fileBuffer: Buffer,
+  ): Promise<ImportResult> {
+    try {
+      const xlsx = require('xlsx');
+      const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
+      const attributeSheet =
+        workbook.Sheets['Thuộc tính'] ?? workbook.Sheets['Sheet2'];
+      if (!attributeSheet) {
+        throw new BadRequestException(
+          'Không tìm thấy sheet Thuộc tính hoặc Sheet2 trong file Excel',
+        );
+      }
+      const attributeRaw = xlsx.utils.sheet_to_json(attributeSheet, {
+        defval: null,
+      });
+      const attributeData = this.normalizeAttributeRows(attributeRaw);
+
+      const result: ImportResult = {
+        success: true,
+        message: 'Import thành công',
+        indicatorsCreated: 0,
+        attributesCreated: 0,
+        indicatorMappings: [],
+        attributeMappings: [],
+        errors: [],
+      };
+
+      await this.ensureForm(templateId);
+
+      const attributeMappings: AttributeMapping[] = [];
+      const attributeParentChildRelationships: Array<{
+        childId: string;
+        parentId: string;
+      }> = [];
+
+      for (const attribute of attributeData) {
+        try {
+          const createDto: CreateFormAttributeDto = {
+            name: attribute.name,
+            parentId: null,
+          };
+
+          const createdAttribute = await this.createAttribute(
+            templateId,
+            createDto,
+            true,
+          );
+
+          const mapping: AttributeMapping = {
+            excelId: attribute.id,
+            apiId: createdAttribute.id,
+          };
+          attributeMappings.push(mapping);
+          result.attributeMappings.push(mapping);
+          result.attributesCreated++;
+
+          if (attribute.parentId) {
+            attributeParentChildRelationships.push({
+              childId: attribute.id,
+              parentId: attribute.parentId,
+            });
+          }
+        } catch (error: any) {
+          result.errors?.push(
+            `Lỗi tạo thuộc tính ${attribute.name}: ${error.message}`,
+          );
+        }
+      }
+
+      for (const relationship of attributeParentChildRelationships) {
+        try {
+          const childMapping = attributeMappings.find(
+            (m) => m.excelId === relationship.childId,
+          );
+          const parentMapping = attributeMappings.find(
+            (m) => m.excelId === relationship.parentId,
+          );
+
+          if (childMapping && parentMapping) {
+            const parentExists = await this.attrRepo.findOne({
+              where: { id: parentMapping.apiId, formId: templateId },
+            });
+
+            if (!parentExists) {
+              result.errors?.push(
+                `Parent attribute không tồn tại trong database: ${relationship.parentId}`,
+              );
+              continue;
+            }
+
+            const updateDto: PatchFormAttributeDto = {
+              parentId: parentMapping.apiId,
+            };
+
+            await this.patchAttribute(
+              templateId,
+              childMapping.apiId,
+              updateDto,
+            );
+          } else {
+            if (!childMapping) {
+              result.errors?.push(
+                `Không tìm thấy mapping cho child attribute: ${relationship.childId}`,
+              );
+            }
+            if (!parentMapping) {
+              result.errors?.push(
+                `Không tìm thấy mapping cho parent attribute: ${relationship.parentId}`,
+              );
+            }
+          }
+        } catch (error: any) {
+          result.errors?.push(
+            `Lỗi cập nhật quan hệ cha-con cho thuộc tính ${relationship.childId}: ${error.message}`,
+          );
+        }
+      }
+
+      if (result.errors && result.errors.length > 0) {
+        result.success = false;
+        result.message = 'Import hoàn thành với một số lỗi';
+      }
+
+      return result;
+    } catch (error: any) {
+      return {
+        success: false,
+        message: `Lỗi xử lý file Excel: ${error.message}`,
+        indicatorsCreated: 0,
+        attributesCreated: 0,
+        indicatorMappings: [],
+        attributeMappings: [],
+        errors: [error.message],
+      };
+    }
+  }
+
+  async importIndicatorsFromExcel(
+    templateId: string,
+    fileBuffer: Buffer,
+  ): Promise<ImportResult> {
+    const ind = await this.importIndicatorsOnlyFromExcel(
+      templateId,
+      fileBuffer,
+    );
+    const attr = await this.importAttributesOnlyFromExcel(
+      templateId,
+      fileBuffer,
+    );
+    const merged: ImportResult = {
+      success: true,
+      message: 'Import thành công',
+      indicatorsCreated: ind.indicatorsCreated,
+      attributesCreated: attr.attributesCreated,
+      indicatorMappings: [...ind.indicatorMappings],
+      attributeMappings: [...attr.attributeMappings],
+      errors: [...(ind.errors ?? []), ...(attr.errors ?? [])],
+    };
+    if (merged.errors && merged.errors.length > 0) {
+      merged.success = false;
+      merged.message = 'Import hoàn thành với một số lỗi';
+    }
+    return merged;
   }
 
   private normalizeIndicatorRows(rows: any[]): ExcelIndicatorRow[] {
