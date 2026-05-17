@@ -1250,6 +1250,90 @@
       ]
     },
     {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Field Categories With Templates",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/field-categories?isGetAll=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "field-categories"],
+              "query": [
+                {
+                  "key": "isGetAll",
+                  "value": "true"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "100",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Field Category Reports",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/field-categories/{{fieldCategoryId}}/reports?templateId={{templateId}}&periodType=THANG&periodCode=KBCT05",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "dashboard",
+                "field-categories",
+                "{{fieldCategoryId}}",
+                "reports"
+              ],
+              "query": [
+                {
+                  "key": "templateId",
+                  "value": "{{formId}}",
+                  "description": "Bắt buộc — lấy từ templates[] của Hub API"
+                },
+                {
+                  "key": "periodCode",
+                  "value": "KBCT05",
+                  "description": "Bắt buộc"
+                },
+                {
+                  "key": "periodType",
+                  "value": "THANG"
+                },
+                {
+                  "key": "status",
+                  "value": "DISTRICT_APPROVED",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Summary & Analytics",
       "item": [
         {

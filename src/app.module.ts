@@ -12,6 +12,7 @@ import { SubmissionModule } from './modules/submission/submission.module';
 import { ApprovalModule } from './modules/approval/approval.module';
 import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import { ReportCampaignModule } from './modules/report-campaign/report-campaign.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { SummaryAnalyticsModule } from './modules/summary-analytics/summary-analytics.module';
 import { LoggingMiddleware, RequestIdMiddleware } from './common';
 import { URL } from 'url';
@@ -87,6 +88,7 @@ function envBool(value: unknown, defaultValue: boolean): boolean {
     OrganizationModule,
     AuditLogModule,
     ReportCampaignModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
