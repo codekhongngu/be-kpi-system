@@ -11,17 +11,17 @@ import { FormIndicator } from '../template-management/entities/form-indicator.en
 import { FormAttribute } from '../template-management/entities/form-attribute.entity';
 import { FormAssignment } from '../report-campaign/assignment/entities/form-assignment.entity';
 import { ReportSubmission } from '../submission/entities/report-submission.entity';
-import { User } from '../user/entities/user.entity';
 import { normalizeSubmissionStatus } from '../submission/submission-status';
 import { DashboardFieldCategoriesQueryDto } from './dto/dashboard-field-categories-query.dto';
 import { DashboardFieldReportsQueryDto } from './dto/dashboard-field-reports-query.dto';
 
-type CellRow = {
-  submission_id: string;
-  indicator_id: string;
-  attribute_id: string;
-  value_text: string | null;
-  value_number: string | number | null;
+type EnrichedCellRow = {
+  indicatorId: string;
+  attributeId: string;
+  code: string | null;
+  attributeName: string | null;
+  valueText: string | null;
+  valueNumber: number | null;
 };
 
 type AssignmentReportRow = {
@@ -150,7 +150,6 @@ export class DashboardService {
   async getFieldCategoryReports(
     fieldCategoryId: string,
     query: DashboardFieldReportsQueryDto,
-    user: User,
   ) {
     const periodCode = query.periodCode?.trim();
     if (!periodCode) {
@@ -181,12 +180,7 @@ export class DashboardService {
     const limit = Math.min(query.limit ?? 50, 100);
     const skip = (page - 1) * limit;
 
-    const baseQb = this.buildAssignmentQueryBase(
-      form.id,
-      periodCode,
-      query,
-      user,
-    );
+    const baseQb = this.buildAssignmentQueryBase(form.id, periodCode, query);
 
     const total = await baseQb.clone().getCount();
 
@@ -218,8 +212,6 @@ export class DashboardService {
       .map((r) => r.submissionId)
       .filter((id): id is string => Boolean(id));
 
-    const cellsBySubmission = await this.loadCellsBySubmission(submissionIds);
-
     const [indicators, attributes] = await Promise.all([
       this.indicatorRepo.find({
         where: { formId: form.id },
@@ -230,6 +222,9 @@ export class DashboardService {
         order: { sortOrder: 'ASC', name: 'ASC' },
       }),
     ]);
+
+    const cellsBySubmission =
+      await this.loadCellsBySubmission(submissionIds);
 
     const periodName =
       rows.find((r) => r.periodName)?.periodName ??
@@ -320,12 +315,21 @@ export class DashboardService {
     formId: string,
     periodCode: string,
     query: DashboardFieldReportsQueryDto,
-    user: User,
   ) {
     const qb = this.assignmentRepo
       .createQueryBuilder('a')
       .innerJoin('organizations', 'o', 'o.id = a.org_id')
-      .leftJoin(ReportSubmission, 's', 's.assignmentId = a.id')
+      .leftJoin(
+        ReportSubmission,
+        's',
+        `s.assignment_id = a.id AND s.id = (
+          SELECT rs.id
+          FROM report_submissions rs
+          WHERE rs.assignment_id = a.id
+          ORDER BY rs.created_at DESC
+          LIMIT 1
+        )`,
+      )
       .where('a.template_id = :formId', { formId })
       .andWhere('a.period_code = :periodCode', { periodCode })
       .andWhere('a.is_cancelled = false');
@@ -336,9 +340,6 @@ export class DashboardService {
       });
     }
 
-    if (user.orgId) {
-      qb.andWhere('a.org_id = :userOrgId', { userOrgId: user.orgId });
-    }
     if (query.orgId) {
       qb.andWhere('a.org_id = :orgId', { orgId: query.orgId });
     }
@@ -358,38 +359,37 @@ export class DashboardService {
 
   private async loadCellsBySubmission(
     submissionIds: string[],
-  ): Promise<
-    Map<
-      string,
-      Array<{
-        indicatorId: string;
-        attributeId: string;
-        valueText: string | null;
-        valueNumber: number | null;
-      }>
-    >
-  > {
-    const map = new Map<
-      string,
-      Array<{
-        indicatorId: string;
-        attributeId: string;
-        valueText: string | null;
-        valueNumber: number | null;
-      }>
-    >();
+  ): Promise<Map<string, EnrichedCellRow[]>> {
+    const map = new Map<string, EnrichedCellRow[]>();
 
     if (submissionIds.length === 0) {
       return map;
     }
 
     const rows = (await this.dataSource.query(
-      `SELECT submission_id, indicator_id, attribute_id, value_text, value_number
-       FROM report_submission_cells
-       WHERE submission_id = ANY($1::uuid[])
-       ORDER BY submission_id ASC, indicator_id ASC, attribute_id ASC`,
+      `SELECT
+         c.submission_id,
+         c.indicator_id,
+         c.attribute_id,
+         c.value_text,
+         c.value_number,
+         i.code AS indicator_code,
+         a.name AS attribute_name
+       FROM report_submission_cells c
+       INNER JOIN form_template_indicators i ON i.id = c.indicator_id
+       INNER JOIN form_template_attributes a ON a.id = c.attribute_id
+       WHERE c.submission_id = ANY($1::uuid[])
+       ORDER BY c.submission_id ASC, i.sort_order ASC, i.code ASC, a.sort_order ASC, a.name ASC`,
       [submissionIds],
-    )) as CellRow[];
+    )) as Array<{
+      submission_id: string;
+      indicator_id: string;
+      attribute_id: string;
+      value_text: string | null;
+      value_number: string | number | null;
+      indicator_code: string;
+      attribute_name: string;
+    }>;
 
     for (const row of rows) {
       const sid = row.submission_id;
@@ -399,6 +399,8 @@ export class DashboardService {
       map.get(sid)!.push({
         indicatorId: row.indicator_id,
         attributeId: row.attribute_id,
+        code: row.indicator_code,
+        attributeName: row.attribute_name,
         valueText: row.value_text,
         valueNumber:
           row.value_number != null ? Number(row.value_number) : null,

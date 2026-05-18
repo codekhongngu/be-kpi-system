@@ -7,8 +7,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { User } from '../user/entities/user.entity';
 import { Permissions, PermissionsGuard } from '../../common';
 import { DashboardService } from './dashboard.service';
 import { DashboardFieldCategoriesQueryDto } from './dto/dashboard-field-categories-query.dto';
@@ -30,12 +28,10 @@ export class DashboardController {
   async getFieldCategoryReports(
     @Param('fieldCategoryId', ParseUUIDPipe) fieldCategoryId: string,
     @Query() query: DashboardFieldReportsQueryDto,
-    @CurrentUser() user: User,
   ) {
     return await this.dashboardService.getFieldCategoryReports(
       fieldCategoryId,
       query,
-      user,
     );
   }
 }
